@@ -111,7 +111,7 @@ function crossjacobian(obj::Abadie)
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)
 
-    return g₂' * (g₁ .* D)
+    return g₂' * scale!(D, g₁)
 end
 
 function crossjacobian(obj::Abadie, w::AbstractVector)
@@ -137,10 +137,10 @@ function crossjacobian(obj::Abadie, w::AbstractVector)
         end
     end
 
-    g₁ = jacobexp(obj.first_stage, w)
+    g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage, w)
 
-    return g₂' * (g₁ .* D)
+    return g₂' * scale!(D, g₁)
 end
 
 #==========================================================================================#

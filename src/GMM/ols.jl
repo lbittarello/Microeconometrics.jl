@@ -24,7 +24,7 @@ end
 function _fit(obj::OLS, w::AbstractVector)
     y = getvector(obj, :response)
     x = getmatrix(obj, :control)
-    z = transpose(x .* w)
+    z = scale!(transpose(x), w)
     return (z * x) \ (z * y)
 end
 
@@ -32,32 +32,28 @@ end
 
 # SCORE (MOMENT CONDITIONS)
 
-score(obj::OLS) = getmatrix(obj, :control) .* residuals(obj)
+score(obj::OLS) = scale!(residuals(obj), copy(getmatrix(obj, :control)))
 
 function score(obj::OLS, w::AbstractVector)
-    x  = getmatrix(obj, :control)
-    r  = residuals(obj)
-    r .= r .* w
-    return x .* r
+    return scale!(w, scale!(residuals(obj), copy(getmatrix(obj, :control))))
 end
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
 function jacobian(obj::OLS)
     x = getmatrix(obj, :control)
-    return - x' * x
+    return crossprod(x, neg = true)
 end
 
 function jacobian(obj::OLS, w::AbstractVector)
-     x  = getmatrix(obj, :control)
-     return - x' * (x .* w)
+     x = getmatrix(obj, :control)
+     return  crossprod(x, w, neg = true)
 end
 
 # HOMOSCEDASTIC VARIANCE MATRIX
 
 function _vcov(obj::OLS, corr::Homoscedastic)
-    σ = std(residuals(obj)) * (nobs(obj) - 1) / dof_residual(obj)
-    return σ * inv(jacobian(obj))
+    return scale!(- sum(abs2, residuals(obj)) / dof_residual(obj), inv(jacobian(obj)))
 end
 
 #==========================================================================================#

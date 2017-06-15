@@ -21,7 +21,8 @@ function _fit(obj::Logit)
     x  = getmatrix(obj, :control)
 
     p  = mean(y)
-    β₀ = (x \ y) / (p * (1.0 - p))
+    p  = 1.0 / (p * (1.0 - p))
+    β₀ = scale!(p, x \ y)
 
     μ  = x * β₀
     r  = similar(y)
@@ -45,10 +46,10 @@ function _fit(obj::Logit)
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             ηi   = logistic(μi)
-            r[i] = yi - ηi
+            r[i] = ηi - yi
         end
 
-        g[:] = - x' * r
+        g[:] = x' * r
     end
 
     function LG!(g::Vector, β::Vector)
@@ -58,11 +59,11 @@ function _fit(obj::Logit)
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             ηi   = logistic(μi)
-            r[i] = yi - ηi
+            r[i] = ηi - yi
             ll  += (iszero(yi) ? log(1.0 - ηi) : log(ηi))
         end
 
-        g[:] = - x' * r
+        g[:] = x' * r
 
         return - ll
     end
@@ -76,7 +77,7 @@ function _fit(obj::Logit)
             ω[i] = ηi * (1.0 - ηi)
         end
 
-        h[:, :] = x' * (x .* ω)
+        h[:, :] = crossprod(x, ω)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!), β₀, Newton())
@@ -94,7 +95,8 @@ function _fit(obj::Logit, w::AbstractVector)
     x  = getmatrix(obj, :control)
 
     p  = mean(y)
-    β₀ = (x \ y) / (p * (1.0 - p))
+    p  = 1.0 / (p * (1.0 - p))
+    β₀ = scale!(p, x \ y)
 
     μ  = x * β₀
     r  = similar(y)
@@ -118,10 +120,10 @@ function _fit(obj::Logit, w::AbstractVector)
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             ηi   = logistic(μi)
-            r[i] = wi * (yi - ηi)
+            r[i] = wi * (ηi - yi)
         end
 
-        g[:] = - x' * r
+        g[:] = x' * r
     end
 
     function LG!(g::Vector, β::Vector)
@@ -131,11 +133,11 @@ function _fit(obj::Logit, w::AbstractVector)
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             ηi   = logistic(μi)
-            r[i] = wi * (yi - ηi)
+            r[i] = wi * (ηi - yi)
             ll  += wi * (iszero(yi) ? log(1.0 - ηi) : log(ηi))
         end
 
-        g[:] = - x' * r
+        g[:] = x' * r
 
         return - ll
     end
@@ -149,7 +151,7 @@ function _fit(obj::Logit, w::AbstractVector)
             ω[i] = wi * ηi * (1.0 - ηi)
         end
 
-        h[:, :] = x' * (x .* ω)
+        h[:, :] = crossprod(x, ω)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!), β₀, Newton())
@@ -165,13 +167,10 @@ end
 
 # SCORE (DERIVATIVE OF THE LIKELIHOOD FUNCTION)
 
-score(obj::Logit) = getmatrix(obj, :control) .* residuals(obj)
+score(obj::Logit) = scale!(residuals(obj), copy(getmatrix(obj, :control)))
 
 function score(obj::Logit, w::AbstractVector)
-    x  = getmatrix(obj, :control)
-    r  = residuals(obj)
-    r .= r .* w
-    return x .* r
+    return scale!(w, scale!(residuals(obj), copy(getmatrix(obj, :control))))
 end
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
@@ -179,27 +178,27 @@ end
 function jacobian(obj::Logit)
 
     x  = getmatrix(obj, :control)
-    η  = x * obj.β
+    ω  = x * obj.β
 
-    @inbounds for (i, ηi) in enumerate(η)
-        ψ     = logistic(ηi)
-        η[i] .= ψ * (1.0 - ψ)
+    @inbounds for (i, ωi) in enumerate(ω)
+        ψ     = logistic(ωi)
+        ω[i] .= ψ * (1.0 - ψ)
     end
 
-    return - x' * (x .* η)
+    return crossprod(x, ω, neg = true)
 end
 
 function jacobian(obj::Logit, w::AbstractVector)
 
     x  = getmatrix(obj, :control)
-    η  = x * obj.β
+    ω  = x * obj.β
 
-    @inbounds for (i, (ηi, wi)) in enumerate(zip(η, w))
-        ψ     = logistic(ηi)
-        η[i] .= wi * ψ * (1.0 - ψ)
+    @inbounds for (i, (ωi, wi)) in enumerate(zip(ω, w))
+        ψ     = logistic(ωi)
+        ω[i] .= wi * ψ * (1.0 - ψ)
     end
 
-    return - x' * (x .* η)
+    return crossprod(x, ω, neg = true)
 end
 
 #==========================================================================================#
@@ -210,7 +209,7 @@ predict(obj::Logit) = getmatrix(obj, :control) * obj.β
 
 # FITTED VALUES
 
-fitted(obj::Logit)  = logistic.(predict(obj))
+fitted(obj::Logit) = logistic.(predict(obj))
 
 # DERIVATIVE OF FITTED VALUES
 
@@ -224,7 +223,7 @@ function jacobexp(obj::Logit)
         η[i] .= ψ * (1.0 - ψ)
     end
 
-    return x .* η
+    return scale!(η, copy(x))
 end
 
 #==========================================================================================#

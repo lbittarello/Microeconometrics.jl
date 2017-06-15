@@ -67,8 +67,8 @@ end
 
 # ADJUSTMENT FOR CLUSTERED COVARIANCE MATRICES
 
-_adjcluster(corr::Clustered)     = (c  = corr.nc; c / (c - 1))
-_adjcluster(corr::CorrStructure) = 1.0
+_adjcluster!(V::Matrix, corr::Clustered)     = (c  = corr.nc; scale!(c / (c - 1), V))
+_adjcluster!(V::Matrix, corr::CorrStructure) = V
 
 #==========================================================================================#
 

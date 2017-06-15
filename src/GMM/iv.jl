@@ -60,8 +60,8 @@ end
 
 function _fit(obj::IV, w::AbstractVector)
 
-    y = getvector(obj, :response) .* w
-    x = getmatrix(obj, :treatment, :control) .* w
+    y = scale!(w, copy(getvector(obj, :response)))
+    x = scale!(w, copy(getmatrix(obj, :treatment, :control)))
     z = getmatrix(obj, :instrument, :control)
 
     if size(x, 2) == size(z, 2)
@@ -82,13 +82,13 @@ end
 
 # SCORE (MOMENT CONDITIONS)
 
-score(obj::IV) = getmatrix(obj, :instrument, :control) .* residuals(obj)
+score(obj::IV) = scale!(residuals(obj), copy(getmatrix(obj, :instrument, :control)))
 
 function score(obj::IV, w::AbstractVector)
-    z  = getmatrix(obj, :instrument, :control)
+    z  = copy(getmatrix(obj, :instrument, :control))
     r  = residuals(obj)
     r .= r .* w
-    return z .* r
+    return scale!(w, scale!(r, z))
 end
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
@@ -96,13 +96,13 @@ end
 function jacobian(obj::IV)
     x = getmatrix(obj, :treatment, :control)
     z = getmatrix(obj, :instrument, :control)
-    return - z' * x
+    return scale!(- 1.0, z' * x)
 end
 
 function jacobian(obj::IV, w::AbstractVector)
-    x = getmatrix(obj, :treatment, :control) .* w
+    x = scale!(w, copy(getmatrix(obj, :treatment, :control)))
     z = getmatrix(obj, :instrument, :control)
-    return - z' * x
+    return scale!(- 1.0, z' * x)
 end
 
 #==========================================================================================#

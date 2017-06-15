@@ -39,9 +39,9 @@ function influence(obj::GMM, args...)
     s = score(obj, args...)
     j = jacobian(obj, args...)
     if obj.method == "Unadjusted"
-        return - (s * j) / (j' * j)
+        return scale!(- 1.0, (s * j) / (j' * j))
     elseif obj.method == "Optimal"
-        return - s / j'
+        return scale!(- 1.0, s / j')
     else
         throw("unknown method")
     end
@@ -55,9 +55,9 @@ function influence(obj::TwoStageModel, obj₁::Micromodel, obj₂::GMM, args...)
     s = score(obj, args...) + crossinfluence(obj, obj₁, args...)
     j = jacobian(obj, args...)
     if obj₂.method == "Unadjusted"
-        return - (s * j) / (j' * j)
+        return scale!(- 1.0, (s * j) / (j' * j))
     elseif obj₂.method == "Optimal"
-        return - s / j'
+        return scale!(- 1.0, s / j')
     else
         throw("unknown method")
     end
@@ -65,7 +65,7 @@ end
 
 function influence(obj::TwoStageModel, obj₁::Micromodel, obj₂::ParModel, args...)
     s = score(obj, args...) + crossinfluence(obj, obj₁, args...)
-    return - s / jacobian(obj)'
+    return scale!(- 1.0, s / jacobian(obj)')
 end
 
 function influence(obj::TwoStageModel, args...)
@@ -94,5 +94,5 @@ end
 
 function _vcov(obj::ParOrTwoStage, corr::ClusterOrCross, args...)
     ψ  = influence(obj, args...)
-    return _adjcluster(corr) * (ψ' * corr.mat * ψ)
+    return _adjcluster!(ψ' * corr.mat * ψ, corr)
 end

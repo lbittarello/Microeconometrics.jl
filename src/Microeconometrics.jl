@@ -1,3 +1,5 @@
+__precompile__()
+
 module Microeconometrics
 
 using DataFrames
@@ -20,6 +22,7 @@ include("./general/data_utils.jl")
 include("./general/retrieval.jl")
 include("./general/statsmodel.jl")
 include("./general/etable.jl")
+include("./general/utils.jl")
 include("./inference/vcov.jl")
 include("./inference/hausman.jl")
 include("./MLE/logit.jl")
@@ -27,12 +30,12 @@ include("./MLE/probit.jl")
 include("./GMM/ols.jl")
 include("./GMM/iv.jl")
 include("./TSM/abadie.jl")
-include("./TSM/frölichmelly.jl")
+include("./TSM/frÃ¶lichmelly.jl")
 
 export CorrStructure, Microdata
 export Homoscedastic, Heteroscedastic, Clustered, CrossCorrelated
 export cc_timespace, truncated, bartlett, parzen, tukeyhanning
-export ParObject, OLS, IV, Logit, Probit, Abadie, FrölichMelly
+export ParObject, OLS, IV, Logit, Probit, Abadie, FrÃ¶lichMelly
 export first_stage, second_stage, reduced_form, tstat, etable
 export hausman_test
 
@@ -41,4 +44,4 @@ export coefnames, coef, coeftable, confint, vcov
 export dof, dof_residual, nobs, r2, adjr2
 export model_response, predict, fitted, residuals
 
-end
+end # module

@@ -59,7 +59,7 @@ function Microdata(
     mat     = ModelMatrix(frame)
 
     if checkrank
-        (rank(mat.n) == size(mat.n, 2)) || throw("model matrix does not have full rank")
+        (rank(mat.m) == size(mat.m, 2)) || throw("model matrix does not have full rank")
     end
 
     map = Dict{Symbol, Vector{Int}}()

@@ -21,7 +21,8 @@ function _fit(obj::Probit)
     x  = getmatrix(obj, :control)
 
     p  = mean(y)
-    β₀ = (x \ y) / normpdf(norminvcdf(p))
+    p  = 1.0 / normpdf(norminvcdf(p))
+    β₀ = scale!(p, x \ y)
 
     μ  = x * β₀
     r  = similar(y)
@@ -48,7 +49,8 @@ function _fit(obj::Probit)
             r[i] = normpdf(μi) / ηi
         end
 
-        g[:] = - x' * r
+        g[:] = x' * r
+        scale!(- 1.0, g)
     end
 
     function LG!(g::Vector, β::Vector)
@@ -62,7 +64,8 @@ function _fit(obj::Probit)
             ll  += (iszero(yi) ? log(- ηi) : log(ηi))
         end
 
-        g[:] = - x' * r
+        g[:] = x' * r
+        scale!(- 1.0, g)
 
         return - ll
     end
@@ -77,7 +80,7 @@ function _fit(obj::Probit)
             ω[i] = abs2(ηi) + μi * ηi
         end
 
-        h[:, :] = x' * (x .* ω)
+        h[:, :] = crossprod(x, ω)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!), β₀, Newton())
@@ -95,7 +98,8 @@ function _fit(obj::Probit, w::AbstractVector)
     x  = getmatrix(obj, :control)
 
     p  = mean(y)
-    β₀ = (x \ y) / normpdf(norminvcdf(p))
+    p  = 1.0 / normpdf(norminvcdf(p))
+    β₀ = scale!(p, x \ y)
 
     μ  = x * β₀
     r  = similar(y)
@@ -122,7 +126,8 @@ function _fit(obj::Probit, w::AbstractVector)
             r[i] = wi * normpdf(μi) / ηi
         end
 
-        g[:] = - x' * r
+        g[:] = x' * r
+        scale!(- 1.0, g)
     end
 
     function LG!(g::Vector, β::Vector)
@@ -136,7 +141,8 @@ function _fit(obj::Probit, w::AbstractVector)
             ll  += wi * (iszero(yi) ? log(- ηi) : log(ηi))
         end
 
-        g[:] = - x' * r
+        g[:] = x' * r
+        scale!(- 1.0, g)
 
         return - ll
     end
@@ -151,7 +157,7 @@ function _fit(obj::Probit, w::AbstractVector)
             ω[i] = wi * (abs2(ηi) + μi * ηi)
         end
 
-        h[:, :] = x' * (x .* ω)
+        h[:, :] = crossprod(x, ω)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!), β₀, Newton())
@@ -178,7 +184,7 @@ function score(obj::Probit)
         ω[i] = normpdf(ωi) / ηi
     end
 
-    return x .* ω
+    return scale!(ω, copy(x))
 end
 
 function score(obj::Probit, w::AbstractVector)
@@ -192,7 +198,7 @@ function score(obj::Probit, w::AbstractVector)
         ω[i] = wi * normpdf(ωi) / ηi
     end
 
-    return x .* ω
+    return scale!(ω, copy(x))
 end
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
@@ -207,7 +213,7 @@ function jacobian(obj::Probit)
         ω[i] = abs2(normpdf(ωi)) / (ηi * (1.0 - ηi))
     end
 
-    return - x' * (x .* ω)
+    return crossprod(x, ω, neg = true)
 end
 
 function jacobian(obj::Probit, w::AbstractVector)
@@ -220,7 +226,7 @@ function jacobian(obj::Probit, w::AbstractVector)
         ω[i] = wi * abs2(normpdf(ωi)) / (ηi * (1.0 - ηi))
     end
 
-    return - x' * (x .* ω)
+    return crossprod(x, ω, neg = true)
 end
 
 #==========================================================================================#
@@ -236,10 +242,10 @@ fitted(obj::Probit) = normcdf.(predict(obj))
 # DERIVATIVE OF FITTED VALUES
 
 function jacobexp(obj::Probit)
-    x  = getmatrix(obj, :control)
+    x  = copy(getmatrix(obj, :control))
     ϕ  = x * obj.β
     ϕ .= normpdf.(ϕ)
-    return x .* ϕ
+    return scale!(ϕ, x)
 end
 
 #==========================================================================================#

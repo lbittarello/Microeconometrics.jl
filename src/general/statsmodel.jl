@@ -125,7 +125,7 @@ function coeftable(
     if level > 0.0
         lprint = fmt.(FormatSpec("0.2f"), level)
         table  = hcat(table, confint(obj, level))
-        label  = hcat(label, ["     C.I.", "($(lprint)%)  "])
+        label  = vcat(label, ["     C.I.", "($(lprint)%)  "])
     end
 
     CT = CoefTable(table, label, coefnames(obj), 4)
