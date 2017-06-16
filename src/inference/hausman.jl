@@ -29,10 +29,7 @@ function hausman_test(
         corr::CorrStructure = getcorr(obj₁)
     )
 
-    if typeof(getcorr(obj₁)) != typeof(corr)
-        throw("different correlation structures")
-    end
-    if typeof(getcorr(obj₂)) != typeof(corr)
+    if (typeof(getcorr(obj₁)) != typeof(corr)) | (typeof(getcorr(obj₂)) != typeof(corr))
         throw("different correlation structures")
     end
 
@@ -79,8 +76,8 @@ function _hausman!(
         corr::Heteroscedastic
     )
 
-    touse₁ = view(getcorr(obj₂).msng, getcorr(obj₁).msng)
-    touse₂ = view(getcorr(obj₁).msng, getcorr(obj₂).msng)
+    touse₁ = view(obj₂.sample.msng, obj₁.sample.msng)
+    touse₂ = view(obj₁.sample.msng, obj₂.sample.msng)
 
     ψ₁  = influence(obj₁)
     ψ₂  = influence(obj₂)
@@ -108,8 +105,8 @@ function _hausman!(
         w₂::AbstractVector
     )
 
-    touse₁ = find(corr.msng .* getcorr(obj₁).msng)
-    touse₂ = find(corr.msng .* getcorr(obj₂).msng)
+    touse₁ = view(obj₂.sample.msng, obj₁.sample.msng)
+    touse₂ = view(obj₁.sample.msng, obj₂.sample.msng)
 
     ψ₁  = influence(obj₁, w₁)
     ψ₂  = influence(obj₂, w₂)
@@ -135,14 +132,15 @@ function _hausman!(
         corr::ClusterOrCross
     )
 
-    if any(corr.msng[getcorr(obj₁).msng] .== false)
-        throw("joint correlation structure does not overlap with both estimation samples")
-    elseif any(corr.msng[getcorr(obj₂).msng] .== false)
+    corr₁ = getcorr(obj₁)
+    corr₂ = getcorr(obj₂)
+
+    if any(corr.msng[corr₁.msng] .== false) | any(corr.msng[corr₂.msng] .== false)
         throw("joint correlation structure does not overlap with both estimation samples")
     end
 
-    touse₁ = find(corr.msng .* getcorr(obj₁).msng)
-    touse₂ = find(corr.msng .* getcorr(obj₂).msng)
+    touse₁ = find(corr.msng .* corr₁.msng)
+    touse₂ = find(corr.msng .* corr₂.msng)
 
     ψ₁  = influence(obj₁)
     ψ₂  = influence(obj₂)
@@ -172,14 +170,15 @@ function _hausman!(
         w₂::AbstractVector
     )
 
-    if any(corr.msng[getcorr(obj₁).msng] .== false)
-        throw("joint correlation structure does not overlap with both estimation samples")
-    elseif any(corr.msng[getcorr(obj₂).msng] .== false)
+    corr₁ = getcorr(obj₁)
+    corr₂ = getcorr(obj₂)
+
+    if any(corr.msng[corr₁.msng] .== false) | any(corr.msng[corr₂.msng] .== false)
         throw("joint correlation structure does not overlap with both estimation samples")
     end
 
-    touse₁ = find(corr.msng .* getcorr(obj₁).msng)
-    touse₂ = find(corr.msng .* getcorr(obj₂).msng)
+    touse₁ = find(corr.msng .* corr₁.msng)
+    touse₂ = find(corr.msng .* corr₂.msng)
 
     ψ₁  = influence(obj₁, w₁)
     ψ₂  = influence(obj₂, w₂)
