@@ -67,7 +67,7 @@ cc_timespace(
     longitude::Symbol,
     spatial_bandwidth::Real;
     date_kernel::Function = parzen,
-    spatial_kerel::Function = parzen
+    spatial_kernel::Function = parzen
 )
 ```
 
