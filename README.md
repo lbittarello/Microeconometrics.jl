@@ -148,7 +148,7 @@ you may pass `novar = true` to `fit` to suppress covariance estimation.
 
 Some functions return parametric objects (`ParObject`).
 These structures contain estimates, their covariance matrix and labels.
-For an example, see the documentation of `hausman` (under "Inference").
+For an example, see the documentation of `hausman` (under [Inference](#inference)).
 
 ## Methods
 
@@ -216,7 +216,7 @@ fit(Probit, MD::Microdata)
 
 The `Microdata` must contain: `response` and `control`.
 
-#### GMM
+#### General method of moments
 
 ```julia
 fit(IV, MD::Microdata; method::String = "Optimal")
@@ -234,6 +234,7 @@ fit(Abadie, FS::Micromodel, SS::ParModel, MD::Microdata; trim::AbstractFloat = 0
 ```
 
 This model estimates a local average response function according to Abadie (2003, JE).
+It assumes that both the treatment and the instrument are binary.
 In a first stage, we use model `FS` to forecast the probability of treatment take-up
 and construct weights. Because of outliers, we give zero weight to observations
 such that the fitted probability is below `trim` or above `1 - trim`.
@@ -246,6 +247,7 @@ fit(FrölichMelly, FS::Micromodel, MD::Microdata; trim::AbstractFloat = 0.01)
 
 This model estimates unconditional local average treatment effects according to
 Frölich and Melly (2013, JBES).
+It assumes that both the treatment and the instrument are binary.
 In a first stage, we use model `FS` to forecast the probability of treatment take-up
 and construct weights. Because of outliers, we give zero weight to observations
 such that the fitted probability is below `trim` or above `1 - trim`.
