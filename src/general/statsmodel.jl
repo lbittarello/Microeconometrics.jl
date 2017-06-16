@@ -114,7 +114,7 @@ coefnames(obj::ParObject) = obj.names
 
 function coeftable(
         obj::Union{ParModel, ParObject, TwoStageModel};
-        level::Float64 = 0.05,
+        level::Float64 = 0.95,
         digits::Int = 4,
         verbose::Bool = true
     )
@@ -123,8 +123,8 @@ function coeftable(
     label = [" Estimate", " St. Err.", "  t-stat.", "  p-value"]
 
     if level > 0.0
-        lprint = fmt.(FormatSpec("0.2f"), level)
-        table  = hcat(table, confint(obj, level))
+        lprint = fmt(FormatSpec("0.2f"), level)
+        table  = hcat(table, round.(confint(obj, level), digits))
         label  = vcat(label, ["     C.I.", "($(lprint)%)  "])
     end
 

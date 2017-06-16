@@ -36,7 +36,7 @@ export CorrStructure, Microdata
 export Homoscedastic, Heteroscedastic, Clustered, CrossCorrelated
 export cc_timespace, truncated, bartlett, parzen, tukeyhanning
 export ParObject, OLS, IV, Logit, Probit, Abadie, FrölichMelly
-export first_stage, second_stage, reduced_form, tstat, etable
+export first_stage, second_stage, reduced_form, tstat, pval, etable
 export hausman_test
 
 export fit, loglikelihood, nullloglikelihood, deviance, nulldeviance
