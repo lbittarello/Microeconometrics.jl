@@ -75,9 +75,8 @@ The resulting structure allows for arbitrary correlation between observations,
 as long as it declines over time and space.
 `date`, `latitude` and `longitude` specify columns of `dset`.
 `dset[date]` must be a `DataVector{Date}`.
-Available kernels include: Bartlett (`bartlett`), Parzen (`parzen`), Truncated (`truncated`),
+Predefined kernels include: Bartlett (`bartlett`), Parzen (`parzen`), Truncated (`truncated`)
 and Tukey-Hanning (`tukeyhanning`). See Andrews (1991, ECTA) for formulae.
-(Note that you may pass your own kernel function.)
 
 ## Microdata
 
@@ -95,16 +94,16 @@ whose elements are `true` if the corresponding row of the `DataFrame` should be 
 and `false` if it should be excluded.
 You may then pass variable sets as keywords, following the
 [syntax of `Formula`](http://juliastats.github.io/DataFrames.jl/stable/man/formulas/).
-The documentation of each model described its requirements.
+The documentation of each model describes its requirements.
 Conventional sets include:
 
 - `response`: the response, outcome or dependent variable.
 - `control`: exogenous explanatory variables (one must explicitly include intercepts, "+ 1").
-- `treatment`: a treatment or endogenous explanatory variables.
+- `treatment`: treatments or endogenous explanatory variables.
 - `instrument`: instrumental variables or excluded exogenous variables.
 - `weight`: a weight vector.
 
-The following keywords control the behavior of the constructor:
+The following reserved keywords control the behavior of the constructor:
 
 - `corr`: a `CorrStructure` (see the documentation above).
 The default is `Heteroscedastic()`.
@@ -118,7 +117,7 @@ The default is `true`. Deactivate if you have frequency weights.
 
 It is also possible to base new `Microdata` on existing `Microdata`.
 This alternative constructor takes the parent as a mandatory argument and new variable sets as keywords.
-(If you don't redefine a set, it is preserved. To suppress a set, define it as `""`.)
+(If you don't redefine a set, it is preserved. To suppress a set, redefine it to be `""`.)
 The new object will contain its own variable map and references to other fields of the parent,
 unless you turn on `makecopy` (which defaults to `false` for this method);
 in that case, other fields are copied, including the model matrix.
