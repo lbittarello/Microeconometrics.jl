@@ -46,11 +46,11 @@ function _fit(obj::Probit)
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             ηi   = (iszero(yi) ? (normcdf(μi) - 1.0) : normcdf(μi))
-            r[i] = normpdf(μi) / ηi
+            r[i] = - normpdf(μi) / ηi
         end
 
         g[:] = x' * r
-        scale!(- 1.0, g)
+
     end
 
     function LG!(g::Vector, β::Vector)
@@ -60,12 +60,11 @@ function _fit(obj::Probit)
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             ηi   = (iszero(yi) ? (normcdf(μi) - 1.0) : normcdf(μi))
-            r[i] = normpdf(μi) / ηi
+            r[i] = - normpdf(μi) / ηi
             ll  += (iszero(yi) ? log(- ηi) : log(ηi))
         end
 
         g[:] = x' * r
-        scale!(- 1.0, g)
 
         return - ll
     end
@@ -123,11 +122,11 @@ function _fit(obj::Probit, w::AbstractVector)
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             ηi   = (iszero(yi) ? (normcdf(μi) - 1.0) : normcdf(μi))
-            r[i] = wi * normpdf(μi) / ηi
+            r[i] = - wi * normpdf(μi) / ηi
         end
 
         g[:] = x' * r
-        scale!(- 1.0, g)
+
     end
 
     function LG!(g::Vector, β::Vector)
@@ -137,12 +136,11 @@ function _fit(obj::Probit, w::AbstractVector)
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             ηi   = (iszero(yi) ? (normcdf(μi) - 1.0) : normcdf(μi))
-            r[i] = wi * normpdf(μi) / ηi
+            r[i] = - wi * normpdf(μi) / ηi
             ll  += wi * (iszero(yi) ? log(- ηi) : log(ηi))
         end
 
         g[:] = x' * r
-        scale!(- 1.0, g)
 
         return - ll
     end

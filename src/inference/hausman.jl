@@ -81,16 +81,16 @@ function _hausman!(
 
     ψ₁  = influence(obj₁)
     ψ₂  = influence(obj₂)
-    V₁₂ = view(ψ₁, touse₁, :)' * view(ψ₂, touse₂, :)
-    V₁  = vcov(obj₁)
-    V₂  = vcov(obj₂)
+    V₁₂ = view(ψ₁, touse₁, i₁)' * view(ψ₂, touse₂, i₂)
+    V₁  = view(vcov(obj₁), i₁, i₁)
+    V₂  = view(vcov(obj₂), i₂, i₂)
     β₁  = coef(obj₁)
     β₂  = coef(obj₂)
 
-    V  = transpose(V₁₂[i₁, i₂])
+    V  = transpose(V₁₂) + V₁₂
     V .= V₁[i₁, i₁] .+ V₂[i₂, i₂] .- V₁₂[i₁, i₂] .- V
 
-    output.β = β₁[i₁] - β₂[i₂]
+    output.β = view(β₁, i₁) - view(β₂, i₂)
     output.V = V
 end
 
@@ -110,16 +110,16 @@ function _hausman!(
 
     ψ₁  = influence(obj₁, w₁)
     ψ₂  = influence(obj₂, w₂)
-    V₁₂ = view(ψ₁, touse₁, :)' * view(ψ₂, touse₂, :)
-    V₁  = vcov(obj₁)
-    V₂  = vcov(obj₂)
+    V₁₂ = view(ψ₁, touse₁, i₁)' * view(ψ₂, touse₂, i₂)
+    V₁  = view(vcov(obj₁), i₁, i₁)
+    V₂  = view(vcov(obj₂), i₂, i₂)
     β₁  = coef(obj₁)
     β₂  = coef(obj₂)
 
-    V  = transpose(V₁₂[i₁, i₂])
-    V .= V₁[i₁, i₁] .+ V₂[i₂, i₂] .- V₁₂[i₁, i₂] .- V
+    V  = transpose(V₁₂) + V₁₂
+    V .= V₁ .+ V₂ .- V
 
-    output.β = β₁[i₁] - β₂[i₂]
+    output.β = view(β₁, i₁) - view(β₂, i₂)
     output.V = V
 end
 
@@ -145,17 +145,17 @@ function _hausman!(
     ψ₁  = influence(obj₁)
     ψ₂  = influence(obj₂)
     V₁₂ = ψ₁' * view(corr.mat, touse₁, touse₂) * ψ₂
-    V₁  = vcov(obj₁)
-    V₂  = vcov(obj₂)
+    V₁₂ = view(V₁₂, i₁, i₂)
+    V₁  = view(vcov(obj₁), i₁, i₁)
+    V₂  = view(vcov(obj₂), i₂, i₂)
     β₁  = coef(obj₁)
     β₂  = coef(obj₂)
 
-    V   = transpose(V₁₂[i₁, i₂])
-    V .+= V₁₂[i₁, i₂]
+    V   = transpose(V₁₂) + V₁₂
     _adjcluster!(V, corr)
-    V .= V₁[i₁, i₁] .+ V₂[i₂, i₂] .- V
+    V .= V₁ .+ V₂ .- V
 
-    output.β = β₁[i₁] - β₂[i₂]
+    output.β = view(β₁, i₁) - view(β₂, i₂)
     output.V = V
 end
 
@@ -183,16 +183,16 @@ function _hausman!(
     ψ₁  = influence(obj₁, w₁)
     ψ₂  = influence(obj₂, w₂)
     V₁₂ = ψ₁' * view(corr.mat, touse₁, touse₂) * ψ₂
-    V₁  = vcov(obj₁)
-    V₂  = vcov(obj₂)
+    V₁₂ = view(V₁₂, i₁, i₂)
+    V₁  = view(vcov(obj₁), i₁, i₁)
+    V₂  = view(vcov(obj₂), i₂, i₂)
     β₁  = coef(obj₁)
     β₂  = coef(obj₂)
 
-    V   = transpose(V₁₂[i₁, i₂])
-    V .+= V₁₂[i₁, i₂]
+    V   = transpose(V₁₂) + V₁₂
     _adjcluster!(V, corr)
-    V .= V₁[i₁, i₁] .+ V₂[i₂, i₂] .- V
+    V .= V₁ .+ V₂ .- V
 
-    output.β = β₁[i₁] - β₂[i₂]
+    output.β = view(β₁, i₁) - view(β₂, i₂)
     output.V = V
 end

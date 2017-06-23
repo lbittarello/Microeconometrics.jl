@@ -17,8 +17,9 @@ function etable(args...;
     (titles == []) && (titles = String["(" * string(i) * ")" for i = 1:N])
 
     β     = Vector{Vector{String}}(N)
-    σ     = Vector{Vector{String}}(N)
     names = Vector{Vector{String}}(N)
+
+    compact || (σ = Vector{Vector{String}}(N))
 
     for (i, ai) in enumerate(args)
 
@@ -47,7 +48,7 @@ function etable(args...;
     w1 = similar(output)
     w2 = similar(output[2:end])
 
-    _fixwidth!(output)
+    _alignatchar!(output)
 
     for (i, (ni, ti, βi)) in enumerate(zip(names, titles, β))
         idx = findin(inter, ni)
@@ -58,7 +59,7 @@ function etable(args...;
         _alignatchar!(w2, '.')
         w1[1]     .= ti
         w1[2:end] .= w2
-        _fixwidth!(w1)
+        _alignatchar!(w1)
         output .*= "    " .* w1
     end
 
@@ -85,17 +86,15 @@ end
 
 #==========================================================================================#
 
-# HARMONIZE WIDTH OF STRING VECTOR
+# ALIGN STRING VECTOR AT FIRST CHARACTER
 
-function _fixwidth!(x::Vector{String}; rev::Bool = true)
+function _alignatchar!(x::Vector{String})
     len    = length.(x)
     maxlen = maximum(len)
     len    = maxlen .- len
     add    = " " .^ len
     rev ? (x .= x .* add) : (x .= add .* x)
 end
-
-#==========================================================================================#
 
 # ALIGN STRING VECTOR AT FIRST OCCURRENCE OF CHARACTER
 

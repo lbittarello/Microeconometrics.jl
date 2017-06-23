@@ -48,7 +48,7 @@ function influence(obj::GMM, args...)
 end
 
 function influence(obj::ParModel, args...)
-    return - score(obj, args...) / jacobian(obj, args...)'
+    return scale!(- 1.0, score(obj, args...) / jacobian(obj, args...)')
 end
 
 function influence(obj::TwoStageModel, obj₁::Micromodel, obj₂::GMM, args...)

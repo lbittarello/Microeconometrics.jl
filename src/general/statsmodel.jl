@@ -21,11 +21,10 @@ end
 
 #==========================================================================================#
 
-# FIRST-STAGE AND REDUCED FORM
+# FIRST AND SECOND STAGES
 
 first_stage(obj::TwoStageModel)  = obj.first_stage
 second_stage(obj::TwoStageModel) = obj.second_stage
-reduced_form(obj::ParModel)      = reduced_form(typeof(obj), obj.sample)
 
 #==========================================================================================#
 

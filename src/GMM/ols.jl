@@ -47,7 +47,7 @@ end
 
 function jacobian(obj::OLS, w::AbstractVector)
      x = getmatrix(obj, :control)
-     return  crossprod(x, w, neg = true)
+     return crossprod(x, w, neg = true)
 end
 
 # HOMOSCEDASTIC VARIANCE MATRIX
