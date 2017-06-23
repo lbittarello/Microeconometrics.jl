@@ -76,8 +76,10 @@ function _hausman!(
         corr::Heteroscedastic
     )
 
-    touse₁ = view(obj₂.sample.msng, obj₁.sample.msng)
-    touse₂ = view(obj₁.sample.msng, obj₂.sample.msng)
+    touse₁ = obj₂.sample.msng .* obj₁.sample.msng
+    touse₁ = obj₁.sample.msng[touse₁]
+    touse₂ = obj₁.sample.msng .* obj₂.sample.msng
+    touse₂ = obj₂.sample.msng[touse₂]
 
     ψ₁  = influence(obj₁)
     ψ₂  = influence(obj₂)
@@ -105,8 +107,10 @@ function _hausman!(
         w₂::AbstractVector
     )
 
-    touse₁ = view(obj₂.sample.msng, obj₁.sample.msng)
-    touse₂ = view(obj₁.sample.msng, obj₂.sample.msng)
+    touse₁ = obj₂.sample.msng .* obj₁.sample.msng
+    touse₁ = obj₁.sample.msng[touse₁]
+    touse₂ = obj₁.sample.msng .* obj₂.sample.msng
+    touse₂ = obj₂.sample.msng[touse₂]
 
     ψ₁  = influence(obj₁, w₁)
     ψ₂  = influence(obj₂, w₂)
@@ -139,8 +143,10 @@ function _hausman!(
         throw("joint correlation structure does not overlap with both estimation samples")
     end
 
-    touse₁ = find(corr.msng .* corr₁.msng)
-    touse₂ = find(corr.msng .* corr₂.msng)
+    touse₁ = corr.msng .* corr₁.msng
+    touse₁ = touse₁[corr.msng]
+    touse₂ = corr.msng .* corr₂.msng
+    touse₂ = touse₂[corr.msng]
 
     ψ₁  = influence(obj₁)
     ψ₂  = influence(obj₂)
@@ -177,8 +183,10 @@ function _hausman!(
         throw("joint correlation structure does not overlap with both estimation samples")
     end
 
-    touse₁ = find(corr.msng .* corr₁.msng)
-    touse₂ = find(corr.msng .* corr₂.msng)
+    touse₁ = corr.msng .* corr₁.msng
+    touse₁ = touse₁[corr.msng]
+    touse₂ = corr.msng .* corr₂.msng
+    touse₂ = touse₂[corr.msng]
 
     ψ₁  = influence(obj₁, w₁)
     ψ₂  = influence(obj₂, w₂)

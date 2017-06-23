@@ -93,7 +93,7 @@ function _alignatchar!(x::Vector{String})
     maxlen = maximum(len)
     len    = maxlen .- len
     add    = " " .^ len
-    rev ? (x .= x .* add) : (x .= add .* x)
+    x     .= x .* add
 end
 
 # ALIGN STRING VECTOR AT FIRST OCCURRENCE OF CHARACTER
