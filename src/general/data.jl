@@ -86,7 +86,7 @@ function Microdata(MD::Microdata; makecopy::Bool = false, kwargs...)
     map = copy(MD.map)
 
     for (i, j) in kwargs
-        map[i] = ((j == "") ? [0] : assign_columns(j, MD.terms, MD.assign))
+        (j == "") ? pop!(map, i) : (map[i] = assign_columns(j, MD.terms, MD.assign))
     end
 
     newmd = Microdata(MD.msng, MD.mat, MD.names, map, MD.corr, MD.terms, MD.assign)

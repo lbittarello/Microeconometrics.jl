@@ -19,10 +19,10 @@ function first_stage{M <: Micromodel}(
         ::Type{FrölichMelly}, ::Type{M}, MD::Microdata; kwargs...
     )
 
-    FSD                  = Microdata(MD)
-    FSD.map[:response]   = FSD.map[:instrument]
-    FSD.map[:instrument] = [0]
-    FSD.map[:treatment]  = [0]
+    FSD                = Microdata(MD)
+    FSD.map[:response] = FSD.map[:instrument]
+    pop!(FSD.map, :treatment)
+    pop!(FSD.map, :instrument)
 
     return fit(M, FSD; kwargs...)
 end
