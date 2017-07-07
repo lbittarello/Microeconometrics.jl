@@ -21,9 +21,7 @@ function IV(MD::Microdata; method::String = "Unadjusted")
     obj        = IV()
     obj.sample = MD
 
-    if method == "OLS"
-        obj.method = "OLS"
-    elseif length(MD.map[:treatment]) == length(MD.map[:instrument])
+    if length(MD.map[:treatment]) == length(MD.map[:instrument])
         obj.method = "Method of moments"
     elseif (method == "Unadjusted") | (method == "Unadjusted GMM") | (method == "2SLS")
         obj.method = "Unadjusted GMM"
@@ -31,6 +29,34 @@ function IV(MD::Microdata; method::String = "Unadjusted")
         obj.method = "Unadjusted GMM"
     else
         throw("unknown method; choose between Unadjusted and Optimal")
+    end
+
+    return obj
+end
+
+#==========================================================================================#
+
+# INTERFACE
+
+function fit(::Type{IV}, MD::Microdata; novar::Bool = false, method::String = "Unadjusted")
+
+    if method == "OLS"
+        FSD               = Microdata(MD)
+        FSD.map[:control] = vcat(FSD.map[:treatment], FSD.map[:control])
+        pop!(FSD.map, :treatment)
+        pop!(FSD.map, :instrument)
+        obj = OLS(FSD)
+    else
+        obj = IV(MD, method = method)
+    end
+
+    if checkweight(MD)
+        w = getvector(MD, :weight)
+        obj.β = _fit(obj, w)
+        novar || (obj.V = _vcov(obj, MD.corr, w))
+    else
+        obj.β = _fit(obj)
+        novar || (obj.V = _vcov(obj, MD.corr))
     end
 
     return obj
@@ -52,31 +78,28 @@ function _fit(obj::IV)
         obj.β = (z * (z \ x)) \ y
     elseif obj.method == "Optimal GMM"
         obj.β = (z * (z \ x)) \ y
-        wmat  = _opg(obj, getcorr(obj))
-        zw    = wmat \ z
-        obj.β = (zw' * x) \ (zw' * y)
-    else
-        throw("unknown method")
+        W     = _opg(obj, getcorr(obj))
+        zz    = W \ z
+        obj.β = (zz' * x) \ (zz' * y)
     end
 end
 
 function _fit(obj::IV, w::AbstractVector)
 
-    y = scale!(w, copy(getvector(obj, :response)))
-    x = scale!(w, copy(getmatrix(obj, :treatment, :control)))
+    y = getvector(obj, :response)
+    x = getmatrix(obj, :treatment, :control)
     z = getmatrix(obj, :instrument, :control)
+    v = scale!(transpose(z), w)
 
     if obj.method == "Method of moments"
-        obj.β = (z' * x) \ (z' * y)
+        obj.β = (v * x) \ (v * y)
     elseif obj.method == "Unadjusted GMM"
-        obj.β = (z * (z \ x)) \ y
+        obj.β = (z * (v * z) \ (v * x)) \ y
     elseif obj.method == "Optimal GMM"
-        obj.β = (z * (z \ x)) \ y
-        wmat  = _opg(obj, getcorr(obj), w)
-        zw    = wmat \ z
-        obj.β = (zw' * x) \ (zw' * y)
-    else
-        throw("unknown method")
+        obj.β = (z * (v * z) \ (v * x)) \ y
+        W     = _opg(obj, getcorr(obj), w)
+        vv    = v / W
+        obj.β = (vv * x) \ (vv * y)
     end
 end
 
@@ -87,10 +110,7 @@ end
 score(obj::IV) = scale!(residuals(obj), copy(getmatrix(obj, :instrument, :control)))
 
 function score(obj::IV, w::AbstractVector)
-    z  = copy(getmatrix(obj, :instrument, :control))
-    r  = residuals(obj)
-    r .= r .* w
-    return scale!(w, scale!(r, z))
+    return scale!(w, scale!(residuals(obj), copy(getmatrix(obj, :instrument, :control))))
 end
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
@@ -102,9 +122,9 @@ function jacobian(obj::IV)
 end
 
 function jacobian(obj::IV, w::AbstractVector)
-    x = scale!(w, copy(getmatrix(obj, :treatment, :control)))
-    z = getmatrix(obj, :instrument, :control)
-    return scale!(- 1.0, z' * x)
+    x = getmatrix(obj, :treatment, :control)
+    v = scale!(transpose(getmatrix(obj, :instrument, :control)), w)
+    return scale!(- 1.0, v * x)
 end
 
 #==========================================================================================#
@@ -130,11 +150,11 @@ coefnames(obj::IV) = getnames(obj, :treatment, :control)
 # FIRST-STAGE (OLS, OUTCOME IS TREATMENT AND INSTRUMENTS ENTER AS CONTROLS)
 
 function first_stage(::Type{IV}, MD::Microdata)
-    FSD                  = Microdata(MD)
-    FSD.map[:response]   = FSD.map[:treatment]
-    FSD.map[:control]    = vcat(FSD.map[:instrument], FSD.map[:control])
-    FSD.map[:treatment]  = [0]
-    FSD.map[:instrument] = [0]
+    FSD                = Microdata(MD)
+    FSD.map[:response] = FSD.map[:treatment]
+    FSD.map[:control]  = vcat(FSD.map[:instrument], FSD.map[:control])
+    pop!(FSD.map, :treatment)
+    pop!(FSD.map, :instrument)
     return fit(OLS, FSD)
 end
 
@@ -143,10 +163,10 @@ first_stage(MM::IV) = first_stage(IV, MM.sample)
 # REDUCED FORM (OLS, INSTRUMENTS REPLACE TREATMENTS)
 
 function reduced_form(::Type{IV}, MD::Microdata)
-    RF                  = Microdata(MD)
-    RF.map[:control]    = vcat(FSD.map[:instrument], FSD.map[:control])
-    RF.map[:treatment]  = [0]
-    RF.map[:instrument] = [0]
+    RF               = Microdata(MD)
+    RF.map[:control] = vcat(FSD.map[:instrument], FSD.map[:control])
+    pop!(RF.map, :treatment)
+    pop!(RF.map, :instrument)
     return fit(OLS, RF)
 end
 
