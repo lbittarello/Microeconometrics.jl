@@ -244,9 +244,9 @@ linear regression of the response on the instrument(s) and controls.
 
 ```julia
 fit(Abadie, M₂::Type{ParModel}, M₁::Type{Micromodel}, MD::Microdata
-    [; novar::Bool = false, trim::AbstractFloat = 0.01, kwargs...])
+    [; novar::Bool = false, trim::AbstractFloat = 0.0, kwargs...])
 fit(Abadie, M₂::Type{ParModel}, m₁::Micromodel, MD::Microdata
-    [; novar::Bool = false, trim::AbstractFloat = 0.01, kwargs...])
+    [; novar::Bool = false, trim::AbstractFloat = 0.0, kwargs...])
 ```
 
 This model estimates a local average response function according to Abadie (2003, JE).
@@ -264,10 +264,10 @@ Additional functionality:
 fits the first-stage model.
 
 ```julia
-fit(FrölichMelly,, M₁::Type{Micromodel}, MD::Microdata
-    [; novar::Bool = false, trim::AbstractFloat = 0.01, kwargs...])
-fit(FrölichMelly,, m₁::Micromodel, MD::Microdata
-    [; novar::Bool = false, trim::AbstractFloat = 0.01, kwargs...])
+fit(FrölichMelly, M₁::Type{Micromodel}, MD::Microdata
+    [; novar::Bool = false, trim::AbstractFloat = 0.0, kwargs...])
+fit(FrölichMelly, m₁::Micromodel, MD::Microdata
+    [; novar::Bool = false, trim::AbstractFloat = 0.0, kwargs...])
 ```
 
 This model estimates unconditional local average treatment effects according to
@@ -285,6 +285,16 @@ Additional functionality:
 
 - `first_stage(FrölichMelly, M₁::Type{Micromodel}, MD::Microdata [; novar::Bool = false])`
 fits the first-stage model.
+
+```julia
+fit(Tan, M₁::Type{Micromodel}, MD::Microdata
+    [; novar::Bool = false, trim::AbstractFloat = 0.0, kwargs...])
+fit(Tan, m₁::Micromodel, MD::Microdata
+    [; novar::Bool = false, trim::AbstractFloat = 0.0, kwargs...])
+```
+
+This model estimates unconditional local average treatment effects according to
+the reweighting method of Tan (2013, JASA). The syntax is similar to `FrölichMelly`.
 
 ## Methods
 
@@ -357,7 +367,7 @@ It accepts the following keyword arguments:
 
 - `digits` (integer): controls rounding.
 - `compact` (boolean): suppresses the display of standard errors.
-- `f` (function): replaces standard errors with the output of `f` (e.g., `tstat`).
+- `aux` (function): replaces standard errors with the output of `aux` (e.g., `tstat`).
 - `stars` (matrix): a two-column matrix,
 whose first column species significance levels and
 whose second columns specifies corresponding adornments (strings).

@@ -30,11 +30,12 @@ include("./GMM/ols.jl")
 include("./GMM/iv.jl")
 include("./TSM/abadie.jl")
 include("./TSM/frölichmelly.jl")
+include("./TSM/tan.jl")
 
 export CorrStructure, Microdata
 export Homoscedastic, Heteroscedastic, Clustered, CrossCorrelated
 export cc_timespace, truncated, bartlett, parzen, tukeyhanning
-export ParObject, OLS, IV, Logit, Probit, Abadie, FrölichMelly
+export ParObject, OLS, IV, Logit, Probit, Abadie, FrölichMelly, Tan
 export first_stage, second_stage, reduced_form, tstat, pval, etable
 export hausman_test
 
