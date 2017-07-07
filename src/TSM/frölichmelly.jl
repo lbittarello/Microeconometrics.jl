@@ -48,7 +48,7 @@ function fit(
         m::Micromodel,
         MD::Microdata;
         novar::Bool = false,
-        trim::AbstractFloat = 0.01,
+        trim::AbstractFloat = 0.0,
         kwargs...
     )
 
@@ -113,18 +113,18 @@ function crossjacobian(obj::FrölichMelly)
     π = fitted(obj.first_stage)
     D = zeros(π)
 
-    @inbounds for (i, (di, zi, πi, wi)) in enumerate(zip(d, z, π, obj.mat))
-        if !iszero(wi)
+    @inbounds for (i, (di, zi, πi, vi)) in enumerate(zip(d, z, π, obj.mat))
+        if !iszero(vi)
             d0 = iszero(di)
             z0 = iszero(zi)
             if d0 & z0
-                D[i] = 1.0 / (1.0 - πi)^2
+                D[i] = 1.0 / abs2(1.0 - πi)
             elseif d0 & !z0
-                D[i] = 1.0 / πi^2
+                D[i] = 1.0 / abs2(πi)
             elseif !d0 & z0
-                D[i] = - 1.0 / (1.0 - πi)^2
+                D[i] = - 1.0 / abs2(1.0 - πi)
             elseif !d0 & !z0
-                D[i] = - 1.0 / πi^2
+                D[i] = - 1.0 / abs2(πi)
             end
         end
     end
@@ -142,24 +142,24 @@ function crossjacobian(obj::FrölichMelly, w::AbstractVector)
     π = fitted(obj.first_stage)
     D = zeros(π)
 
-    @inbounds for (i, (di, zi, πi, wi)) in enumerate(zip(d, z, π, obj.mat))
-        if !iszero(wi)
+    @inbounds for (i, (di, zi, πi, vi, wi)) in enumerate(zip(d, z, π, obj.mat, w))
+        if !iszero(vi)
             d0 = iszero(di)
             z0 = iszero(zi)
             if d0 & z0
-                D[i] = 1.0 / (1.0 - πi)^2
+                D[i] = wi / abs2(1.0 - πi)
             elseif d0 & !z0
-                D[i] = 1.0 / πi^2
+                D[i] = wi / abs2(πi)
             elseif !d0 & z0
-                D[i] = - 1.0 / (1.0 - πi)^2
+                D[i] = - wi / abs2(1.0 - πi)
             elseif !d0 & !z0
-                D[i] = - 1.0 / πi^2
+                D[i] = - wi / abs2(πi)
             end
         end
     end
 
     g₁ = jacobexp(obj.first_stage)
-    g₂ = score(obj.second_stage, w)
+    g₂ = score(obj.second_stage)
 
     return g₂' * scale!(D, g₁)
 end
