@@ -2,21 +2,20 @@
 
 # INTERFACE
 
-function fit{M <: ParModel}(::Type{M}, MD::Microdata; novar::Bool = false)
+function fit{M <: ParModel}(::Type{M}, MD::Microdata; novar::Bool = false, kwargs...)
 
-    output        = M()
-    output.sample = MD
+    obj = M(MD; kwargs...)
 
     if checkweight(MD)
         w = getvector(MD, :weight)
-        output.β = _fit(output, w)
-        novar || (output.V = _vcov(output, MD.corr, w))
+        obj.β = _fit(obj, w)
+        novar || (obj.V = _vcov(obj, MD.corr, w))
     else
-        output.β = _fit(output)
-        novar || (output.V = _vcov(output, MD.corr))
+        obj.β = _fit(obj)
+        novar || (obj.V = _vcov(obj, MD.corr))
     end
 
-    return output
+    return obj
 end
 
 #==========================================================================================#
@@ -72,24 +71,44 @@ function _r2(obj::Micromodel, w::AbstractVector)
     return 1.0 - rss / tss
 end
 
-function loglikelihood(obj::MLE)
-    checkweight(obj) ? _loglikelihood(obj, getvector(obj, :weight)) : _loglikelihood(obj)
-end
-
-function nullloglikelihood(obj::MLE)
-    if checkweight(obj)
-        _nullloglikelihood(obj, getvector(obj, :weight))
+function loglikelihood(obj::ParModel)
+    if obj.method == "MLE"
+        if checkweight(obj)
+            _loglikelihood(obj, getvector(obj, :weight))
+        else
+            _loglikelihood(obj)
+        end
     else
-        _nullloglikelihood(obj)
+        throw("loglikelihood is only available for MLE")
     end
 end
 
-function deviance(obj::MLE)
-    checkweight(obj) ? _deviance(obj, getvector(obj, :weight)) : _deviance(obj)
+function nullloglikelihood(obj::ParModel)
+    if obj.method == "MLE"
+        if checkweight(obj)
+            _nullloglikelihood(obj, getvector(obj, :weight))
+        else
+            _nullloglikelihood(obj)
+        end
+    else
+        throw("nullloglikelihood is only available for MLE")
+    end
 end
 
-function nulldeviance(obj::MLE)
-    checkweight(obj) ? _nulldeviance(obj, getvector(obj, :weight)) : _nulldeviance(obj)
+function deviance(obj::ParModel)
+    if obj.method == "MLE"
+        checkweight(obj) ? _deviance(obj, getvector(obj, :weight)) : _deviance(obj)
+    else
+        throw("deviance is only available for MLE")
+    end
+end
+
+function nulldeviance(obj::ParModel)
+    if obj.method == "MLE"
+        checkweight(obj) ? _nulldeviance(obj, getvector(obj, :weight)) : _nulldeviance(obj)
+    else
+        throw("nulldeviance is only available for MLE")
+    end
 end
 
 #==========================================================================================#

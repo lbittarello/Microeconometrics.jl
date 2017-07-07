@@ -35,7 +35,7 @@ end
 
 function Microdata(
         df::DataFrame,
-        subset::Union{BitVector, Vector{Bool}, DataVector{Bool}} = trues(size(df, 1));
+        subset::AbstractVector{Bool} = trues(size(df, 1));
         corr::CorrStructure = Heteroscedastic(),
         makecopy::Bool = true,
         checkrank::Bool = true,
@@ -52,8 +52,8 @@ function Microdata(
     formula = DataFrames.Formula(nothing, parse(input))
     terms   = DataFrames.Terms(formula)
     msng    = convert(BitVector, completecases(df[:, terms.eterms]))
-    msng   .= msng .* convert(BitVector, subset)
-    newcorr = markcorr!(msng, corr, makecopy)
+    msng   .= msng .* BitVector(subset)
+    newcorr = _adjmsng!(msng, corr, makecopy)
     frame   = ModelFrame(terms, df[msng, :])
     names   = coefnames(frame)
     mat     = ModelMatrix(frame)

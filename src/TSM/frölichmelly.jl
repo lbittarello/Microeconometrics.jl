@@ -13,61 +13,83 @@ end
 
 #==========================================================================================#
 
+# FIRST STAGE
+
+function first_stage{M <: Micromodel}(
+        ::Type{FrölichMelly}, ::Type{M}, MD::Microdata; kwargs...
+    )
+
+    FSD                  = Microdata(MD)
+    FSD.map[:response]   = FSD.map[:instrument]
+    FSD.map[:instrument] = [0]
+    FSD.map[:treatment]  = [0]
+
+    return fit(M, FSD; kwargs...)
+end
+
+#==========================================================================================#
+
 # ESTIMATION
 
 function fit{M <: Micromodel}(
         ::Type{FrölichMelly},
         ::Type{M},
         MD::Microdata;
-        trim::AbstractFloat = 0.01,
-        novar::Bool = false
+        novar::Bool = false,
+        kwargs...
     )
 
+    m = first_stage(FrölichMelly, M, MD, novar = novar)
+    return fit(FrölichMelly, m, MD; novar = novar, kwargs...)
+end
+
+function fit(
+        ::Type{FrölichMelly},
+        m::Micromodel,
+        MD::Microdata;
+        novar::Bool = false,
+        trim::AbstractFloat = 0.01,
+        kwargs...
+    )
+
+    SSD               = Microdata(MD)
+    SSD.map[:control] = vcat(SSD.map[:treatment], 1)
+    obj               = FrölichMelly()
+    obj.first_stage   = m
+    obj.second_stage  = OLS(SSD)
+
     invtrim = one(trim) - trim
-
-    FSD                  = Microdata(MD)
-    FSD.map[:response]   = FSD.map[:instrument]
-    FSD.map[:instrument] = [0]
-    FSD.map[:treatment]  = [0]
-    SSD                  = Microdata(MD)
-    SSD.map[:control]    = vcat(SSD.map[:treatment], 1)
-
-    output                     = FrölichMelly()
-    output.first_stage         = fit(M, FSD)
-    output.second_stage        = OLS()
-    output.second_stage.sample = SSD
-
-    d          = getvector(SSD, :treatment)
-    z          = getvector(SSD, :instrument)
-    π          = fitted(output.first_stage)
-    output.mat = zeros(π)
+    d       = getvector(SSD, :treatment)
+    z       = getvector(SSD, :instrument)
+    π       = fitted(obj.first_stage)
+    obj.mat = zeros(π)
 
     @inbounds for (i, (di, zi, πi)) in enumerate(zip(d, z, π))
         d0 = iszero(di)
         z0 = iszero(zi)
         if trim < πi < invtrim
             if d0 & z0
-                output.mat[i] = 1.0 / (1.0 - πi)
+                obj.mat[i] = 1.0 / (1.0 - πi)
             elseif d0 & !z0
-                output.mat[i] = - 1.0 / πi
+                obj.mat[i] = - 1.0 / πi
             elseif !d0 & z0
-                output.mat[i] = - 1.0 / (1.0 - πi)
+                obj.mat[i] = - 1.0 / (1.0 - πi)
             elseif !d0 & !z0
-                output.mat[i] = 1.0 / πi
+                obj.mat[i] = 1.0 / πi
             end
         end
     end
 
     if checkweight(SSD)
         w = getvector(SSD, :weight)
-        output.second_stage.β = _fit(output.second_stage, w .* output.mat)
-        novar || (output.second_stage.V = _vcov(output, SSD.corr, w))
+        obj.second_stage.β = _fit(obj.second_stage, w .* obj.mat)
+        novar || (obj.second_stage.V = _vcov(obj, SSD.corr, w))
     else
-        output.second_stage.β = _fit(output.second_stage, output.mat)
-        novar || (output.second_stage.V = _vcov(output, SSD.corr))
+        obj.second_stage.β = _fit(obj.second_stage, obj.mat)
+        novar || (obj.second_stage.V = _vcov(obj, SSD.corr))
     end
 
-    return output
+    return obj
 end
 
 #==========================================================================================#

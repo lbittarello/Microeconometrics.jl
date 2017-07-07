@@ -53,7 +53,7 @@ function Clustered(df::DataFrame, x::Symbol)
     msng  = Array{Bool}(length(df[x]))
     msng .= (isna.(df[x]) .== false)
     n     = sum(msng)
-    dfx   = convert(Array, df[x][msng])
+    dfx   = Array(df[x][msng])
     iter  = unique(dfx)
     mat   = spzeros(Float64, n, n)
 

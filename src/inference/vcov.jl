@@ -35,37 +35,24 @@ end
 
 # INFLUENCE FUNCTION
 
-function influence(obj::GMM, args...)
+function influence(obj::ParModel, args...)
     s = score(obj, args...)
     j = jacobian(obj, args...)
     if obj.method == "Unadjusted"
         return scale!(- 1.0, (s * j) / (j' * j))
-    elseif obj.method == "Optimal"
-        return scale!(- 1.0, s / j')
     else
-        throw("unknown method")
-    end
-end
-
-function influence(obj::ParModel, args...)
-    return scale!(- 1.0, score(obj, args...) / jacobian(obj, args...)')
-end
-
-function influence(obj::TwoStageModel, obj₁::Micromodel, obj₂::GMM, args...)
-    s = score(obj, args...) + crossinfluence(obj, obj₁, args...)
-    j = jacobian(obj, args...)
-    if obj₂.method == "Unadjusted"
-        return scale!(- 1.0, (s * j) / (j' * j))
-    elseif obj₂.method == "Optimal"
         return scale!(- 1.0, s / j')
-    else
-        throw("unknown method")
     end
 end
 
 function influence(obj::TwoStageModel, obj₁::Micromodel, obj₂::ParModel, args...)
     s = score(obj, args...) + crossinfluence(obj, obj₁, args...)
-    return scale!(- 1.0, s / jacobian(obj)')
+    j = jacobian(obj, args...)
+    if obj₂.method == "Unadjusted"
+        return scale!(- 1.0, (s * j) / (j' * j))
+    else
+        return scale!(- 1.0, s / j')
+    end
 end
 
 function influence(obj::TwoStageModel, args...)
@@ -76,12 +63,16 @@ end
 
 # COVARIANCE MATRIX FOR HOMOSCEDASTIC MLE
 
-function _vcov(obj::MLE, corr::Homoscedastic, args...)
-    if corr.method == "OIM"
-        return - inv(jacobian(obj, args...))
-    elseif corr.method == "OPG"
-        g = score(obj, args...)
-        return g' * g
+function _vcov(obj::ParModel, corr::Homoscedastic, args...)
+    if obj.method == "MLE"
+        if corr.method == "OIM"
+            return - inv(jacobian(obj, args...))
+        elseif corr.method == "OPG"
+            g = score(obj, args...)
+            return g' * g
+        end
+    else
+        throw("homoscecastic errors are only available for OLS and MLE")
     end
 end
 
@@ -93,6 +84,6 @@ function _vcov(obj::ParOrTwoStage, corr::Heteroscedastic, args...)
 end
 
 function _vcov(obj::ParOrTwoStage, corr::ClusterOrCross, args...)
-    ψ  = influence(obj, args...)
+    ψ = influence(obj, args...)
     return _adjcluster!(ψ' * corr.mat * ψ, corr)
 end

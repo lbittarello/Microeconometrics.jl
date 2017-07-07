@@ -4,11 +4,23 @@
 
 mutable struct OLS <: ParModel
 
+    method::String
     sample::Microdata
     β::Vector{Float64}
     V::Matrix{Float64}
 
     OLS() = new()
+end
+
+#==========================================================================================#
+
+# CONSTRUCTOR
+
+function OLS(MD::Microdata)
+    obj        = OLS()
+    obj.method = "OLS"
+    obj.sample = MD
+    return obj
 end
 
 #==========================================================================================#

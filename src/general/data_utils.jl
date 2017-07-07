@@ -2,19 +2,17 @@
 
 # INTERSECTION BETWEEN A FRAME AND CORRELATION STRUCTURE
 
-function markcorr!(msng::BitVector, corr::Homoscedastic, makecopy::Bool)
+function _adjmsng!(msng::BitVector, corr::Homoscedastic, makecopy::Bool)
     return (makecopy ? copy(corr) : corr)
 end
 
-function markcorr!(msng::BitVector, corr::Heteroscedastic, makecopy::Bool)
+function _adjmsng!(msng::BitVector, corr::Heteroscedastic, makecopy::Bool)
     return (makecopy ? copy(corr) : corr)
 end
 
-function markcorr!(msng::BitVector, corr::Clustered, makecopy::Bool)
+function _adjmsng!(msng::BitVector, corr::Clustered, makecopy::Bool)
 
-    if msng == corr.msng
-        return (makecopy ? copy(corr) : corr)
-    end
+    (msng == corr.msng) && (return (makecopy ? copy(corr) : corr))
 
     intersection = msng .* corr.msng
     msng[:]      = intersection
@@ -25,11 +23,9 @@ function markcorr!(msng::BitVector, corr::Clustered, makecopy::Bool)
     return Clustered(intersection, new_mat, new_ic, length(unique(new_ic)))
 end
 
-function markcorr!(msng::BitVector, corr::CrossCorrelated, makecopy::Bool)
+function _adjmsng!(msng::BitVector, corr::CrossCorrelated, makecopy::Bool)
 
-    if msng == corr.msng
-        return (makecopy ? copy(corr) : corr)
-    end
+    (msng == corr.msng) && (return (makecopy ? copy(corr) : corr))
 
     intersection = msng .* corr.msng
     msng[:]      = intersection

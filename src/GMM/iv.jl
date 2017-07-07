@@ -2,7 +2,7 @@
 
 # TYPE
 
-mutable struct IV <: GMM
+mutable struct IV <: ParModel
 
     method::String
     sample::Microdata
@@ -14,24 +14,26 @@ end
 
 #==========================================================================================#
 
-# INTERFACE
+# CONSTRUCTOR
 
-function fit(::Type{IV}, MD::Microdata; method::String = "Unadjusted", novar::Bool = false)
+function IV(MD::Microdata; method::String = "Unadjusted")
 
-    output        = IV()
-    output.method = method
-    output.sample = MD
+    obj        = IV()
+    obj.sample = MD
 
-    if checkweight(MD)
-        w = getvector(MD, :weight)
-        output.β = _fit(output, w)
-        novar || (output.V = _vcov(output, MD.corr, w))
+    if method == "OLS"
+        obj.method = "OLS"
+    elseif length(MD.map[:treatment]) == length(MD.map[:instrument])
+        obj.method = "Method of moments"
+    elseif (method == "Unadjusted") | (method == "Unadjusted GMM") | (method == "2SLS")
+        obj.method = "Unadjusted GMM"
+    elseif (method == "Optimal") | (method == "Optimal GMM")
+        obj.method = "Unadjusted GMM"
     else
-        output.β = _fit(output)
-        novar || (output.V = _vcov(output, MD.corr))
+        throw("unknown method; choose between Unadjusted and Optimal")
     end
 
-    return output
+    return obj
 end
 
 #==========================================================================================#
@@ -44,11 +46,11 @@ function _fit(obj::IV)
     x = getmatrix(obj, :treatment, :control)
     z = getmatrix(obj, :instrument, :control)
 
-    if size(x, 2) == size(z, 2)
+    if obj.method == "Method of moments"
         obj.β = (z' * x) \ (z' * y)
-    elseif obj.method == "Unadjusted"
+    elseif obj.method == "Unadjusted GMM"
         obj.β = (z * (z \ x)) \ y
-    elseif obj.method == "Optimal"
+    elseif obj.method == "Optimal GMM"
         obj.β = (z * (z \ x)) \ y
         wmat  = _opg(obj, getcorr(obj))
         zw    = wmat \ z
@@ -64,11 +66,11 @@ function _fit(obj::IV, w::AbstractVector)
     x = scale!(w, copy(getmatrix(obj, :treatment, :control)))
     z = getmatrix(obj, :instrument, :control)
 
-    if size(x, 2) == size(z, 2)
+    if obj.method == "Method of moments"
         obj.β = (z' * x) \ (z' * y)
-    elseif obj.method == "Unadjusted"
+    elseif obj.method == "Unadjusted GMM"
         obj.β = (z * (z \ x)) \ y
-    elseif obj.method == "Optimal"
+    elseif obj.method == "Optimal GMM"
         obj.β = (z * (z \ x)) \ y
         wmat  = _opg(obj, getcorr(obj), w)
         zw    = wmat \ z

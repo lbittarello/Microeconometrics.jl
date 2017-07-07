@@ -13,62 +13,81 @@ end
 
 #==========================================================================================#
 
-# ESTIMATION
+# FIRST STAGE
 
-function fit{M₁ <: Micromodel, M₂ <: ParModel}(
-        ::Type{Abadie},
-        ::Type{M₁},
-        ::Type{M₂},
-        MD::Microdata;
-        trim::AbstractFloat = 0.01,
-        novar::Bool = false
-    )
-
-    invtrim = one(trim) - trim
-
+function first_stage{M <: Micromodel}(::Type{Abadie}, ::Type{M}, MD::Microdata; kwargs...)
     FSD                  = Microdata(MD)
     FSD.map[:response]   = FSD.map[:instrument]
     FSD.map[:instrument] = [0]
     FSD.map[:treatment]  = [0]
-    SSD                  = Microdata(MD)
-    SSD.map[:control]    = vcat(SSD.map[:treatment], SSD.map[:control])
+    return fit(M, FSD; kwargs...)
+end
 
-    output                     = Abadie()
-    output.first_stage         = fit(M₁, FSD)
-    output.second_stage        = M₂()
-    output.second_stage.sample = SSD
+#==========================================================================================#
 
-    d          = getvector(SSD, :treatment)
-    z          = getvector(SSD, :instrument)
-    π          = fitted(output.first_stage)
-    output.mat = zeros(π)
+# ESTIMATION
+
+function fit{M₁ <: Micromodel, M₂ <: ParModel}(
+        ::Type{Abadie},
+        ::Type{M₂},
+        ::Type{M₁},
+        MD::Microdata;
+        novar::Bool = false,
+        kwargs...
+    )
+
+    m₁ = first_stage(Abadie, M₁, MD, novar = novar)
+    return fit(Abadie, M₂, m₁, MD; novar = novar, kwargs...)
+end
+
+function fit{M <: Micromodel}(
+        ::Type{Abadie},
+        ::Type{M},
+        m₁::Micromodel,
+        MD::Microdata;
+        novar::Bool = false,
+        trim::AbstractFloat = 0.01,
+        kwargs...
+    )
+
+    SSD               = Microdata(MD)
+    SSD.map[:control] = vcat(SSD.map[:treatment], SSD.map[:control])
+    obj               = Abadie()
+    obj.first_stage   = m₁
+    obj.second_stage  = M(SSD; kwargs...)
+
+    invtrim = one(trim) - trim
+    d       = getvector(SSD, :treatment)
+    z       = getvector(SSD, :instrument)
+    π       = fitted(obj.first_stage)
+    obj.mat = zeros(π)
 
     @inbounds for (i, (di, zi, πi)) in enumerate(zip(d, z, π))
         d0 = iszero(di)
         z0 = iszero(zi)
         if trim < πi < invtrim
             if d0 & z0
-                output.mat[i] = 1.0
+                obj.mat[i] = 1.0
             elseif d0 & !z0
-                output.mat[i] = 1.0 - 1.0 / πi
+                obj.mat[i] = 1.0 - 1.0 / πi
             elseif !d0 & z0
-                output.mat[i] = 1.0 - 1.0 / (1.0 - πi)
+                obj.mat[i] = 1.0 - 1.0 / (1.0 - πi)
             elseif !d0 & !z0
-                output.mat[i] = 1.0
+                obj.mat[i] = 1.0
             end
         end
     end
 
     if checkweight(SSD)
         w = getvector(SSD, :weight)
-        output.second_stage.β = _fit(output.second_stage, w .* output.mat)
-        novar || (output.second_stage.V = _vcov(output, SSD.corr, w))
+        obj.second_stage.β = _fit(obj.second_stage, w .* obj.mat)
+        novar || (obj.second_stage.V = _vcov(obj, SSD.corr, w))
     else
-        output.second_stage.β = _fit(output.second_stage, output.mat)
-        novar || (output.second_stage.V = _vcov(output, SSD.corr))
+        obj.second_stage.β = _fit(obj.second_stage, obj.mat)
+        novar || (obj.second_stage.V = _vcov(obj, SSD.corr))
     end
 
-    return output
+    return obj
 end
 
 #==========================================================================================#
