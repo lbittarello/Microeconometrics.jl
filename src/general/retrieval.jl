@@ -9,7 +9,8 @@ function getvector(MD::Microdata, x::Symbol)
     return view(MD.mat, :, MD.map[x]...)
 end
 
-getvector(MM::Micromodel, x::Symbol) = getvector(MM.sample, x)
+getvector(MM::ParModel, x::Symbol)      = getvector(MM.sample, x)
+getvector(MM::TwoStageModel, x::Symbol) = getvector(second_stage(MM).sample, x)
 
 function getmatrix(MD::Microdata, args...)
 
@@ -29,7 +30,8 @@ function getmatrix(MD::Microdata, args...)
     return view(MD.mat, :, x)
 end
 
-getmatrix(MM::Micromodel, args...) = getmatrix(MM.sample, args...)
+getmatrix(MM::ParModel, args...)        = getmatrix(MM.sample, args...)
+getmatrix(MM::TwoStageModel, x::Symbol) = getmatrix(second_stage(MM).sample, x)
 
 #==========================================================================================#
 
@@ -53,7 +55,8 @@ function getnames(MD::Microdata, args...)
     return MD.names[x]
 end
 
-getnames(MM::Micromodel, args...) = getnames(MM.sample, args...)
+getnames(MM::ParModel, args...)      = getnames(MM.sample, args...)
+getnames(MM::TwoStageModel, args...) = getnames(second_stage(MM).sample, args...)
 
 #==========================================================================================#
 
