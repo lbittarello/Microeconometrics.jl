@@ -4,7 +4,7 @@
 
 function etable(args...;
         digits::Int = 4,
-        f::Function = stderr,
+        aux::Function = stderr,
         compact::Bool = false,
         stars::Matrix{Any} = [0.1 "*"; 0.05 "**"; 0.01 "***"],
         titles::Vector{String} = []
@@ -26,7 +26,7 @@ function etable(args...;
         β[i]     = fmt.(fspec, coef(ai))
         names[i] = coefnames(ai)
 
-        compact || (σ[i] = "(" .* fmt.(fspec, f(ai)) .* ")")
+        compact || (σ[i] = "(" .* fmt.(fspec, aux(ai)) .* ")")
 
         if cutpoints != []
             for (j, pj) in enumerate(pval(ai))
