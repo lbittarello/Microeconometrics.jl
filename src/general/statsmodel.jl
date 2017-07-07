@@ -141,7 +141,7 @@ function coeftable(
     label = [" Estimate", " St. Err.", "  t-stat.", "  p-value"]
 
     if level > 0.0
-        lprint = fmt(FormatSpec("0.2f"), level)
+        lprint = fmt(FormatSpec("0.2f"), 100 * level)
         table  = hcat(table, round.(confint(obj, level), digits))
         label  = vcat(label, ["     C.I.", "($(lprint)%)  "])
     end
