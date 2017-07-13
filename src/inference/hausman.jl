@@ -76,10 +76,11 @@ function _hausman!(
         corr::Heteroscedastic
     )
 
-    touse₁ = obj₂.sample.msng .* obj₁.sample.msng
-    touse₁ = obj₁.sample.msng[touse₁]
-    touse₂ = obj₁.sample.msng .* obj₂.sample.msng
-    touse₂ = obj₂.sample.msng[touse₂]
+    msng₁  = getmsng(obj₁)
+    msng₂  = getmsng(obj₂)
+    touse  = msng₁ .* msng₂
+    touse₁ = msng₁[touse]
+    touse₂ = msng₂[touse]
 
     ψ₁  = influence(obj₁)
     ψ₂  = influence(obj₂)
@@ -107,10 +108,11 @@ function _hausman!(
         w₂::AbstractVector
     )
 
-    touse₁ = obj₂.sample.msng .* obj₁.sample.msng
-    touse₁ = obj₁.sample.msng[touse₁]
-    touse₂ = obj₁.sample.msng .* obj₂.sample.msng
-    touse₂ = obj₂.sample.msng[touse₂]
+    msng₁  = getmsng(obj₁)
+    msng₂  = getmsng(obj₂)
+    touse  = msng₁ .* msng₂
+    touse₁ = msng₁[touse]
+    touse₂ = msng₂[touse]
 
     ψ₁  = influence(obj₁, w₁)
     ψ₂  = influence(obj₂, w₂)

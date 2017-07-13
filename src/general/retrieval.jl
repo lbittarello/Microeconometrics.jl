@@ -5,7 +5,7 @@
 function getvector(MD::Microdata, x::Symbol)
     haskey(MD.map, x)       || throw(string(x) * " not found")
     iszero(MD.map[x])       && throw(string(x) * " not found")
-    (length(MD.map[x]) > 1) && throw(string(x) * "is not a vector")
+    (length(MD.map[x]) > 1) && throw(string(x) * " is not a vector")
     return view(MD.mat, :, MD.map[x]...)
 end
 
@@ -64,6 +64,13 @@ getnames(MM::TwoStageModel, args...) = getnames(second_stage(MM).sample, args...
 
 getcorr(obj::ParModel)      = obj.sample.corr
 getcorr(obj::TwoStageModel) = second_stage(obj).sample.corr
+
+#==========================================================================================#
+
+# GET INDICATOR OF MISSING DATA
+
+getmsng(obj::ParModel)      = obj.sample.msng
+getmsng(obj::TwoStageModel) = second_stage(obj).sample.msng
 
 #==========================================================================================#
 
