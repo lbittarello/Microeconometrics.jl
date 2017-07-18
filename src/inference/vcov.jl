@@ -11,22 +11,22 @@ end
 # EXPECTED OUTER PRODUCT OF THE SCORE VECTOR × NUMBER OF OBSERVATIONS
 # INVERSE OF OPTIMAL WEIGHT MATRIX FOR GMM
 
-function _opg(obj::ParModel, corr::Heteroscedastic, args...)
+function opg(obj::ParModel, corr::Heteroscedastic, args...)
     ψ = score(obj, args...)
     return ψ' * ψ
 end
 
-function _opg(obj::ParModel, corr::ClusterOrCross, args...)
+function opg(obj::ParModel, corr::ClusterOrCross, args...)
     ψ = score(obj, args...)
     return ψ' * corr.mat * ψ
 end
 
-function _opg(obj::TwoStageModel, corr::Heteroscedastic, args...)
+function opg(obj::TwoStageModel, corr::Heteroscedastic, args...)
     ψ = score(obj, args...) + crossinfluence(obj, first_stage(obj), args...)
     return ψ' * ψ
 end
 
-function _opg(obj::TwoStageModel, corr::ClusterOrCross, args...)
+function opg(obj::TwoStageModel, corr::ClusterOrCross, args...)
     ψ = score(obj, args...) + crossinfluence(obj, first_stage(obj), args...)
     return ψ' * corr.mat * ψ
 end
@@ -85,5 +85,5 @@ end
 
 function _vcov(obj::ParOrTwoStage, corr::ClusterOrCross, args...)
     ψ = influence(obj, args...)
-    return _adjcluster!(ψ' * corr.mat * ψ, corr)
+    return adjcluster!(ψ' * corr.mat * ψ, corr)
 end

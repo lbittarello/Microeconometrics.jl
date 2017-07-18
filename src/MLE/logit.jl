@@ -227,8 +227,8 @@ fitted(obj::Logit) = logistic.(predict(obj))
 
 function jacobexp(obj::Logit)
 
-    x  = getmatrix(obj, :control)
-    η  = x * obj.β
+    x = getmatrix(obj, :control)
+    η = x * obj.β
 
     @inbounds for (i, ηi) in enumerate(η)
         ψ     = logistic(ηi)

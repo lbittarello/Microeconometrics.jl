@@ -53,7 +53,7 @@ function Microdata(
     terms   = DataFrames.Terms(formula)
     msng    = convert(BitVector, completecases(df[:, terms.eterms]))
     msng   .= msng .* BitVector(subset)
-    newcorr = _adjmsng!(msng, corr, makecopy)
+    newcorr = adjmsng!(msng, corr, makecopy)
     frame   = ModelFrame(terms, df[msng, :])
     names   = coefnames(frame)
     mat     = ModelMatrix(frame)

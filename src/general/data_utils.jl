@@ -2,15 +2,15 @@
 
 # INTERSECTION BETWEEN A FRAME AND CORRELATION STRUCTURE
 
-function _adjmsng!(msng::BitVector, corr::Homoscedastic, makecopy::Bool)
+function adjmsng!(msng::BitVector, corr::Homoscedastic, makecopy::Bool)
     return (makecopy ? copy(corr) : corr)
 end
 
-function _adjmsng!(msng::BitVector, corr::Heteroscedastic, makecopy::Bool)
+function adjmsng!(msng::BitVector, corr::Heteroscedastic, makecopy::Bool)
     return (makecopy ? copy(corr) : corr)
 end
 
-function _adjmsng!(msng::BitVector, corr::Clustered, makecopy::Bool)
+function adjmsng!(msng::BitVector, corr::Clustered, makecopy::Bool)
 
     (msng == corr.msng) && (return (makecopy ? copy(corr) : corr))
 
@@ -23,7 +23,7 @@ function _adjmsng!(msng::BitVector, corr::Clustered, makecopy::Bool)
     return Clustered(intersection, new_mat, new_ic, length(unique(new_ic)))
 end
 
-function _adjmsng!(msng::BitVector, corr::CrossCorrelated, makecopy::Bool)
+function adjmsng!(msng::BitVector, corr::CrossCorrelated, makecopy::Bool)
 
     (msng == corr.msng) && (return (makecopy ? copy(corr) : corr))
 
