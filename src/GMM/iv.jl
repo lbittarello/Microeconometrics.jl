@@ -73,15 +73,17 @@ function _fit(obj::IV)
     z = getmatrix(obj, :instrument, :control)
 
     if obj.method == "Method of moments"
-        obj.β = (z' * x) \ (z' * y)
+        β = (z' * x) \ (z' * y)
     elseif obj.method == "Unadjusted GMM"
-        obj.β = (z * (z \ x)) \ y
+        β = (z * (z \ x)) \ y
     elseif obj.method == "Optimal GMM"
-        obj.β = (z * (z \ x)) \ y
-        W     = _opg(obj, getcorr(obj))
-        zz    = W \ z
-        obj.β = (zz' * x) \ (zz' * y)
+        β  = (z * (z \ x)) \ y
+        W  = _opg(obj, getcorr(obj))
+        zz = W \ z
+        β  = (zz' * x) \ (zz' * y)
     end
+
+    return β
 end
 
 function _fit(obj::IV, w::AbstractVector)
@@ -92,15 +94,17 @@ function _fit(obj::IV, w::AbstractVector)
     v = scale!(transpose(z), w)
 
     if obj.method == "Method of moments"
-        obj.β = (v * x) \ (v * y)
+        β  = (v * x) \ (v * y)
     elseif obj.method == "Unadjusted GMM"
-        obj.β = (z * (v * z) \ (v * x)) \ y
+        β  = (z * (v * z) \ (v * x)) \ y
     elseif obj.method == "Optimal GMM"
-        obj.β = (z * (v * z) \ (v * x)) \ y
-        W     = _opg(obj, getcorr(obj), w)
-        vv    = v / W
-        obj.β = (vv * x) \ (vv * y)
+        β  = (z * (v * z) \ (v * x)) \ y
+        W  = _opg(obj, getcorr(obj), w)
+        vv = v / W
+        β  = (vv * x) \ (vv * y)
     end
+
+    return β
 end
 
 #==========================================================================================#
