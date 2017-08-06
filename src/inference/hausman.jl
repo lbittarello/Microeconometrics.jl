@@ -160,7 +160,7 @@ function _hausman!(
     β₂  = coef(obj₂)
 
     V   = transpose(V₁₂) + V₁₂
-    _adjcluster!(V, corr)
+    adjcluster!(V, corr)
     V .= V₁ .+ V₂ .- V
 
     output.β = view(β₁, i₁) - view(β₂, i₂)
@@ -200,7 +200,7 @@ function _hausman!(
     β₂  = coef(obj₂)
 
     V   = transpose(V₁₂) + V₁₂
-    _adjcluster!(V, corr)
+    adjcluster!(V, corr)
     V .= V₁ .+ V₂ .- V
 
     output.β = view(β₁, i₁) - view(β₂, i₂)
