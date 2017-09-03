@@ -2,17 +2,17 @@
 
 # CROSS PRODUCTS
 
-function crossprod(x::AbstractMatrix; neg = false)
+function crossprod(x::AbstractMatrix; neg::Bool = false)
     neg ? scale!(- 1.0, x' * x) : (x' * x)
 end
 
-function crossprod(x::AbstractMatrix, w::AbstractVector; neg = false)
+function crossprod(x::AbstractMatrix, w::AbstractVector; neg::Bool = false)
     neg ? scale!(- 1.0, x' * scale!(w, copy(x))) : (x' * scale!(w, copy(x)))
 end
 
 #==========================================================================================#
 
-# DISTANCE ON A SPHERE
+# DISTANCE ON THE GLOBE
 
 havd(x::Float64) = 0.5 * (1.0 - cosd(x))
 
