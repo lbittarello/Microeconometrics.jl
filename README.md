@@ -13,7 +13,7 @@ julia> d_ols = Microdata(DF, response = "OptDen", control = "Carb + 1", corr = C
 julia> e_ols = fit(OLS, d_ols)
 
 julia> coeftable(e_ols)
-              Estimate  St. Err.   t-stat.   p-value      C.I. (0.95%)  
+              Estimate  St. Err.   t-stat.   p-value      C.I. (95%)  
 Carb            0.8763    0.0135   64.7444    <1e-99    0.8498    0.9028
 (Intercept)     0.0051    0.0078    0.6492    0.5162   -0.0103    0.0204
 ```
