@@ -38,21 +38,13 @@ end
 function influence(obj::ParModel, args...)
     s = score(obj, args...)
     j = jacobian(obj, args...)
-    if obj.method == "Unadjusted"
-        return scale!(- 1.0, (s * j) / (j' * j))
-    else
-        return scale!(- 1.0, s / j')
-    end
+    return scale!(- 1.0, s / j')
 end
 
 function influence(obj::TwoStageModel, obj₁::Micromodel, obj₂::ParModel, args...)
     s = score(obj, args...) + crossinfluence(obj, obj₁, args...)
     j = jacobian(obj, args...)
-    if obj₂.method == "Unadjusted"
-        return scale!(- 1.0, (s * j) / (j' * j))
-    else
-        return scale!(- 1.0, s / j')
-    end
+    return scale!(- 1.0, s / j')
 end
 
 function influence(obj::TwoStageModel, args...)

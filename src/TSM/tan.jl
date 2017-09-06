@@ -67,10 +67,10 @@ function fit(
 
     if checkweight(SSD)
         w = getvector(SSD, :weight)
-        obj.second_stage.β = _fit(obj.second_stage, w .* obj.mat)
+        _fit!(second_stage(obj), w .* obj.mat)
         novar || (obj.second_stage.V = _vcov(obj, SSD.corr, w))
     else
-        obj.second_stage.β = _fit(obj.second_stage, obj.mat)
+        _fit!(second_stage(obj), obj.mat)
         novar || (obj.second_stage.V = _vcov(obj, SSD.corr))
     end
 
@@ -93,7 +93,7 @@ jacobian(obj::Tan, w::AbstractVector) = jacobian(second_stage(obj), w .* obj.mat
 
 function crossjacobian(obj::Tan)
 
-    z = getvector(obj.second_stage, :instrument)
+    z = getvector(obj, :instrument)
     p = mean(z)
     π = fitted(obj.first_stage)
     D = zeros(π)
@@ -112,7 +112,7 @@ end
 
 function crossjacobian(obj::Tan, w::AbstractVector)
 
-    z = getvector(obj.second_stage, :instrument)
+    z = getvector(obj, :instrument)
     π = fitted(obj.first_stage)
     D = zeros(π)
 

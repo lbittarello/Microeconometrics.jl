@@ -8,10 +8,10 @@ function fit{M <: ParModel}(::Type{M}, MD::Microdata; novar::Bool = false, kwarg
 
     if checkweight(MD)
         w = getvector(MD, :weight)
-        obj.β = _fit(obj, w)
+        _fit!(obj, w)
         novar || (obj.V = _vcov(obj, MD.corr, w))
     else
-        obj.β = _fit(obj)
+        _fit!(obj)
         novar || (obj.V = _vcov(obj, MD.corr))
     end
 
@@ -51,8 +51,8 @@ dof(obj::ParModel)               = length(coef(obj))
 dof(obj::TwoStageModel)          = dof(second_stage(obj))
 dof_residual(obj::ParOrTwoStage) = nobs(obj) - dof(obj)
 
-r2(obj::Micromodel) = (checkweight(obj) ? _r2(obj, getvector(obj, :weight)) : _r2(obj))
 adjr2(obj::ParOrTwoStage) = 1.0 - ((nobs(obj) - 1) / dof_residual(obj)) * (1.0 - r2(obj))
+r2(obj::Micromodel) = (checkweight(obj) ? _r2(obj, getvector(obj, :weight)) : _r2(obj))
 
 function _r2(obj::Micromodel)
     y   = model_response(obj)
@@ -141,7 +141,7 @@ function coeftable(
     label = [" Estimate", " St. Err.", "  t-stat.", "  p-value"]
 
     if level > 0.0
-        lprint = fmt(FormatSpec("0.2f"), 100 * level)
+        lprint = fmt(FormatSpec("0.0d"), 100 * level)
         table  = hcat(table, round.(confint(obj, level), digits))
         label  = vcat(label, ["     C.I.", "($(lprint)%)  "])
     end

@@ -27,7 +27,7 @@ end
 
 # ESTIMATION
 
-function _fit(obj::Logit)
+function _fit!(obj::Logit)
 
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
@@ -95,13 +95,13 @@ function _fit(obj::Logit)
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!), β₀, Newton())
 
     if Optim.converged(res)
-        return Optim.minimizer(res)
+        obj.β = Optim.minimizer(res)
     else
         throw("likelihood maximization did not converge")
     end
 end
 
-function _fit(obj::Logit, w::AbstractVector)
+function _fit!(obj::Logit, w::AbstractVector)
 
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
@@ -131,8 +131,7 @@ function _fit(obj::Logit, w::AbstractVector)
         A_mul_B!(μ, x, β)
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
-            ηi   = logistic(μi)
-            r[i] = wi * (ηi - yi)
+            r[i] = wi * (logistic(μi) - yi)
         end
 
         g[:] = x' * r
@@ -169,7 +168,7 @@ function _fit(obj::Logit, w::AbstractVector)
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!), β₀, Newton())
 
     if Optim.converged(res)
-        return Optim.minimizer(res)
+        obj.β = Optim.minimizer(res)
     else
         throw("likelihood maximization did not converge")
     end
@@ -282,10 +281,11 @@ end
 
 function _nullloglikelihood(obj::Logit, w::AbstractVector)
     y  = getvector(obj, :response)
-    w0 = view(w, y .== 0.0)
-    w1 = view(w, y .== 1.0)
-    μ  = mean(w1)
-    return sum(w1) * log(μ) + sum(w0) * log(1.0 - μ)
+    w₀ = view(w, y .== 0.0)
+    w₁ = view(w, y .== 1.0)
+    s₁ = sum(w₁)
+    μ₁ = mean(w₁) / s₁
+    return sum(w₁) * log(μ₁) + sum(w₀) * log(1.0 - μ₁)
 end
 
 # DEVIANCE

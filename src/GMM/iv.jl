@@ -16,19 +16,17 @@ end
 
 # CONSTRUCTOR
 
-function IV(MD::Microdata; method::String = "Unadjusted")
+function IV(MD::Microdata; method::String = "One-step")
 
     obj        = IV()
     obj.sample = MD
 
     if length(MD.map[:treatment]) == length(MD.map[:instrument])
         obj.method = "Method of moments"
-    elseif (method == "Unadjusted") | (method == "Unadjusted GMM") | (method == "2SLS")
-        obj.method = "Unadjusted GMM"
-    elseif (method == "Optimal") | (method == "Optimal GMM")
-        obj.method = "Unadjusted GMM"
+    elseif (method == "One-step") | (method == "One-step GMM") | (method == "2SLS")
+        obj.method = "One-step GMM"
     else
-        throw("unknown method; choose between Unadjusted and Optimal")
+        throw("unknown method")
     end
 
     return obj
@@ -38,7 +36,7 @@ end
 
 # INTERFACE
 
-function fit(::Type{IV}, MD::Microdata; novar::Bool = false, method::String = "Unadjusted")
+function fit(::Type{IV}, MD::Microdata; novar::Bool = false, method::String = "One-step")
 
     if method == "OLS"
         FSD               = Microdata(MD)
@@ -52,10 +50,10 @@ function fit(::Type{IV}, MD::Microdata; novar::Bool = false, method::String = "U
 
     if checkweight(MD)
         w = getvector(MD, :weight)
-        obj.β = _fit(obj, w)
+        _fit!(obj, w)
         novar || (obj.V = _vcov(obj, MD.corr, w))
     else
-        obj.β = _fit(obj)
+        _fit!(obj)
         novar || (obj.V = _vcov(obj, MD.corr))
     end
 
@@ -66,27 +64,21 @@ end
 
 # ESTIMATION
 
-function _fit(obj::IV)
+function _fit!(obj::IV)
 
-    y = getvector(obj, :response)
-    x = getmatrix(obj, :treatment, :control)
-    z = getmatrix(obj, :instrument, :control)
+    y  = getvector(obj, :response)
+    x  = getmatrix(obj, :treatment, :control)
+    z  = getmatrix(obj, :instrument, :control)
 
     if obj.method == "Method of moments"
-        β = (z' * x) \ (z' * y)
-    elseif obj.method == "Unadjusted GMM"
-        β = (z * (z \ x)) \ y
-    elseif obj.method == "Optimal GMM"
-        β  = (z * (z \ x)) \ y
-        W  = _opg(obj, getcorr(obj))
-        zz = W \ z
-        β  = (zz' * x) \ (zz' * y)
+        obj.β = (z' * x) \ (z' * y)
+    elseif obj.method == "One-step GMM"
+        zγ    = z * (z \ x)
+        obj.β = zγ \ y
     end
-
-    return β
 end
 
-function _fit(obj::IV, w::AbstractVector)
+function _fit!(obj::IV, w::AbstractVector)
 
     y = getvector(obj, :response)
     x = getmatrix(obj, :treatment, :control)
@@ -94,41 +86,71 @@ function _fit(obj::IV, w::AbstractVector)
     v = scale!(transpose(z), w)
 
     if obj.method == "Method of moments"
-        β  = (v * x) \ (v * y)
-    elseif obj.method == "Unadjusted GMM"
-        β  = (z * (v * z) \ (v * x)) \ y
-    elseif obj.method == "Optimal GMM"
-        β  = (z * (v * z) \ (v * x)) \ y
-        W  = _opg(obj, getcorr(obj), w)
-        vv = v / W
-        β  = (vv * x) \ (vv * y)
+        obj.β = (v * x) \ (v * y)
+    elseif obj.method == "One-step GMM"
+        vγ    = transpose((v * z) \ (v * x)) * v
+        obj.β = (vγ * x) \ (vγ * y)
     end
-
-    return β
 end
 
 #==========================================================================================#
 
 # SCORE (MOMENT CONDITIONS)
 
-score(obj::IV) = scale!(residuals(obj), copy(getmatrix(obj, :instrument, :control)))
+function score(obj::IV)
+
+    z = getmatrix(obj, :instrument, :control)
+    s = scale!(residuals(obj), copy(z))
+
+    if obj.method == "Method of moments"
+        return s
+    elseif obj.method == "One-step GMM"
+        x = getmatrix(obj, :treatment, :control)
+        return s * (z \ x)
+    end
+end
 
 function score(obj::IV, w::AbstractVector)
-    return scale!(w, scale!(residuals(obj), copy(getmatrix(obj, :instrument, :control))))
+
+    z = getmatrix(obj, :instrument, :control)
+    v = scale!(w, copy(z))
+    s = scale!(residuals(obj), copy(v))
+
+    if obj.method == "Method of moments"
+        return s
+    elseif obj.method == "One-step GMM"
+        x = getmatrix(obj, :treatment, :control)
+        return s * ((v' * z) \ (v' * x))
+    end
 end
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
 function jacobian(obj::IV)
+
     x = getmatrix(obj, :treatment, :control)
     z = getmatrix(obj, :instrument, :control)
-    return scale!(- 1.0, z' * x)
+
+    if obj.method == "Method of moments"
+        return scale!(- 1.0, z' * x)
+    elseif obj.method == "One-step GMM"
+        zγ = z * (z \ x)
+        return scale!(- 1.0, zγ' * x)
+    end
 end
 
 function jacobian(obj::IV, w::AbstractVector)
+
     x = getmatrix(obj, :treatment, :control)
-    v = scale!(transpose(getmatrix(obj, :instrument, :control)), w)
-    return scale!(- 1.0, v * x)
+    z = getmatrix(obj, :instrument, :control)
+    v = scale!(transpose(z), w)
+
+    if obj.method == "Method of moments"
+        return scale!(- 1.0, v * x)
+    elseif obj.method == "One-step GMM"
+        vγ = transpose((v * z) \ (v * x)) * v
+        return scale!(- 1.0, vγ * x)
+    end
 end
 
 #==========================================================================================#

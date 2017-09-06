@@ -27,17 +27,17 @@ end
 
 # ESTIMATION
 
-function _fit(obj::OLS)
-    y = getvector(obj, :response)
-    x = getmatrix(obj, :control)
-    return x \ y
+function _fit!(obj::OLS)
+    y     = getvector(obj, :response)
+    x     = getmatrix(obj, :control)
+    obj.β =  x \ y
 end
 
-function _fit(obj::OLS, w::AbstractVector)
-    y = getvector(obj, :response)
-    x = getmatrix(obj, :control)
-    z = scale!(transpose(x), w)
-    return (z * x) \ (z * y)
+function _fit!(obj::OLS, w::AbstractVector)
+    y     = getvector(obj, :response)
+    x     = getmatrix(obj, :control)
+    z     = scale!(transpose(x), w)
+    obj.β =  (z * x) \ (z * y)
 end
 
 #==========================================================================================#

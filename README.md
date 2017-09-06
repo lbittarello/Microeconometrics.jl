@@ -222,13 +222,13 @@ The `Microdata` must contain: `response` and `control`.
 #### General method of moments
 
 ```julia
-fit(IV, MD::Microdata [; novar::Bool = false, method::String = "Unadjusted"])
+fit(IV, MD::Microdata [; novar::Bool = false, method::String = "One-step GMM"])
 ```
 
 Linear IV regression.
 Multiple endogenous variables are supported.
-The default method is two-stage least squares.
-For two-step optimally weighted GMM, set `method = "Optimal"`.
+For now, only two-stage least squares is implemented (`method = "One-step GMM"`).
+Two-step GMM is planned for a future release.
 For convenience, you may also set `method = "OLS"`.
 The `Microdata` must contain: `response`, `treatment`, `control` and `instrument`.
 

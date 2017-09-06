@@ -82,10 +82,10 @@ function fit(
 
     if checkweight(SSD)
         w = getvector(SSD, :weight)
-        obj.second_stage.β = _fit(obj.second_stage, w .* obj.mat)
+        _fit!(second_stage(obj), w .* obj.mat)
         novar || (obj.second_stage.V = _vcov(obj, SSD.corr, w))
     else
-        obj.second_stage.β = _fit(obj.second_stage, obj.mat)
+        _fit!(second_stage(obj), obj.mat)
         novar || (obj.second_stage.V = _vcov(obj, SSD.corr))
     end
 
@@ -108,8 +108,8 @@ jacobian(obj::FrölichMelly, w::AbstractVector) = jacobian(second_stage(obj), w 
 
 function crossjacobian(obj::FrölichMelly)
 
-    d = getvector(obj.second_stage, :treatment)
-    z = getvector(obj.second_stage, :instrument)
+    d = getvector(obj, :treatment)
+    z = getvector(obj, :instrument)
     π = fitted(obj.first_stage)
     D = zeros(π)
 
@@ -137,8 +137,8 @@ end
 
 function crossjacobian(obj::FrölichMelly, w::AbstractVector)
 
-    d = getvector(obj.second_stage, :treatment)
-    z = getvector(obj.second_stage, :instrument)
+    d = getvector(obj, :treatment)
+    z = getvector(obj, :instrument)
     π = fitted(obj.first_stage)
     D = zeros(π)
 
