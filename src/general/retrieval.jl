@@ -62,6 +62,7 @@ getnames(MM::TwoStageModel, args...) = getnames(second_stage(MM).sample, args...
 
 # GET CORRELATION STRUCTURE
 
+getcorr(obj::Microdata)     = obj.corr
 getcorr(obj::ParModel)      = obj.sample.corr
 getcorr(obj::TwoStageModel) = second_stage(obj).sample.corr
 
@@ -69,6 +70,7 @@ getcorr(obj::TwoStageModel) = second_stage(obj).sample.corr
 
 # GET INDICATOR OF MISSING DATA
 
+getmsng(obj::Microdata)     = obj.msng
 getmsng(obj::ParModel)      = obj.sample.msng
 getmsng(obj::TwoStageModel) = second_stage(obj).sample.msng
 

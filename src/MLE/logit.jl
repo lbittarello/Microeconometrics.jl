@@ -2,9 +2,8 @@
 
 # TYPE
 
-mutable struct Logit <: ParModel
+mutable struct Logit <: MLE
 
-    method::String
     sample::Microdata
     β::Vector{Float64}
     V::Matrix{Float64}
@@ -18,7 +17,6 @@ end
 
 function Logit(MD::Microdata)
     obj        = Logit()
-    obj.method = "MLE"
     obj.sample = MD
     return obj
 end

@@ -4,7 +4,6 @@
 
 mutable struct OLS <: ParModel
 
-    method::String
     sample::Microdata
     β::Vector{Float64}
     V::Matrix{Float64}
@@ -18,7 +17,6 @@ end
 
 function OLS(MD::Microdata)
     obj        = OLS()
-    obj.method = "OLS"
     obj.sample = MD
     return obj
 end
@@ -36,8 +34,8 @@ end
 function _fit!(obj::OLS, w::AbstractVector)
     y     = getvector(obj, :response)
     x     = getmatrix(obj, :control)
-    z     = scale!(transpose(x), w)
-    obj.β =  (z * x) \ (z * y)
+    v     = scale!(w, copy(x))
+    obj.β =  (v' * x) \ (v' * y)
 end
 
 #==========================================================================================#
@@ -52,15 +50,8 @@ end
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-function jacobian(obj::OLS)
-    x = getmatrix(obj, :control)
-    return crossprod(x, neg = true)
-end
-
-function jacobian(obj::OLS, w::AbstractVector)
-     x = getmatrix(obj, :control)
-     return crossprod(x, w, neg = true)
-end
+jacobian(obj::OLS)                    = crossprod(getmatrix(obj, :control), neg = true)
+jacobian(obj::OLS, w::AbstractVector) = crossprod(getmatrix(obj, :control), w, neg = true)
 
 # HOMOSCEDASTIC VARIANCE MATRIX
 

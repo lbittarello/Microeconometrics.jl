@@ -6,7 +6,7 @@ mutable struct FrölichMelly <: TwoStageModel
 
     first_stage::Micromodel
     second_stage::OLS
-    mat::AbstractVector
+    mat::Matrix{Float64}
 
     FrölichMelly() = new()
 end
@@ -45,7 +45,7 @@ end
 
 function fit(
         ::Type{FrölichMelly},
-        m::Micromodel,
+        MM::Micromodel,
         MD::Microdata;
         novar::Bool = false,
         trim::AbstractFloat = 0.0,
@@ -55,37 +55,40 @@ function fit(
     SSD               = Microdata(MD)
     SSD.map[:control] = vcat(SSD.map[:treatment], 1)
     obj               = FrölichMelly()
-    obj.first_stage   = m
+    obj.first_stage   = MM
     obj.second_stage  = OLS(SSD)
 
     invtrim = one(trim) - trim
     d       = getvector(SSD, :treatment)
     z       = getvector(SSD, :instrument)
-    π       = fitted(obj.first_stage)
-    obj.mat = zeros(π)
+    π       = fitted(MM)
+
+    obj.mat       = Matrix{Float64}(nobs(SSD), 2)
+    obj.mat[:, 1] = π
+    obj.mat[:, 2] = 0.0
 
     @inbounds for (i, (di, zi, πi)) in enumerate(zip(d, z, π))
         d0 = iszero(di)
         z0 = iszero(zi)
-        if trim < πi < invtrim
+        if trim <= πi <= invtrim
             if d0 & z0
-                obj.mat[i] = 1.0 / (1.0 - πi)
+                obj.mat[i, 2] = 1.0 / (1.0 - πi)
             elseif d0 & !z0
-                obj.mat[i] = - 1.0 / πi
+                obj.mat[i, 2] = - 1.0 / πi
             elseif !d0 & z0
-                obj.mat[i] = - 1.0 / (1.0 - πi)
+                obj.mat[i, 2] = - 1.0 / (1.0 - πi)
             elseif !d0 & !z0
-                obj.mat[i] = 1.0 / πi
+                obj.mat[i, 2] = 1.0 / πi
             end
         end
     end
 
     if checkweight(SSD)
         w = getvector(SSD, :weight)
-        _fit!(second_stage(obj), w .* obj.mat)
+        _fit!(second_stage(obj), w .* obj.mat[:, 2])
         novar || (obj.second_stage.V = _vcov(obj, SSD.corr, w))
     else
-        _fit!(second_stage(obj), obj.mat)
+        _fit!(second_stage(obj), obj.mat[:, 2])
         novar || (obj.second_stage.V = _vcov(obj, SSD.corr))
     end
 
@@ -96,13 +99,16 @@ end
 
 # SCORE (MOMENT CONDITIONS)
 
-score(obj::FrölichMelly)                    = score(second_stage(obj), obj.mat)
-score(obj::FrölichMelly, w::AbstractVector) = score(second_stage(obj), w .* obj.mat)
+score(obj::FrölichMelly)                    = score(second_stage(obj), obj.mat[:, 2])
+score(obj::FrölichMelly, w::AbstractVector) = score(second_stage(obj), w .* obj.mat[:, 2])
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-jacobian(obj::FrölichMelly)                    = jacobian(second_stage(obj), obj.mat)
-jacobian(obj::FrölichMelly, w::AbstractVector) = jacobian(second_stage(obj), w .* obj.mat)
+jacobian(obj::FrölichMelly) = jacobian(second_stage(obj), obj.mat[:, 2])
+
+function jacobian(obj::FrölichMelly, w::AbstractVector)
+    jacobian(second_stage(obj), w .* obj.mat[:, 2])
+end
 
 # EXPECTED JACOBIAN OF SCORE W.R.T. FIRST-STAGE PARAMETERS × NUMBER OF OBSERVATIONS
 
@@ -110,10 +116,11 @@ function crossjacobian(obj::FrölichMelly)
 
     d = getvector(obj, :treatment)
     z = getvector(obj, :instrument)
-    π = fitted(obj.first_stage)
-    D = zeros(π)
+    π = obj.mat[:, 1]
+    v = obj.mat[:, 2]
+    D = zeros(nobs(obj))
 
-    @inbounds for (i, (di, zi, πi, vi)) in enumerate(zip(d, z, π, obj.mat))
+    @inbounds for (i, (di, zi, πi, vi)) in enumerate(zip(d, z, π, v))
         if !iszero(vi)
             d0 = iszero(di)
             z0 = iszero(zi)
@@ -139,10 +146,11 @@ function crossjacobian(obj::FrölichMelly, w::AbstractVector)
 
     d = getvector(obj, :treatment)
     z = getvector(obj, :instrument)
-    π = fitted(obj.first_stage)
-    D = zeros(π)
+    π = obj.mat[:, 1]
+    v = obj.mat[:, 2]
+    D = zeros(nobs(obj))
 
-    @inbounds for (i, (di, zi, πi, vi, wi)) in enumerate(zip(d, z, π, obj.mat, w))
+    @inbounds for (i, (di, zi, πi, vi, wi)) in enumerate(zip(d, z, π, v, w))
         if !iszero(vi)
             d0 = iszero(di)
             z0 = iszero(zi)

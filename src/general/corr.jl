@@ -52,23 +52,25 @@ function Clustered(df::DataFrame, x::Symbol)
 
     msng  = Array{Bool}(length(df[x]))
     msng .= (isna.(df[x]) .== false)
-    n     = sum(msng)
-    dfx   = Array(df[x][msng])
-    iter  = unique(dfx)
+    id    = Array(df[x][msng])
+    n     = length(id)
+    iter  = unique(id)
+    nc    = length(iter)
+    adj   = nc / (nc - 1)
     mat   = spzeros(Float64, n, n)
 
     for i in iter
-        ii = findin(dfx, [i])
+        ii = findin(id, [i])
         mat[ii, ii] = 1.0
     end
 
-    return Clustered(msng, mat, dfx, length(iter))
+    return Clustered(msng, mat, id, adj)
 end
 
 # ADJUSTMENT FOR CLUSTERED COVARIANCE MATRICES
 
-adjcluster!(V::Matrix, corr::Clustered)     = (c  = corr.nc; scale!(c / (c - 1), V))
-adjcluster!(V::Matrix, corr::CorrStructure) = V
+adjfactor!(V::Matrix, corr::Clustered)     = scale!(corr.adjustment, V)
+adjfactor!(V::Matrix, corr::CorrStructure) = V
 
 #==========================================================================================#
 
@@ -109,7 +111,7 @@ function _timespace(
             w1 = Dates.value(x1[ii] - x1[jj])
             w1 = k1(float(w1) / b1)
             if w1 > 0.0
-                w2 = distance(y2[ii], x2[ii], y2[jj], x2[jj])
+                w2 = geodistance(y2[ii], x2[ii], y2[jj], x2[jj])
                 w2 = k2(w2 / b2)
                 if w2 > 0.0
                     mat[j, i] = w1 * w2

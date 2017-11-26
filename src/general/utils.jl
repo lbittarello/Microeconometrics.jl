@@ -16,7 +16,7 @@ end
 
 havd(x::Float64) = 0.5 * (1.0 - cosd(x))
 
-function distance(y0::Float64, x0::Float64, y1::Float64, x1::Float64)
+function geodistance(y0::Float64, x0::Float64, y1::Float64, x1::Float64)
     h = havd(y1 - y0) + havd(x1 - x0) * cosd(y0) * cosd(y1)
     return 12742.0 * asin(min(1.0, sqrt(h)))
 end
@@ -38,3 +38,5 @@ function parzen(x::Float64)
         return 0.0
     end
 end
+
+gallant(x::Float64) = parzen(x)

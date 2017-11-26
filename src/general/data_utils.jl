@@ -2,37 +2,34 @@
 
 # INTERSECTION BETWEEN A FRAME AND CORRELATION STRUCTURE
 
-function adjmsng!(msng::BitVector, corr::Homoscedastic, makecopy::Bool)
-    return (makecopy ? copy(corr) : corr)
+adjmsng!(msng::BitVector, corr::Homoscedastic)   = copy(corr)
+adjmsng!(msng::BitVector, corr::Heteroscedastic) = copy(corr)
+
+function adjmsng!(msng::BitVector, corr::Clustered)
+
+    (msng == corr.msng) && (return copy(corr))
+
+    intersect = msng .* corr.msng
+    msng     .= intersect
+    touse     = intersect[corr.msng]
+    new_ic    = copy(corr.ic[touse])
+    new_nc    = length(unique(new_ic))
+    new_adj   = new_nc / (new_nc - 1)
+    new_mat   = copy(corr.mat[touse, touse])
+
+    return Clustered(intersect, new_mat, new_ic, new_adj)
 end
 
-function adjmsng!(msng::BitVector, corr::Heteroscedastic, makecopy::Bool)
-    return (makecopy ? copy(corr) : corr)
-end
+function adjmsng!(msng::BitVector, corr::CrossCorrelated)
 
-function adjmsng!(msng::BitVector, corr::Clustered, makecopy::Bool)
+    (msng == corr.msng) && (return copy(corr))
 
-    (msng == corr.msng) && (return (makecopy ? copy(corr) : corr))
+    intersect = msng .* corr.msng
+    msng     .= intersect
+    touse     = intersect[corr.msng]
+    new_mat   = copy(corr.mat[touse, touse])
 
-    intersection = msng .* corr.msng
-    msng[:]      = intersection
-    touse        = intersection[corr.msng]
-    new_ic       = (makecopy ? copy(corr.ic[touse]) : view(corr.ic, touse))
-    new_mat      = (makecopy ? copy(corr.mat[touse, touse]) : view(corr.mat, touse, touse))
-
-    return Clustered(intersection, new_mat, new_ic, length(unique(new_ic)))
-end
-
-function adjmsng!(msng::BitVector, corr::CrossCorrelated, makecopy::Bool)
-
-    (msng == corr.msng) && (return (makecopy ? copy(corr) : corr))
-
-    intersection = msng .* corr.msng
-    msng[:]      = intersection
-    touse        = intersection[corr.msng]
-    new_mat      = (makecopy ? copy(corr.mat[touse, touse]) : view(corr.mat, touse, touse))
-
-    return CrossCorrelated(intersection, new_mat)
+    return CrossCorrelated(intersect, new_mat)
 end
 
 #==========================================================================================#
@@ -53,4 +50,13 @@ function assign_columns(input::String, urterms::Terms, assign::Vector{Int})
     end
 
     return output
+end
+
+#==========================================================================================#
+
+# CHECK RANK
+
+function checkrank(MD, args...)
+    mat = getmatrix(MD, args)
+    (rank(mat) == size(mat, 2)) || throw("model matrix does not have full rank")
 end

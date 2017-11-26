@@ -1,4 +1,4 @@
-__precompile__()
+__precompile__(true)
 
 module Microeconometrics
 
@@ -32,16 +32,21 @@ include("./TSM/abadie.jl")
 include("./TSM/frölichmelly.jl")
 include("./TSM/tan.jl")
 
-export CorrStructure, Microdata
-export Homoscedastic, Heteroscedastic, Clustered, CrossCorrelated
-export cc_timespace, truncated, bartlett, parzen, tukeyhanning
-export ParObject, OLS, IV, Logit, Probit, Abadie, FrölichMelly, Tan
-export first_stage, second_stage, reduced_form, tstat, pval, etable
-export hausman_test
+export
 
-export fit, loglikelihood, nullloglikelihood, deviance, nulldeviance
-export coefnames, coef, coeftable, confint, vcov
-export dof, dof_residual, nobs, r2, adjr2
-export model_response, predict, fitted, residuals
+    CorrStructure,
+        Homoscedastic,
+        Heteroscedastic,
+        Clustered,
+        CrossCorrelated,
+            cc_timespace,
+    Kernel,
+        Bartlett,
+        Truncated,
+        TukeyHanning,
+        Parzen, Gallant,
+    Microdata,
+    OLS, IV, Logit, Probit, Abadie, FrölichMelly, Tan,
+    first_stage, second_stage, reduced_form, tstat, pval, etable, hausman
 
 end # module

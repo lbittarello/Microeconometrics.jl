@@ -45,7 +45,8 @@ end
 
 # SUMMARY STATISTICS
 
-nobs(obj::Micromodel)            = size(obj.sample.mat, 1)
+nobs(obj::Microdata)             = size(obj.mat, 1)
+nobs(obj::Micromodel)            = nobs(obj.sample)
 nobs(obj::TwoStageModel)         = nobs(second_stage(obj))
 dof(obj::ParModel)               = length(coef(obj))
 dof(obj::TwoStageModel)          = dof(second_stage(obj))
@@ -71,49 +72,41 @@ function _r2(obj::Micromodel, w::AbstractVector)
     return 1.0 - rss / tss
 end
 
-function loglikelihood(obj::ParModel)
-    if obj.method == "MLE"
-        if checkweight(obj)
-            _loglikelihood(obj, getvector(obj, :weight))
-        else
-            _loglikelihood(obj)
-        end
+function loglikelihood(obj::MLE)
+    if checkweight(obj)
+        _loglikelihood(obj, getvector(obj, :weight))
     else
-        throw("loglikelihood is only available for MLE")
+        _loglikelihood(obj)
     end
 end
 
-function nullloglikelihood(obj::ParModel)
-    if obj.method == "MLE"
-        if checkweight(obj)
-            _nullloglikelihood(obj, getvector(obj, :weight))
-        else
-            _nullloglikelihood(obj)
-        end
+function nullloglikelihood(obj::MLE)
+    if checkweight(obj)
+        _nullloglikelihood(obj, getvector(obj, :weight))
     else
-        throw("nullloglikelihood is only available for MLE")
+        _nullloglikelihood(obj)
     end
 end
 
-function deviance(obj::ParModel)
-    if obj.method == "MLE"
-        checkweight(obj) ? _deviance(obj, getvector(obj, :weight)) : _deviance(obj)
+function deviance(obj::MLE)
+    if checkweight(obj)
+        _deviance(obj, getvector(obj, :weight))
     else
-        throw("deviance is only available for MLE")
+        _deviance(obj)
     end
 end
 
-function nulldeviance(obj::ParModel)
-    if obj.method == "MLE"
-        checkweight(obj) ? _nulldeviance(obj, getvector(obj, :weight)) : _nulldeviance(obj)
+function nulldeviance(obj::MLE)
+    if checkweight(obj)
+        _nulldeviance(obj, getvector(obj, :weight))
     else
-        throw("nulldeviance is only available for MLE")
+        _nulldeviance(obj)
     end
 end
 
 #==========================================================================================#
 
-# PREDICTION AND RELATED
+# PREDICTION
 
 model_response(obj::Micromodel)    = getvector(obj, :response)
 model_response(obj::TwoStageModel) = getvector(second_stage(obj), :response)
@@ -126,12 +119,14 @@ end
 
 #==========================================================================================#
 
-# OUTPUT
+# COEFFICIENT NAMES
 
 coefnames(obj::ParObject) = obj.names
 
+# OUTPUT
+
 function coeftable(
-        obj::Union{ParModel, ParObject, TwoStageModel};
+        obj::Union{ParOrTwoStage, ParObject};
         level::Float64 = 0.95,
         digits::Int = 4,
         verbose::Bool = true

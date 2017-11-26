@@ -4,8 +4,7 @@
 
 function etable(args...;
         digits::Int = 4,
-        aux::Function = stderr,
-        compact::Bool = false,
+        aux::Union{Function, Void} = nothing,
         stars::Matrix{Any} = [0.1 "*"; 0.05 "**"; 0.01 "***"],
         titles::Vector{String} = []
     )
@@ -16,17 +15,16 @@ function etable(args...;
 
     (titles == []) && (titles = String["(" * string(i) * ")" for i = 1:N])
 
-    β     = Vector{Vector{String}}(N)
-    names = Vector{Vector{String}}(N)
-
-    compact || (σ = Vector{Vector{String}}(N))
+    μ = Vector{Vector{String}}(N)
+    β = Vector{Vector{String}}(N)
+    σ = Vector{Vector{String}}(N)
 
     for (i, ai) in enumerate(args)
 
-        β[i]     = fmt.(fspec, coef(ai))
-        names[i] = coefnames(ai)
+        μ[i] = coefnames(ai)
+        β[i] = fmt.(fspec, coef(ai))
 
-        compact || (σ[i] = "(" .* fmt.(fspec, aux(ai)) .* ")")
+        (typeof(aux) == Void) || (σ[i] = "(" .* fmt.(fspec, aux(ai)) .* ")")
 
         if cutpoints != []
             for (j, pj) in enumerate(pval(ai))
@@ -36,9 +34,9 @@ function etable(args...;
         end
     end
 
-    inter = union(names...)
+    inter = union(μ...)
 
-    if compact
+    if typeof(aux) == Void
         output = vcat("", inter)
     else
         output          = fill("", 2 * length(inter) + 1)
@@ -50,12 +48,12 @@ function etable(args...;
 
     _alignatchar!(output)
 
-    for (i, (ni, ti, βi)) in enumerate(zip(names, titles, β))
+    for (i, (ni, ti, βi)) in enumerate(zip(μ, titles, β))
         idx = findin(inter, ni)
-        compact || (idx .= 2 * idx - 1)
+        (typeof(aux) == Void) || (idx .= 2 * idx - 1)
         w2      .= ""
         w2[idx] .= βi
-        compact || (w2[idx + 1] .= σ[i])
+        (typeof(aux) == Void) || (w2[idx + 1] .= σ[i])
         _alignatchar!(w2, '.')
         w1[1]     .= ti
         w1[2:end] .= w2

@@ -4,6 +4,12 @@ end
 abstract type ParModel <: Micromodel
 end
 
+abstract type MLE <: ParModel
+end
+
+abstract type TwoStageModel <: Micromodel
+end
+
 mutable struct ParObject
 
     names::Vector{String}
@@ -11,9 +17,6 @@ mutable struct ParObject
     V::AbstractArray
 
     ParObject() = new()
-end
-
-abstract type TwoStageModel <: Micromodel
 end
 
 const ParOrTwoStage = Union{ParModel, TwoStageModel}

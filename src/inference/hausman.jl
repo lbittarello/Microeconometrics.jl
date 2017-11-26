@@ -2,31 +2,31 @@
 
 # INTERFACE
 
-function hausman_test(obj₁::ParOrTwoStage, obj₂::ParOrTwoStage)
-    names = intersect(coefnames(obj₁), coefnames(obj₂))
-    return hausman_test(obj₁, obj₂, names, getcorr(obj₁))
+function hausman(obj₁::ParOrTwoStage, obj₂::ParOrTwoStage)
+    return hausman(obj₁, obj₂, getcorr(obj₁), intersect(coefnames(obj₁), coefnames(obj₂)))
 end
 
-function hausman_test(obj₁::ParOrTwoStage, obj₂::ParOrTwoStage, corr::CorrStructure)
-    names = intersect(coefnames(obj₁), coefnames(obj₂))
-    return hausman_test(obj₁, obj₂, names, corr)
+function hausman(obj₁::ParOrTwoStage, obj₂::ParOrTwoStage, corr::CorrStructure)
+    return hausman(obj₁, obj₂, corr, intersect(coefnames(obj₁), coefnames(obj₂)))
 end
 
-function hausman_test(
+function hausman(obj₁::ParOrTwoStage, obj₂::ParOrTwoStage, names::String)
+    return hausman(obj₁, obj₂, getcorr(obj₁), [names])
+end
+
+function hausman(obj₁::ParOrTwoStage, obj₂::ParOrTwoStage, names::Vector{String})
+    return hausman(obj₁, obj₂, getcorr(obj₁), names)
+end
+
+function hausman(obj₁::ParOrTwoStage, obj₂::ParOrTwoStage, corr::CorrStructure, names::String)
+    return hausman(obj₁, obj₂, corr, [names])
+end
+
+function hausman(
         obj₁::ParOrTwoStage,
         obj₂::ParOrTwoStage,
-        names::String,
-        corr::CorrStructure = getcorr(obj₁)
-    )
-
-    return hausman_test(obj₁, obj₂, [names], corr)
-end
-
-function hausman_test(
-        obj₁::ParOrTwoStage,
-        obj₂::ParOrTwoStage,
-        names::Vector{String},
-        corr::CorrStructure = getcorr(obj₁)
+        corr::CorrStructure,
+        names::Vector{String}
     )
 
     if (typeof(getcorr(obj₁)) != typeof(corr)) | (typeof(getcorr(obj₂)) != typeof(corr))
@@ -50,10 +50,10 @@ function hausman_test(
         _hausman!(output, obj₁, i₁, obj₂, i₂, corr, w₁, w₂)
     elseif W₁ & !W₂
         w₁ = getvector(obj₁, :weight)
-        w₂ = ones(Float64, nobs(obj₂))
+        w₂ = fill(1.0, nobs(obj₂))
         _hausman!(output, obj₁, i₁, obj₂, i₂, corr, w₁, w₂)
     elseif !W₁ & W₂
-        w₁ = ones(Float64, nobs(obj₁))
+        w₁ = fill(1.0, nobs(obj₁))
         w₂ = getvector(obj₂, :weight)
         _hausman!(output, obj₁, i₁, obj₂, i₂, corr, w₁, w₂)
     else
@@ -82,16 +82,16 @@ function _hausman!(
     touse₁ = msng₁[touse]
     touse₂ = msng₂[touse]
 
+    β₁  = coef(obj₁)
+    β₂  = coef(obj₂)
     ψ₁  = influence(obj₁)
     ψ₂  = influence(obj₂)
     V₁₂ = view(ψ₁, touse₁, i₁)' * view(ψ₂, touse₂, i₂)
     V₁  = view(vcov(obj₁), i₁, i₁)
     V₂  = view(vcov(obj₂), i₂, i₂)
-    β₁  = coef(obj₁)
-    β₂  = coef(obj₂)
 
-    V  = transpose(V₁₂) + V₁₂
-    V .= V₁[i₁, i₁] .+ V₂[i₂, i₂] .- V₁₂[i₁, i₂] .- V
+    V  = V₁₂' + V₁₂
+    V .= V₁ .+ V₂ .- V
 
     output.β = view(β₁, i₁) - view(β₂, i₂)
     output.V = V
@@ -114,15 +114,15 @@ function _hausman!(
     touse₁ = msng₁[touse]
     touse₂ = msng₂[touse]
 
+    β₁  = coef(obj₁)
+    β₂  = coef(obj₂)
     ψ₁  = influence(obj₁, w₁)
     ψ₂  = influence(obj₂, w₂)
     V₁₂ = view(ψ₁, touse₁, i₁)' * view(ψ₂, touse₂, i₂)
     V₁  = view(vcov(obj₁), i₁, i₁)
     V₂  = view(vcov(obj₂), i₂, i₂)
-    β₁  = coef(obj₁)
-    β₂  = coef(obj₂)
 
-    V  = transpose(V₁₂) + V₁₂
+    V  = V₁₂' + V₁₂
     V .= V₁ .+ V₂ .- V
 
     output.β = view(β₁, i₁) - view(β₂, i₂)
@@ -150,17 +150,16 @@ function _hausman!(
     touse₂ = corr.msng .* corr₂.msng
     touse₂ = touse₂[corr.msng]
 
+    β₁  = coef(obj₁)
+    β₂  = coef(obj₂)
     ψ₁  = influence(obj₁)
     ψ₂  = influence(obj₂)
     V₁₂ = ψ₁' * view(corr.mat, touse₁, touse₂) * ψ₂
     V₁₂ = view(V₁₂, i₁, i₂)
     V₁  = view(vcov(obj₁), i₁, i₁)
     V₂  = view(vcov(obj₂), i₂, i₂)
-    β₁  = coef(obj₁)
-    β₂  = coef(obj₂)
 
-    V   = transpose(V₁₂) + V₁₂
-    adjcluster!(V, corr)
+    V  = adjfactor!(V₁₂' + V₁₂, corr)
     V .= V₁ .+ V₂ .- V
 
     output.β = view(β₁, i₁) - view(β₂, i₂)
@@ -190,17 +189,16 @@ function _hausman!(
     touse₂ = corr.msng .* corr₂.msng
     touse₂ = touse₂[corr.msng]
 
+    β₁  = coef(obj₁)
+    β₂  = coef(obj₂)
     ψ₁  = influence(obj₁, w₁)
     ψ₂  = influence(obj₂, w₂)
     V₁₂ = ψ₁' * view(corr.mat, touse₁, touse₂) * ψ₂
     V₁₂ = view(V₁₂, i₁, i₂)
     V₁  = view(vcov(obj₁), i₁, i₁)
     V₂  = view(vcov(obj₂), i₂, i₂)
-    β₁  = coef(obj₁)
-    β₂  = coef(obj₂)
 
-    V   = transpose(V₁₂) + V₁₂
-    adjcluster!(V, corr)
+    V  = adjfactor!(V₁₂' + V₁₂, corr)
     V .= V₁ .+ V₂ .- V
 
     output.β = view(β₁, i₁) - view(β₂, i₂)

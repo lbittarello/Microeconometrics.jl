@@ -6,7 +6,7 @@ mutable struct Tan <: TwoStageModel
 
     first_stage::Micromodel
     second_stage::IV
-    mat::AbstractVector
+    mat::Matrix{Float64}
 
     Tan() = new()
 end
@@ -41,7 +41,7 @@ end
 
 function fit(
         ::Type{Tan},
-        m::Micromodel,
+        MM::Micromodel,
         MD::Microdata;
         novar::Bool = false,
         trim::AbstractFloat = 0.0,
@@ -50,27 +50,30 @@ function fit(
 
     SSD              = Microdata(MD, control = "1")
     obj              = Tan()
-    obj.first_stage  = m
+    obj.first_stage  = MM
     obj.second_stage = IV(SSD)
 
     invtrim = one(trim) - trim
     z       = getvector(SSD, :instrument)
     p       = mean(z)
-    π       = fitted(obj.first_stage)
-    obj.mat = zeros(π)
+    π       = fitted(MM)
+
+    obj.mat       = Matrix{Float64}(nobs(SSD), 2)
+    obj.mat[:, 1] = π
+    obj.mat[:, 2] = 0.0
 
     @inbounds for (i, (zi, πi)) in enumerate(zip(z, π))
-        if trim < πi < invtrim
-            obj.mat[i] = (iszero(zi) ? ((1.0 - p) / (1.0 - πi)) : (p / πi))
+        if trim <= πi <= invtrim
+            obj.mat[i, 2] = (iszero(zi) ? ((1.0 - p) / (1.0 - πi)) : (p / πi))
         end
     end
 
     if checkweight(SSD)
         w = getvector(SSD, :weight)
-        _fit!(second_stage(obj), w .* obj.mat)
+        _fit!(second_stage(obj), w .* obj.mat[:, 2])
         novar || (obj.second_stage.V = _vcov(obj, SSD.corr, w))
     else
-        _fit!(second_stage(obj), obj.mat)
+        _fit!(second_stage(obj), obj.mat[:, 2])
         novar || (obj.second_stage.V = _vcov(obj, SSD.corr))
     end
 
@@ -81,13 +84,13 @@ end
 
 # SCORE (MOMENT CONDITIONS)
 
-score(obj::Tan)                    = score(second_stage(obj), obj.mat)
-score(obj::Tan, w::AbstractVector) = score(second_stage(obj), w .* obj.mat)
+score(obj::Tan)                    = score(second_stage(obj), obj.mat[:, 2])
+score(obj::Tan, w::AbstractVector) = score(second_stage(obj), w .* obj.mat[:, 2])
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-jacobian(obj::Tan)                    = jacobian(second_stage(obj), obj.mat)
-jacobian(obj::Tan, w::AbstractVector) = jacobian(second_stage(obj), w .* obj.mat)
+jacobian(obj::Tan)                    = jacobian(second_stage(obj), obj.mat[:, 2])
+jacobian(obj::Tan, w::AbstractVector) = jacobian(second_stage(obj), w .* obj.mat[:, 2])
 
 # EXPECTED JACOBIAN OF SCORE W.R.T. FIRST-STAGE PARAMETERS × NUMBER OF OBSERVATIONS
 
@@ -95,10 +98,11 @@ function crossjacobian(obj::Tan)
 
     z = getvector(obj, :instrument)
     p = mean(z)
-    π = fitted(obj.first_stage)
-    D = zeros(π)
+    π = obj.mat[:, 1]
+    v = obj.mat[:, 2]
+    D = zeros(nobs(obj))
 
-    @inbounds for (i, (zi, πi, vi)) in enumerate(zip(z, π, obj.mat))
+    @inbounds for (i, (zi, πi, vi)) in enumerate(zip(z, π, v))
         if !iszero(vi)
             D[i] = (iszero(zi) ? ((1.0 - p) / abs2(1.0 - πi)) : (- p / abs2(πi)))
         end
@@ -113,10 +117,11 @@ end
 function crossjacobian(obj::Tan, w::AbstractVector)
 
     z = getvector(obj, :instrument)
-    π = fitted(obj.first_stage)
-    D = zeros(π)
+    π = obj.mat[:, 1]
+    v = obj.mat[:, 2]
+    D = zeros(nobs(obj))
 
-    @inbounds for (i, (zi, πi, vi, wi)) in enumerate(zip(z, π, obj.mat, w))
+    @inbounds for (i, (zi, πi, vi, wi)) in enumerate(zip(z, π, v, w))
         if !iszero(vi)
             D[i] = (iszero(zi) ? (wi * (1.0 - p) / abs2(1.0 - πi)) : (- wi * p / abs2(πi)))
         end
