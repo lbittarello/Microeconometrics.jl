@@ -15,9 +15,9 @@ end
 
 # FIRST STAGE
 
-function first_stage{M <: Micromodel}(
+function first_stage(
         ::Type{FrölichMelly}, ::Type{M}, MD::Microdata; kwargs...
-    )
+    ) where {M <: Micromodel}
 
     FSD                = Microdata(MD)
     FSD.map[:response] = FSD.map[:instrument]
@@ -31,13 +31,13 @@ end
 
 # ESTIMATION
 
-function fit{M <: Micromodel}(
+function fit(
         ::Type{FrölichMelly},
         ::Type{M},
         MD::Microdata;
         novar::Bool = false,
         kwargs...
-    )
+    ) where {M <: Micromodel}
 
     m = first_stage(FrölichMelly, M, MD, novar = novar)
     return fit(FrölichMelly, m, MD; novar = novar, kwargs...)

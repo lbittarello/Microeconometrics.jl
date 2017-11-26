@@ -15,7 +15,10 @@ end
 
 # FIRST STAGE
 
-function first_stage{M <: Micromodel}(::Type{Abadie}, ::Type{M}, MD::Microdata; kwargs...)
+function first_stage(
+        ::Type{Abadie}, ::Type{M}, MD::Microdata; kwargs...
+    ) where {M <: Micromodel}
+
     FSD                = Microdata(MD)
     FSD.map[:response] = FSD.map[:instrument]
     pop!(FSD.map, :treatment)
@@ -27,20 +30,20 @@ end
 
 # ESTIMATION
 
-function fit{M₁ <: Micromodel, M₂ <: ParModel}(
+function fit(
         ::Type{Abadie},
         ::Type{M₂},
         ::Type{M₁},
         MD::Microdata;
         novar::Bool = false,
         kwargs...
-    )
+    ) where {M₂ <: Micromodel, M₁ <: ParModel}
 
     m₁ = first_stage(Abadie, M₁, MD, novar = novar)
     return fit(Abadie, M₂, m₁, MD; novar = novar, kwargs...)
 end
 
-function fit{M <: Micromodel}(
+function fit(
         ::Type{Abadie},
         ::Type{M},
         MM::Micromodel,
@@ -48,7 +51,7 @@ function fit{M <: Micromodel}(
         novar::Bool = false,
         trim::AbstractFloat = 0.0,
         kwargs...
-    )
+    ) where {M <: Micromodel}
 
     SSD               = Microdata(MD)
     SSD.map[:control] = vcat(SSD.map[:treatment], SSD.map[:control])
