@@ -2,12 +2,12 @@
 
 # TYPES
 
-mutable struct Microdata
+mutable struct Microdata{T <: CorrStructure}
     msng::BitVector
     mat::Matrix{Float64}
     names::Vector{String}
     map::Dict{Symbol, Vector{Int}}
-    corr::CorrStructure
+    corr::T
     terms::Terms
     assign::Vector{Int}
 end
@@ -16,7 +16,7 @@ end
 
 # COPY
 
-function copy(MD::Microdata)
+function copy(MD::Microdata{T}) where {T}
 
     msng   = copy(MD.msng)
     mat    = copy(MD.mat)
@@ -26,7 +26,7 @@ function copy(MD::Microdata)
     terms  = copy(MD.terms)
     assign = copy(MD.assign)
 
-    return Microdata(msng, mat, names, map, newcorr, terms, assign)
+    return Microdata{T}(msng, mat, names, map, newcorr, terms, assign)
 end
 
 #==========================================================================================#
@@ -47,10 +47,10 @@ end
 
 function Microdata(
         df::DataFrame,
-        corr::CorrStructure,
+        corr::T,
         subset::AbstractVector{Bool};
         kwargs...
-    )
+    ) where {T <: CorrStructure}
 
     input   = reduce((x, y) -> x * " + " * y[2], "", kwargs)
     formula = DataFrames.Formula(nothing, parse(input))
@@ -68,14 +68,14 @@ function Microdata(
         map[i] = assign_columns(j, terms, mat.assign)
     end
 
-    return Microdata(msng, mat.m, names, map, newcorr, terms, mat.assign)
+    return Microdata{T}(msng, mat.m, names, map, newcorr, terms, mat.assign)
 end
 
 #==========================================================================================#
 
 # REASSIGN VARIABLE SETS
 
-function Microdata(MD::Microdata; kwargs...)
+function Microdata(MD::Microdata{T}; kwargs...) where {T}
 
     map = copy(MD.map)
 
@@ -83,5 +83,5 @@ function Microdata(MD::Microdata; kwargs...)
         (j == "") ? pop!(map, i) : (map[i] = assign_columns(j, MD.terms, MD.assign))
     end
 
-    Microdata(MD.msng, MD.mat, MD.names, map, MD.corr, MD.terms, MD.assign)
+    Microdata{T}(MD.msng, MD.mat, MD.names, map, MD.corr, MD.terms, MD.assign)
 end

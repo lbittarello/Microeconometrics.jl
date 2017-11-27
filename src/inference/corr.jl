@@ -16,7 +16,7 @@ mutable struct Clustered <: CorrStructure
     msng::BitVector
     mat::AbstractMatrix
     ic::AbstractVector
-    nc::Int
+    adj::Float64
 end
 
 mutable struct CrossCorrelated <: CorrStructure
@@ -24,7 +24,7 @@ mutable struct CrossCorrelated <: CorrStructure
     mat::AbstractMatrix
 end
 
-const ClusterOrCross = Union{Clustered, CrossCorrelated}
+ClusterOrCross = Union{Clustered, CrossCorrelated}
 
 #==========================================================================================#
 
@@ -35,7 +35,7 @@ copy(corr::Heteroscedastic) = Heteroscedastic()
 copy(corr::CrossCorrelated) = CrossCorrelated(copy(corr.msng), copy(corr.mat))
 
 function copy(corr::Clustered)
-    return Clustered(copy(corr.msng), copy(corr.mat), copy(corr.ic), copy(corr.nc))
+    return Clustered(copy(corr.msng), copy(corr.mat), copy(corr.ic), copy(corr.adj))
 end
 
 #==========================================================================================#
@@ -50,13 +50,13 @@ Homoscedastic() = Homoscedastic("OIM")
 
 function Clustered(df::DataFrame, x::Symbol)
 
-    msng  = Array{Bool}(length(df[x]))
+    msng  = BitVector(length(df[x]))
     msng .= (isna.(df[x]) .== false)
     id    = Array(df[x][msng])
     n     = length(id)
     iter  = unique(id)
     nc    = length(iter)
-    adj   = nc / (nc - 1)
+    adj   = float(nc / (nc - 1))
     mat   = spzeros(Float64, n, n)
 
     for i in iter
@@ -69,7 +69,7 @@ end
 
 # ADJUSTMENT FOR CLUSTERED COVARIANCE MATRICES
 
-adjfactor!(V::Matrix, corr::Clustered)     = scale!(corr.adjustment, V)
+adjfactor!(V::Matrix, corr::Clustered)     = scale!(corr.adj, V)
 adjfactor!(V::Matrix, corr::CorrStructure) = V
 
 #==========================================================================================#

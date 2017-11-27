@@ -2,36 +2,29 @@
 
 # INTERFACE
 
-function hausman(obj₁::ParOrTwoStage, obj₂::ParOrTwoStage)
+function hausman(obj₁::ParOr2Stage, obj₂::ParOr2Stage)
     return hausman(obj₁, obj₂, getcorr(obj₁), intersect(coefnames(obj₁), coefnames(obj₂)))
 end
 
-function hausman(obj₁::ParOrTwoStage, obj₂::ParOrTwoStage, corr::CorrStructure)
+function hausman(obj₁::ParOr2Stage, obj₂::ParOr2Stage, corr::CorrStructure)
     return hausman(obj₁, obj₂, corr, intersect(coefnames(obj₁), coefnames(obj₂)))
 end
 
-function hausman(obj₁::ParOrTwoStage, obj₂::ParOrTwoStage, names::String)
+function hausman(obj₁::ParOr2Stage, obj₂::ParOr2Stage, names::String)
     return hausman(obj₁, obj₂, getcorr(obj₁), [names])
 end
 
-function hausman(obj₁::ParOrTwoStage, obj₂::ParOrTwoStage, names::Vector{String})
+function hausman(obj₁::ParOr2Stage, obj₂::ParOr2Stage, names::Vector{String})
     return hausman(obj₁, obj₂, getcorr(obj₁), names)
 end
 
-function hausman(obj₁::ParOrTwoStage, obj₂::ParOrTwoStage, corr::CorrStructure, names::String)
+function hausman(obj₁::ParOr2Stage, obj₂::ParOr2Stage, corr::CorrStructure, names::String)
     return hausman(obj₁, obj₂, corr, [names])
 end
 
 function hausman(
-        obj₁::ParOrTwoStage,
-        obj₂::ParOrTwoStage,
-        corr::CorrStructure,
-        names::Vector{String}
-    )
-
-    if (typeof(getcorr(obj₁)) != typeof(corr)) | (typeof(getcorr(obj₂)) != typeof(corr))
-        throw("different correlation structures")
-    end
+        obj₁::ParOr2Stage{T}, obj₂::ParOr2Stage{T}, corr::T, names::Vector{String}
+    ) where {T <: CorrStructure}
 
     i₁ = indexin(names, coefnames(obj₁))
     i₂ = indexin(names, coefnames(obj₂))
@@ -44,17 +37,9 @@ function hausman(
     output       = ParObject()
     output.names = copy(names)
 
-    if W₁ & W₂
-        w₁ = getvector(obj₁, :weight)
-        w₂ = getvector(obj₂, :weight)
-        _hausman!(output, obj₁, i₁, obj₂, i₂, corr, w₁, w₂)
-    elseif W₁ & !W₂
-        w₁ = getvector(obj₁, :weight)
-        w₂ = fill(1.0, nobs(obj₂))
-        _hausman!(output, obj₁, i₁, obj₂, i₂, corr, w₁, w₂)
-    elseif !W₁ & W₂
-        w₁ = fill(1.0, nobs(obj₁))
-        w₂ = getvector(obj₂, :weight)
+    if W₁ | W₂
+        w₁ = (W₁ ? getvector(obj₁, :weight) : fill(1.0, nobs(obj₁)))
+        w₂ = (W₂ ? getvector(obj₂, :weight) : fill(1.0, nobs(obj₂)))
         _hausman!(output, obj₁, i₁, obj₂, i₂, corr, w₁, w₂)
     else
         _hausman!(output, obj₁, i₁, obj₂, i₂, corr)
@@ -69,9 +54,9 @@ end
 
 function _hausman!(
         output::ParObject,
-        obj₁::ParOrTwoStage,
+        obj₁::ParOr2Stage,
         i₁::Vector{Int},
-        obj₂::ParOrTwoStage,
+        obj₂::ParOr2Stage,
         i₂::Vector{Int},
         corr::Heteroscedastic
     )
@@ -82,8 +67,6 @@ function _hausman!(
     touse₁ = msng₁[touse]
     touse₂ = msng₂[touse]
 
-    β₁  = coef(obj₁)
-    β₂  = coef(obj₂)
     ψ₁  = influence(obj₁)
     ψ₂  = influence(obj₂)
     V₁₂ = view(ψ₁, touse₁, i₁)' * view(ψ₂, touse₂, i₂)
@@ -93,15 +76,15 @@ function _hausman!(
     V  = V₁₂' + V₁₂
     V .= V₁ .+ V₂ .- V
 
-    output.β = view(β₁, i₁) - view(β₂, i₂)
+    output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
     output.V = V
 end
 
 function _hausman!(
         output::ParObject,
-        obj₁::ParOrTwoStage,
+        obj₁::ParOr2Stage,
         i₁::Vector{Int},
-        obj₂::ParOrTwoStage,
+        obj₂::ParOr2Stage,
         i₂::Vector{Int},
         corr::Heteroscedastic,
         w₁::AbstractVector,
@@ -114,8 +97,6 @@ function _hausman!(
     touse₁ = msng₁[touse]
     touse₂ = msng₂[touse]
 
-    β₁  = coef(obj₁)
-    β₂  = coef(obj₂)
     ψ₁  = influence(obj₁, w₁)
     ψ₂  = influence(obj₂, w₂)
     V₁₂ = view(ψ₁, touse₁, i₁)' * view(ψ₂, touse₂, i₂)
@@ -125,15 +106,15 @@ function _hausman!(
     V  = V₁₂' + V₁₂
     V .= V₁ .+ V₂ .- V
 
-    output.β = view(β₁, i₁) - view(β₂, i₂)
+    output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
     output.V = V
 end
 
 function _hausman!(
         output::ParObject,
-        obj₁::ParOrTwoStage,
+        obj₁::ParOr2Stage,
         i₁::Vector{Int},
-        obj₂::ParOrTwoStage,
+        obj₂::ParOr2Stage,
         i₂::Vector{Int},
         corr::ClusterOrCross
     )
@@ -150,8 +131,6 @@ function _hausman!(
     touse₂ = corr.msng .* corr₂.msng
     touse₂ = touse₂[corr.msng]
 
-    β₁  = coef(obj₁)
-    β₂  = coef(obj₂)
     ψ₁  = influence(obj₁)
     ψ₂  = influence(obj₂)
     V₁₂ = ψ₁' * view(corr.mat, touse₁, touse₂) * ψ₂
@@ -162,15 +141,15 @@ function _hausman!(
     V  = adjfactor!(V₁₂' + V₁₂, corr)
     V .= V₁ .+ V₂ .- V
 
-    output.β = view(β₁, i₁) - view(β₂, i₂)
+    output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
     output.V = V
 end
 
 function _hausman!(
         output::ParObject,
-        obj₁::ParOrTwoStage,
+        obj₁::ParOr2Stage,
         i₁::Vector{Int},
-        obj₂::ParOrTwoStage,
+        obj₂::ParOr2Stage,
         i₂::Vector{Int},
         corr::ClusterOrCross,
         w₁::AbstractVector,
@@ -189,8 +168,6 @@ function _hausman!(
     touse₂ = corr.msng .* corr₂.msng
     touse₂ = touse₂[corr.msng]
 
-    β₁  = coef(obj₁)
-    β₂  = coef(obj₂)
     ψ₁  = influence(obj₁, w₁)
     ψ₂  = influence(obj₂, w₂)
     V₁₂ = ψ₁' * view(corr.mat, touse₁, touse₂) * ψ₂
@@ -201,6 +178,6 @@ function _hausman!(
     V  = adjfactor!(V₁₂' + V₁₂, corr)
     V .= V₁ .+ V₂ .- V
 
-    output.β = view(β₁, i₁) - view(β₂, i₂)
+    output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
     output.V = V
 end

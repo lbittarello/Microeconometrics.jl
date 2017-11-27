@@ -2,13 +2,13 @@
 
 # TYPE
 
-mutable struct Tan <: TwoStageModel
+mutable struct Tan{T} <: TwoStageModel{T}
 
-    first_stage::Micromodel
-    second_stage::IV
+    first_stage::Micromodel{T}
+    second_stage::IV{T}
     mat::Matrix{Float64}
 
-    Tan() = new()
+    Tan{T}() where {T} = new()
 end
 
 #==========================================================================================#
@@ -17,7 +17,7 @@ end
 
 function first_stage(
         ::Type{Tan}, ::Type{M}, MD::Microdata; kwargs...
-    ) where {M <: Micromodel}
+    ) where {M <: Micromodel{T} where T}
 
     FSD                = Microdata(MD)
     FSD.map[:response] = FSD.map[:instrument]
@@ -37,7 +37,7 @@ function fit(
         MD::Microdata;
         novar::Bool = false,
         kwargs...
-    ) where {M <: Micromodel}
+    ) where {M <: Micromodel{T} where T}
 
     m = first_stage(Tan, M, MD, novar = novar)
     return fit(Tan, m, MD; novar = novar, kwargs...)
@@ -45,15 +45,15 @@ end
 
 function fit(
         ::Type{Tan},
-        MM::Micromodel,
-        MD::Microdata;
+        MM::Micromodel{T},
+        MD::Microdata{T};
         novar::Bool = false,
         trim::AbstractFloat = 0.0,
         kwargs...
-    )
+    ) where {T}
 
     SSD              = Microdata(MD, control = "1")
-    obj              = Tan()
+    obj              = Tan{T}()
     obj.first_stage  = MM
     obj.second_stage = IV(SSD)
 
@@ -75,10 +75,10 @@ function fit(
     if checkweight(SSD)
         w = getvector(SSD, :weight)
         _fit!(second_stage(obj), w .* obj.mat[:, 2])
-        novar || (obj.second_stage.V = _vcov(obj, SSD.corr, w))
+        novar || _vcov!(obj, w)
     else
         _fit!(second_stage(obj), obj.mat[:, 2])
-        novar || (obj.second_stage.V = _vcov(obj, SSD.corr))
+        novar || _vcov!(obj)
     end
 
     return obj
@@ -104,7 +104,7 @@ function crossjacobian(obj::Tan)
     p = mean(z)
     π = obj.mat[:, 1]
     v = obj.mat[:, 2]
-    D = zeros(nobs(obj))
+    D = fill(0.0, nobs(obj))
 
     @inbounds for (i, (zi, πi, vi)) in enumerate(zip(z, π, v))
         if !iszero(vi)
@@ -123,7 +123,7 @@ function crossjacobian(obj::Tan, w::AbstractVector)
     z = getvector(obj, :instrument)
     π = obj.mat[:, 1]
     v = obj.mat[:, 2]
-    D = zeros(nobs(obj))
+    D = fill(0.0, nobs(obj))
 
     @inbounds for (i, (zi, πi, vi, wi)) in enumerate(zip(z, π, v, w))
         if !iszero(vi)

@@ -2,17 +2,17 @@
 
 # INTERFACE
 
-function fit{M <: ParModel}(::Type{M}, MD::Microdata; novar::Bool = false, kwargs...)
+function fit(::Type{M}, MD::Microdata; novar::Bool = false, kwargs...) where {M <: ParModel}
 
     obj = M(MD; kwargs...)
 
     if checkweight(MD)
         w = getvector(MD, :weight)
         _fit!(obj, w)
-        novar || (obj.V = _vcov(obj, MD.corr, w))
+        novar || _vcov!(obj, w)
     else
         _fit!(obj)
-        novar || (obj.V = _vcov(obj, MD.corr))
+        novar || _vcov!(obj)
     end
 
     return obj
@@ -45,15 +45,15 @@ end
 
 # SUMMARY STATISTICS
 
-nobs(obj::Microdata)             = size(obj.mat, 1)
-nobs(obj::Micromodel)            = nobs(obj.sample)
-nobs(obj::TwoStageModel)         = nobs(second_stage(obj))
-dof(obj::ParModel)               = length(coef(obj))
-dof(obj::TwoStageModel)          = dof(second_stage(obj))
-dof_residual(obj::ParOrTwoStage) = nobs(obj) - dof(obj)
+nobs(obj::Microdata)           = size(obj.mat, 1)
+nobs(obj::Micromodel)          = nobs(obj.sample)
+nobs(obj::TwoStageModel)       = nobs(second_stage(obj))
+dof(obj::ParModel)             = length(coef(obj))
+dof(obj::TwoStageModel)        = dof(second_stage(obj))
+dof_residual(obj::ParOr2Stage) = nobs(obj) - dof(obj)
 
-adjr2(obj::ParOrTwoStage) = 1.0 - ((nobs(obj) - 1) / dof_residual(obj)) * (1.0 - r2(obj))
-r2(obj::Micromodel) = (checkweight(obj) ? _r2(obj, getvector(obj, :weight)) : _r2(obj))
+adjr2(obj::ParOr2Stage) = 1.0 - ((nobs(obj) - 1) / dof_residual(obj)) * (1.0 - r2(obj))
+r2(obj::Micromodel)     = (checkweight(obj) ? _r2(obj, getvector(obj, :weight)) : _r2(obj))
 
 function _r2(obj::Micromodel)
     y   = model_response(obj)
@@ -126,7 +126,7 @@ coefnames(obj::ParObject) = obj.names
 # OUTPUT
 
 function coeftable(
-        obj::Union{ParOrTwoStage, ParObject};
+        obj::Union{ParOr2Stage, ParObject};
         level::Float64 = 0.95,
         digits::Int = 4,
         verbose::Bool = true

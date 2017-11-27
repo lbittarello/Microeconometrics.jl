@@ -14,10 +14,10 @@ import StatsBase:  dof, dof_residual, nobs, r2, adjr2
 import StatsBase:  model_response, predict, fitted, residuals
 import DataFrames: coefnames, Terms
 
-include("./general/types.jl")
-include("./general/utils.jl")
 include("./inference/corr.jl")
 include("./inference/utils.jl")
+include("./general/types.jl")
+include("./general/utils.jl")
 include("./data/types.jl")
 include("./data/utils.jl")
 include("./data/retrieval.jl")

@@ -2,21 +2,21 @@
 
 # TYPE
 
-mutable struct OLS <: ParModel
+mutable struct OLS{T} <: ParModel{T}
 
-    sample::Microdata
+    sample::Microdata{T}
     β::Vector{Float64}
     V::Matrix{Float64}
 
-    OLS() = new()
+    OLS{T}() where {T} = new()
 end
 
 #==========================================================================================#
 
 # CONSTRUCTOR
 
-function OLS(MD::Microdata)
-    obj        = OLS()
+function OLS(MD::Microdata{T}) where {T}
+    obj        = OLS{T}()
     obj.sample = MD
     return obj
 end
@@ -55,8 +55,8 @@ jacobian(obj::OLS, w::AbstractVector) = crossprod(getmatrix(obj, :control), w, n
 
 # HOMOSCEDASTIC VARIANCE MATRIX
 
-function _vcov(obj::OLS, corr::Homoscedastic)
-    return scale!(- sum(abs2, residuals(obj)) / dof_residual(obj), inv(jacobian(obj)))
+function _vcov!(obj::OLS{Homoscedastic})
+    obj.V = scale!(- sum(abs2, residuals(obj)) / dof_residual(obj), inv(jacobian(obj)))
 end
 
 #==========================================================================================#

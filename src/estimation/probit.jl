@@ -2,21 +2,21 @@
 
 # TYPE
 
-mutable struct Probit <: MLE
+mutable struct Probit{T} <: MLE{T}
 
-    sample::Microdata
+    sample::Microdata{T}
     β::Vector{Float64}
     V::Matrix{Float64}
 
-    Probit() = new()
+    Probit{T}() where {T} = new()
 end
 
 #==========================================================================================#
 
 # CONSTRUCTOR
 
-function Probit(MD::Microdata)
-    obj        = Probit()
+function Probit(MD::Microdata{T}) where {T}
+    obj        = Probit{T}()
     obj.sample = MD
     return obj
 end

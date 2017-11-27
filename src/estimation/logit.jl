@@ -2,21 +2,21 @@
 
 # TYPE
 
-mutable struct Logit <: MLE
+mutable struct Logit{T} <: MLE{T}
 
-    sample::Microdata
+    sample::Microdata{T}
     β::Vector{Float64}
     V::Matrix{Float64}
 
-    Logit() = new()
+    Logit{T}() where {T} = new()
 end
 
 #==========================================================================================#
 
 # CONSTRUCTOR
 
-function Logit(MD::Microdata)
-    obj        = Logit()
+function Logit(MD::Microdata{T}) where {T}
+    obj        = Logit{T}()
     obj.sample = MD
     return obj
 end

@@ -2,23 +2,23 @@
 
 # TYPE
 
-mutable struct IV <: ParModel
+mutable struct IV{T} <: ParModel{T}
 
     method::String
-    sample::Microdata
+    sample::Microdata{T}
     β::Vector{Float64}
     V::Matrix{Float64}
 
-    IV() = new()
+    IV{T}() where {T} = new()
 end
 
 #==========================================================================================#
 
 # CONSTRUCTOR
 
-function IV(MD::Microdata; method::String = "TSLS")
+function IV(MD::Microdata{T}; method::String = "TSLS") where {T}
 
-    obj        = IV()
+    obj        = IV{T}()
     obj.sample = MD
 
     if length(MD.map[:treatment]) == length(MD.map[:instrument])
@@ -51,10 +51,10 @@ function fit(::Type{IV}, MD::Microdata; novar::Bool = false, method::String = "T
     if checkweight(MD)
         w = getvector(MD, :weight)
         _fit!(obj, w)
-        novar || (obj.V = _vcov(obj, MD.corr, w))
+        novar || _vcov!(obj, w)
     else
         _fit!(obj)
-        novar || (obj.V = _vcov(obj, MD.corr))
+        novar || _vcov!(obj)
     end
 
     return obj
