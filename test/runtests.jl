@@ -6,8 +6,10 @@
 
 using Microeconometrics
 using Base.Test
+using StatsBase
+using CSV
 using DataFrames
-using RDatasets
+# using RDatasets
 
 function test_show(x)
     io = IOBuffer()
@@ -20,9 +22,11 @@ const datadir = joinpath(dirname(@__FILE__), "..", "data")
 
 # OLS
 
+# RDatasets needs updating
+
+#=
 dset = dataset("datasets", "Formaldehyde")
-mdta = Microdata(dset, corr = Homoscedastic(),
-        response = "OptDen", control = "Carb + 1")
+mdta = Microdata(dset, Homoscedastic(), response = "OptDen", control = "Carb + 1")
 
 @testset "OLS" begin
 
@@ -39,6 +43,7 @@ mdta = Microdata(dset, corr = Homoscedastic(),
     @test adjr²(e_ols) == adjr2(e_ols)
     @test isapprox(adjr²(e_ols), 0.998808343507198)
 end
+=#
 
 #==========================================================================================#
 
@@ -49,8 +54,9 @@ end
 # (actually, ours is a little higher)
 # So the log loglikelihood must be somewhat flat around the MLE
 
-dset = readtable(joinpath(datadir, "admit.csv.gz")) ; pool!(dset, :rank)
-mdta = Microdata(dset, response = "admit", control = "gre + gpa + rank + 1")
+dset        = CSV.read(joinpath(datadir, "admit.csv"))
+dset[:rank] = categorical(dset[:rank], levels = [1; 2; 3; 4])
+mdta        = Microdata(dset, response = "admit", control = "gre + gpa + rank + 1")
 
 @testset "Logit" begin
 
