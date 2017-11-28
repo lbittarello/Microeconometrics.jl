@@ -91,17 +91,17 @@ function cc_timespace(
 end
 
 function _timespace(
-        x1::DataVector{Date},
+        x1::Vector{Date},
         b1::Float64,
-        y2::DataVector{Float64},
-        x2::DataVector{Float64},
+        y2::Vector{Float64},
+        x2::Vector{Float64},
         b2::Float64,
         k1::Function,
         k2::Function
     )
 
     msng  = Array{Bool}(length(x1))
-    msng .= (isna.(x1) .* isna.(y2) .* isna.(x2) .== false)
+    msng .= (ismissing.(x1) .* ismissing.(y2) .* ismissing.(x2) .== false)
     n     = sum(msng)
     mat   = speye(Float64, n, n)
     idx   = findin(msng, [true])

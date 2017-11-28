@@ -53,8 +53,8 @@ function Microdata(
     ) where {T <: CorrStructure}
 
     input   = reduce((x, y) -> x * " + " * y[2], "", kwargs)
-    formula = DataFrames.Formula(nothing, parse(input))
-    terms   = DataFrames.Terms(formula)
+    formula = StatsModels.Formula(nothing, parse(input))
+    terms   = StatsModels.Terms(formula)
     msng    = BitVector(completecases(df[:, terms.eterms]))
     msng   .= msng .* BitVector(subset)
     newcorr = adjmsng!(msng, corr)

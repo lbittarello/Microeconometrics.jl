@@ -38,7 +38,7 @@ end
 
 function assign_columns(input::String, urterms::Terms, assign::Vector{Int})
 
-    terms  = DataFrames.getterms(parse(input))
+    terms  = StatsModels.getterms(parse(input))
     output = findin(assign, findin(urterms.terms, terms))
 
     if any(terms .== 1) | any(terms .== +1)

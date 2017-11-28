@@ -2,17 +2,19 @@ __precompile__(true)
 
 module Microeconometrics
 
-using DataFrames
 using StatsFuns
+using DataFrames
+using StatsModels
 using Optim
 using Formatting
 
-import Base:       copy
-import StatsBase:  fit, loglikelihood, nullloglikelihood, deviance, nulldeviance
-import StatsBase:  coef, coeftable, confint, vcov
-import StatsBase:  dof, dof_residual, nobs, r2, adjr2
-import StatsBase:  model_response, predict, fitted, residuals
-import DataFrames: coefnames, Terms
+import Base:        copy
+import StatsBase:   RegressionModel
+import StatsBase:   fit, coef, confint, stderr, vcov, coeftable
+import StatsBase:   loglikelihood, nullloglikelihood, deviance, nulldeviance
+import StatsBase:   dof, dof_residual, nobs, r2, adjr2
+import StatsBase:   model_response, predict, fitted, residuals
+import StatsModels: coefnames, Terms
 
 include("./inference/corr.jl")
 include("./inference/utils.jl")
@@ -48,6 +50,10 @@ export
         Parzen, Gallant,
     Microdata,
     OLS, IV, Logit, Probit, Abadie, FrölichMelly, Tan,
-    first_stage, second_stage, reduced_form, tstat, pval, etable, hausman
+    fit, first_stage, second_stage, reduced_form,
+    coef, confint, pval, stderr, tstat, vcov, hausman,
+    loglikelihood, nullloglikelihood, deviance, nulldeviance,
+    dof, dof_residual, nobs, r2, adjr2, aic, aicc, bic,
+    coeftable, etable
 
 end # module
