@@ -10,9 +10,9 @@ using Formatting
 
 import Base:        copy
 import StatsBase:   RegressionModel
-import StatsBase:   fit, coef, confint, stderr, vcov, coeftable
+import StatsBase:   fit, coef, confint, stderr, vcov
 import StatsBase:   loglikelihood, nullloglikelihood, deviance, nulldeviance
-import StatsBase:   dof, dof_residual, nobs, r2, adjr2
+import StatsBase:   aic, aicc, bic, dof, dof_residual, nobs, r2, r², adjr2, adjr², coeftable
 import StatsBase:   model_response, predict, fitted, residuals
 import StatsModels: coefnames, Terms
 
@@ -53,7 +53,7 @@ export
     fit, first_stage, second_stage, reduced_form,
     coef, confint, pval, stderr, tstat, vcov, hausman,
     loglikelihood, nullloglikelihood, deviance, nulldeviance,
-    dof, dof_residual, nobs, r2, adjr2, aic, aicc, bic,
-    coeftable, etable
+    aic, aicc, bic, dof, dof_residual, nobs, r2, r², adjr2, adjr², coeftable, etable,
+    model_response, predict, fitted, residuals
 
 end # module
