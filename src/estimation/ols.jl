@@ -28,7 +28,7 @@ end
 function _fit!(obj::OLS)
     y     = getvector(obj, :response)
     x     = getmatrix(obj, :control)
-    obj.β =  x \ y
+    obj.β = x \ y
 end
 
 function _fit!(obj::OLS, w::AbstractVector)
@@ -55,8 +55,9 @@ jacobian(obj::OLS, w::AbstractVector) = crossprod(getmatrix(obj, :control), w, n
 
 # HOMOSCEDASTIC VARIANCE MATRIX
 
-function _vcov!(obj::OLS{Homoscedastic})
-    obj.V = scale!(- sum(abs2, residuals(obj)) / dof_residual(obj), inv(jacobian(obj)))
+function _vcov!(obj::OLS{Homoscedastic}, args...)
+    σ²    = sum(abs2, residuals(obj)) / dof_residual(obj)
+    obj.V = scale!(- σ², inv(jacobian(obj, args...)))
 end
 
 #==========================================================================================#
