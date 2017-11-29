@@ -213,12 +213,14 @@ end
 
 function jacobian(obj::Probit)
 
+    y = getvector(obj, :response)
     x = getmatrix(obj, :control)
     ω = x * obj.β
 
     @inbounds for (i, ωi) in enumerate(ω)
-        ηi   = normcdf(ωi)
-        ω[i] = abs2(normpdf(ωi)) / (ηi * (1.0 - ηi))
+        ηi   = (iszero(yi) ? (normcdf(ωi) - 1.0) : normcdf(ωi))
+        ηi   = normpdf(ωi) / ηi
+        ω[i] = abs2(ηi) + ωi * ηi
     end
 
     return crossprod(x, ω, neg = true)
@@ -226,12 +228,14 @@ end
 
 function jacobian(obj::Probit, w::AbstractVector)
 
+    y = getvector(obj, :response)
     x = getmatrix(obj, :control)
     ω = x * obj.β
 
     @inbounds for (i, (ωi, wi)) in enumerate(zip(ω, w))
-        ηi   = normcdf(ωi)
-        ω[i] = wi * abs2(normpdf(ωi)) / (ηi * (1.0 - ηi))
+        ηi   = (iszero(yi) ? (normcdf(ωi) - 1.0) : normcdf(ωi))
+        ηi   = normpdf(ωi) / ηi
+        ω[i] = wi * (abs2(ηi) + ωi * ηi)
     end
 
     return crossprod(x, ω, neg = true)
