@@ -22,10 +22,10 @@ end
 
 function _vcov!(obj::MLE{Homoscedastic}, args...)
     if getcorr(obj).method == "OIM"
-        return - inv(jacobian(obj, args...))
+        obj.V = - inv(jacobian(obj, args...))
     elseif getcorr(obj).method == "OPG"
         g = score(obj, args...)
-        return g' * g
+        obj.V = g' * g
     end
 end
 
