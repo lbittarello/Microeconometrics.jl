@@ -217,7 +217,7 @@ function jacobian(obj::Probit)
     x = getmatrix(obj, :control)
     ω = x * obj.β
 
-    @inbounds for (i, ωi) in enumerate(ω)
+    @inbounds for (i, (yi, ωi)) in enumerate(zip(y, ω))
         ηi   = (iszero(yi) ? (normcdf(ωi) - 1.0) : normcdf(ωi))
         ηi   = normpdf(ωi) / ηi
         ω[i] = abs2(ηi) + ωi * ηi
@@ -232,7 +232,7 @@ function jacobian(obj::Probit, w::AbstractVector)
     x = getmatrix(obj, :control)
     ω = x * obj.β
 
-    @inbounds for (i, (ωi, wi)) in enumerate(zip(ω, w))
+    @inbounds for (i, (yi, ωi, wi)) in enumerate(zip(y, ω, w))
         ηi   = (iszero(yi) ? (normcdf(ωi) - 1.0) : normcdf(ωi))
         ηi   = normpdf(ωi) / ηi
         ω[i] = wi * (abs2(ηi) + ωi * ηi)
