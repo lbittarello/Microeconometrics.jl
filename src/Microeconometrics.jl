@@ -25,6 +25,7 @@ include("./data/utils.jl")
 include("./data/retrieval.jl")
 include("./general/statsmodel.jl")
 include("./general/etable.jl")
+include("./inference/adjfactor.jl")
 include("./inference/vcov.jl")
 include("./inference/hausman.jl")
 include("./estimation/logit.jl")
@@ -51,9 +52,10 @@ export
     Microdata,
     OLS, IV, Logit, Probit, Abadie, FrölichMelly, Tan,
     fit, first_stage, second_stage, reduced_form,
-    coef, confint, pval, stderr, tstat, vcov, hausman,
+    coef, confint, pval, stderr, tstat, vcov, hausman_1s, hausman_2s,
     loglikelihood, nullloglikelihood, deviance, nulldeviance,
-    aic, aicc, bic, dof, dof_residual, nobs, r2, r², adjr2, adjr², coeftable, etable,
-    model_response, predict, fitted, residuals
+    aic, aicc, bic, dof, dof_residual, nobs, r2, r², adjr2, adjr²,
+    model_response, predict, fitted, residuals,
+    coeftable, etable, coefnames
 
 end # module

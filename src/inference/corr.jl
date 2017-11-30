@@ -6,20 +6,24 @@ abstract type CorrStructure
 end
 
 mutable struct Homoscedastic <: CorrStructure
+    adj::Bool
     method::String
 end
 
 mutable struct Heteroscedastic <: CorrStructure
+    adj::Bool
 end
 
 mutable struct Clustered <: CorrStructure
+    adj::Bool
     msng::BitVector
     mat::AbstractMatrix
     ic::AbstractVector
-    adj::Float64
+    nc::Int
 end
 
 mutable struct CrossCorrelated <: CorrStructure
+    adj::Bool
     msng::BitVector
     mat::AbstractMatrix
 end
@@ -30,25 +34,32 @@ ClusterOrCross = Union{Clustered, CrossCorrelated}
 
 # COPY
 
-copy(corr::Homoscedastic)   = Homoscedastic()
-copy(corr::Heteroscedastic) = Heteroscedastic()
-copy(corr::CrossCorrelated) = CrossCorrelated(copy(corr.msng), copy(corr.mat))
+copy(corr::Homoscedastic)   = Homoscedastic(corr.adj, corr.method)
+copy(corr::Heteroscedastic) = Heteroscedastic(corr.adj)
+
+function copy(corr::CrossCorrelated)
+    CrossCorrelated(corr.adj, copy(corr.msng), copy(corr.mat))
+end
 
 function copy(corr::Clustered)
-    return Clustered(copy(corr.msng), copy(corr.mat), copy(corr.ic), copy(corr.adj))
+    Clustered(corr.adj, copy(corr.msng), copy(corr.mat), copy(corr.ic), copy(corr.nc))
 end
 
 #==========================================================================================#
 
 # HOMOSCEDASTIC
 
-Homoscedastic() = Homoscedastic("OIM")
+Homoscedastic(method::String = "OIM"; adj::Bool = true) = Homoscedastic(adj, method)
+
+# HETEROSCEDASTIC
+
+Heteroscedastic(; adj::Bool = true) = Heteroscedastic(adj)
 
 #==========================================================================================#
 
 # CLUSTERED
 
-function Clustered(df::DataFrame, x::Symbol)
+function Clustered(df::DataFrame, x::Symbol; adj::Bool = true)
 
     msng  = BitVector(length(df[x]))
     msng .= (isna.(df[x]) .== false)
@@ -56,7 +67,6 @@ function Clustered(df::DataFrame, x::Symbol)
     n     = length(id)
     iter  = unique(id)
     nc    = length(iter)
-    adj   = float(nc / (nc - 1))
     mat   = spzeros(Float64, n, n)
 
     for i in iter
@@ -64,13 +74,8 @@ function Clustered(df::DataFrame, x::Symbol)
         mat[ii, ii] = 1.0
     end
 
-    return Clustered(msng, mat, id, adj)
+    return Clustered(adj, msng, mat, id, nc)
 end
-
-# ADJUSTMENT FOR CLUSTERED COVARIANCE MATRICES
-
-adjfactor!(V::Matrix, corr::Clustered)     = scale!(corr.adj, V)
-adjfactor!(V::Matrix, corr::CorrStructure) = V
 
 #==========================================================================================#
 
@@ -84,10 +89,11 @@ function cc_timespace(
         x2::Symbol,
         b2::Real;
         k1::Function = parzen,
-        k2::Function = parzen
+        k2::Function = parzen,
+        adj::Bool = true
     )
 
-    _timespace(df[x1], float(b1), df[y2], df[x2], float(b2), k1, k2)
+    _timespace(df[x1], float(b1), df[y2], df[x2], float(b2), k1, k2, adj)
 end
 
 function _timespace(
@@ -97,7 +103,8 @@ function _timespace(
         x2::Vector{Float64},
         b2::Float64,
         k1::Function,
-        k2::Function
+        k2::Function,
+        adj::Bool
     )
 
     msng  = Array{Bool}(length(x1))
@@ -120,5 +127,5 @@ function _timespace(
         end
     end
 
-    return CrossCorrelated(msng, Symmetric(mat))
+    return CrossCorrelated(adj, msng, Symmetric(mat))
 end

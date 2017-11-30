@@ -1,38 +1,27 @@
 #==========================================================================================#
 
-# INTERFACE
+# ONE SAMPLE: INTERFACE
 
-function hausman(obj₁::ParOr2Stage, obj₂::ParOr2Stage)
-    return hausman(obj₁, obj₂, getcorr(obj₁), intersect(coefnames(obj₁), coefnames(obj₂)))
+function hausman_1s(obj₁::ParOr2Stage, obj₂::ParOr2Stage)
+    return hausman_1s(obj₁, obj₂, intersect(coefnames(obj₁), coefnames(obj₂)))
 end
 
-function hausman(obj₁::ParOr2Stage, obj₂::ParOr2Stage, corr::CorrStructure)
-    return hausman(obj₁, obj₂, corr, intersect(coefnames(obj₁), coefnames(obj₂)))
+function hausman_1s(obj₁::ParOr2Stage, obj₂::ParOr2Stage, name::String)
+    return hausman_1s(obj₁, obj₂, [name])
 end
 
-function hausman(obj₁::ParOr2Stage, obj₂::ParOr2Stage, names::String)
-    return hausman(obj₁, obj₂, getcorr(obj₁), [names])
-end
-
-function hausman(obj₁::ParOr2Stage, obj₂::ParOr2Stage, names::Vector{String})
-    return hausman(obj₁, obj₂, getcorr(obj₁), names)
-end
-
-function hausman(obj₁::ParOr2Stage, obj₂::ParOr2Stage, corr::CorrStructure, names::String)
-    return hausman(obj₁, obj₂, corr, [names])
-end
-
-function hausman(
-        obj₁::ParOr2Stage{T}, obj₂::ParOr2Stage{T}, corr::T, names::Vector{String}
+function hausman_1s(
+        obj₁::ParOr2Stage{T},
+        obj₂::ParOr2Stage{T},
+        names::Vector{String}
     ) where {T <: CorrStructure}
 
     i₁ = indexin(names, coefnames(obj₁))
     i₂ = indexin(names, coefnames(obj₂))
-
-    (iszero(i₁) | iszero(i₂)) && throw("missing coefficients in at least one model")
-
     W₁ = checkweight(obj₁)
     W₂ = checkweight(obj₂)
+
+    (iszero(i₁) | iszero(i₂)) && throw("missing coefficients in at least one model")
 
     output       = ParObject()
     output.names = copy(names)
@@ -40,26 +29,183 @@ function hausman(
     if W₁ | W₂
         w₁ = (W₁ ? getvector(obj₁, :weight) : fill(1.0, nobs(obj₁)))
         w₂ = (W₂ ? getvector(obj₂, :weight) : fill(1.0, nobs(obj₂)))
-        _hausman!(output, obj₁, i₁, obj₂, i₂, corr, w₁, w₂)
+        _hausman_1s!(output, obj₁, i₁, obj₂, i₂, w₁, w₂)
     else
-        _hausman!(output, obj₁, i₁, obj₂, i₂, corr)
+        _hausman_1s!(output, obj₁, i₁, obj₂, i₂)
     end
+
+    return output
+end
+
+# ONE SAMPLE: ESTIMATION
+
+function _hausman_1s!(
+        output::ParObject,
+        obj₁::ParOr2Stage{T},
+        i₁::Vector{Int},
+        obj₂::ParOr2Stage{T},
+        i₂::Vector{Int}
+    ) where {T <: Heteroscedastic}
+
+    Ψ₁  = influence(obj₁)
+    ψ₁  = view(Ψ₁, :, i₁)
+    Ψ₂  = influence(obj₂)
+    ψ₂  = view(Ψ₂, :, i₂)
+    V₁₂ = ψ₁' * ψ₂
+
+    adjfactor!(V₁₂, obj₁)
+
+    output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
+    output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
+end
+
+function _hausman_1s!(
+        output::ParObject,
+        obj₁::ParOr2Stage{T},
+        i₁::Vector{Int},
+        obj₂::ParOr2Stage{T},
+        i₂::Vector{Int},
+        w₁::AbstractVector,
+        w₂::AbstractVector
+    ) where {T <: Heteroscedastic}
+
+    Ψ₁  = influence(obj₁, w₁)
+    ψ₁  = view(Ψ₁, :, i₁)
+    Ψ₂  = influence(obj₂, w₁)
+    ψ₂  = view(Ψ₂, :, i₂)
+    V₁₂ = ψ₁' * ψ₂
+
+    adjfactor!(V₁₂, obj₁)
+
+    output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
+    output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
+end
+
+function _hausman_1s!(
+        output::ParObject,
+        obj₁::ParOr2Stage{T},
+        i₁::Vector{Int},
+        obj₂::ParOr2Stage{T},
+        i₂::Vector{Int}
+    ) where {T <: ClusterOrCross}
+
+    Ω   = getcorr(obj₁).mat
+    Ψ₁  = influence(obj₁)
+    ψ₁  = view(Ψ₁, :, i₁)
+    Ψ₂  = influence(obj₂)
+    ψ₂  = view(Ψ₂, :, i₂)
+    V₁₂ = ψ₁' * Ω * ψ₂
+
+    adjfactor!(V₁₂, obj₁)
+
+    output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
+    output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
+end
+
+function _hausman_1s!(
+        output::ParObject,
+        obj₁::ParOr2Stage{T},
+        i₁::Vector{Int},
+        obj₂::ParOr2Stage{T},
+        i₂::Vector{Int},
+        w₁::AbstractVector,
+        w₂::AbstractVector
+    ) where {T <: ClusterOrCross}
+
+    Ω   = getcorr(obj₁).mat
+    Ψ₁  = influence(obj₁, w₁)
+    ψ₁  = view(Ψ₁, :, i₁)
+    Ψ₂  = influence(obj₂, w₁)
+    ψ₂  = view(Ψ₂, :, i₂)
+    V₁₂ = ψ₁' * Ω * ψ₂
+
+    adjfactor!(V₁₂, obj₁)
+
+    output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
+    output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
+end
+
+#==========================================================================================#
+
+# TWO INDEPENDENT SAMPLES
+
+function hausman_2s(obj₁::ParOr2Stage, obj₂::ParOr2Stage)
+    return hausman(obj₁, obj₂, intersect(coefnames(obj₁), coefnames(obj₂)))
+end
+
+function hausman_2s(obj₁::ParOr2Stage, obj₂::ParOr2Stage, name::String)
+    return hausman(obj₁, obj₂, [name])
+end
+
+function hausman_2s(
+        obj₁::ParOr2Stage{T},
+        obj₂::ParOr2Stage{T},
+        names::Vector{String}
+    ) where {T <: CorrStructure}
+
+    i₁ = indexin(names, coefnames(obj₁))
+    i₂ = indexin(names, coefnames(obj₂))
+
+    (iszero(i₁) | iszero(i₂)) && throw("missing coefficients in at least one model")
+
+    output       = ParObject()
+    output.names = copy(names)
+    output.β     = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
+    output.names = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂)
 
     return output
 end
 
 #==========================================================================================#
 
-# TWO-SAMPLE HAUSMAN TEST
+# TWO DEPENDENT SAMPLES: INTERFACE
 
-function _hausman!(
+function hausman_2s(obj₁::ParOr2Stage, obj₂::ParOr2Stage, corr::CorrStructure)
+    return hausman_2s(obj₁, obj₂, corr, intersect(coefnames(obj₁), coefnames(obj₂)))
+end
+
+function hausman_2s(obj₁::ParOr2Stage, obj₂::ParOr2Stage, corr::CorrStructure, name::String)
+    return hausman_2s(obj₁, obj₂, corr, [name])
+end
+
+function hausman_2s(
+        obj₁::ParOr2Stage{T},
+        obj₂::ParOr2Stage{T},
+        corr::T,
+        names::Vector{String}
+    ) where {T <: CorrStructure}
+
+    i₁ = indexin(names, coefnames(obj₁))
+    i₂ = indexin(names, coefnames(obj₂))
+    W₁ = checkweight(obj₁)
+    W₂ = checkweight(obj₂)
+
+    (iszero(i₁) | iszero(i₂)) && throw("missing coefficients in at least one model")
+
+    output       = ParObject()
+    output.names = copy(names)
+
+    if W₁ | W₂
+        w₁ = (W₁ ? getvector(obj₁, :weight) : fill(1.0, nobs(obj₁)))
+        w₂ = (W₂ ? getvector(obj₂, :weight) : fill(1.0, nobs(obj₂)))
+        _hausman_2s!(output, obj₁, i₁, obj₂, i₂, w₁, w₂)
+    else
+        _hausman_2s!(output, obj₁, i₁, obj₂, i₂, corr)
+    end
+
+    return output
+end
+
+# TWO DEPENDENT SAMPLES: ESTIMATION
+
+function _hausman_2s!(
         output::ParObject,
-        obj₁::ParOr2Stage,
+        obj₁::ParOr2Stage{T},
         i₁::Vector{Int},
-        obj₂::ParOr2Stage,
+        obj₂::ParOr2Stage{T},
         i₂::Vector{Int},
-        corr::Heteroscedastic
-    )
+        corr::T
+    ) where {T <: Heteroscedastic}
 
     msng₁  = getmsng(obj₁)
     msng₂  = getmsng(obj₂)
@@ -67,29 +213,28 @@ function _hausman!(
     touse₁ = msng₁[touse]
     touse₂ = msng₂[touse]
 
-    ψ₁  = influence(obj₁)
-    ψ₂  = influence(obj₂)
-    V₁₂ = view(ψ₁, touse₁, i₁)' * view(ψ₂, touse₂, i₂)
-    V₁  = view(vcov(obj₁), i₁, i₁)
-    V₂  = view(vcov(obj₂), i₂, i₂)
+    Ψ₁  = influence(obj₁)
+    ψ₁  = view(Ψ₁, :, i₁)
+    Ψ₂  = influence(obj₂)
+    ψ₂  = view(Ψ₂, :, i₂)
+    V₁₂ = ψ₁' * ψ₂
 
-    V  = V₁₂' + V₁₂
-    V .= V₁ .+ V₂ .- V
+    adjfactor!(V₁₂, obj₁)
 
     output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
-    output.V = V
+    output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
 end
 
-function _hausman!(
+function _hausman_2s!(
         output::ParObject,
-        obj₁::ParOr2Stage,
+        obj₁::ParOr2Stage{T},
         i₁::Vector{Int},
-        obj₂::ParOr2Stage,
+        obj₂::ParOr2Stage{T},
         i₂::Vector{Int},
-        corr::Heteroscedastic,
+        corr::T,
         w₁::AbstractVector,
         w₂::AbstractVector
-    )
+    ) where {T <: Heteroscedastic}
 
     msng₁  = getmsng(obj₁)
     msng₂  = getmsng(obj₂)
@@ -97,87 +242,72 @@ function _hausman!(
     touse₁ = msng₁[touse]
     touse₂ = msng₂[touse]
 
-    ψ₁  = influence(obj₁, w₁)
-    ψ₂  = influence(obj₂, w₂)
-    V₁₂ = view(ψ₁, touse₁, i₁)' * view(ψ₂, touse₂, i₂)
-    V₁  = view(vcov(obj₁), i₁, i₁)
-    V₂  = view(vcov(obj₂), i₂, i₂)
+    Ψ₁  = influence(obj₁)
+    ψ₁  = view(Ψ₁, :, i₁)
+    Ψ₂  = influence(obj₂)
+    ψ₂  = view(Ψ₂, :, i₂)
+    V₁₂ = ψ₁' * ψ₂
 
-    V  = V₁₂' + V₁₂
-    V .= V₁ .+ V₂ .- V
+    adjfactor!(V₁₂, obj₁)
 
     output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
-    output.V = V
+    output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
 end
 
-function _hausman!(
+function _hausman_2s!(
         output::ParObject,
-        obj₁::ParOr2Stage,
+        obj₁::ParOr2Stage{T},
         i₁::Vector{Int},
-        obj₂::ParOr2Stage,
+        obj₂::ParOr2Stage{T},
         i₂::Vector{Int},
-        corr::ClusterOrCross
-    )
+        corr::T
+    ) where {T <: ClusterOrCross}
 
-    corr₁ = getcorr(obj₁)
-    corr₂ = getcorr(obj₂)
-
-    if any(corr.msng[corr₁.msng] .== false) | any(corr.msng[corr₂.msng] .== false)
-        throw("joint correlation structure does not overlap with both estimation samples")
-    end
-
-    touse₁ = corr.msng .* corr₁.msng
+    msng₁  = getmsng(obj₁)
+    msng₂  = getmsng(obj₂)
+    touse₁ = corr.msng .* msng₁
     touse₁ = touse₁[corr.msng]
-    touse₂ = corr.msng .* corr₂.msng
+    touse₂ = corr.msng .* msng₂
     touse₂ = touse₂[corr.msng]
 
-    ψ₁  = influence(obj₁)
-    ψ₂  = influence(obj₂)
-    V₁₂ = ψ₁' * view(corr.mat, touse₁, touse₂) * ψ₂
-    V₁₂ = view(V₁₂, i₁, i₂)
-    V₁  = view(vcov(obj₁), i₁, i₁)
-    V₂  = view(vcov(obj₂), i₂, i₂)
+    Ψ₁  = influence(obj₁)
+    ψ₁  = view(Ψ₁, :, i₁)
+    Ψ₂  = influence(obj₂)
+    ψ₂  = view(Ψ₂, :, i₂)
+    V₁₂ = ψ₁' * corr.mat[touse₁, touse₂] * ψ₂
 
-    V  = adjfactor!(V₁₂' + V₁₂, corr)
-    V .= V₁ .+ V₂ .- V
+    adjfactor!(V₁₂, obj₁)
 
     output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
-    output.V = V
+    output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
 end
 
-function _hausman!(
+function _hausman_2s!(
         output::ParObject,
-        obj₁::ParOr2Stage,
+        obj₁::ParOr2Stage{T},
         i₁::Vector{Int},
-        obj₂::ParOr2Stage,
+        obj₂::ParOr2Stage{T},
         i₂::Vector{Int},
-        corr::ClusterOrCross,
+        corr::T,
         w₁::AbstractVector,
         w₂::AbstractVector
-    )
+    ) where {T <: ClusterOrCross}
 
-    corr₁ = getcorr(obj₁)
-    corr₂ = getcorr(obj₂)
-
-    if any(corr.msng[corr₁.msng] .== false) | any(corr.msng[corr₂.msng] .== false)
-        throw("joint correlation structure does not overlap with both estimation samples")
-    end
-
-    touse₁ = corr.msng .* corr₁.msng
+    msng₁  = getmsng(obj₁)
+    msng₂  = getmsng(obj₂)
+    touse₁ = corr.msng .* msng₁
     touse₁ = touse₁[corr.msng]
-    touse₂ = corr.msng .* corr₂.msng
+    touse₂ = corr.msng .* msng₂
     touse₂ = touse₂[corr.msng]
 
-    ψ₁  = influence(obj₁, w₁)
-    ψ₂  = influence(obj₂, w₂)
-    V₁₂ = ψ₁' * view(corr.mat, touse₁, touse₂) * ψ₂
-    V₁₂ = view(V₁₂, i₁, i₂)
-    V₁  = view(vcov(obj₁), i₁, i₁)
-    V₂  = view(vcov(obj₂), i₂, i₂)
+    Ψ₁  = influence(obj₁)
+    ψ₁  = view(Ψ₁, :, i₁)
+    Ψ₂  = influence(obj₂)
+    ψ₂  = view(Ψ₂, :, i₂)
+    V₁₂ = ψ₁' * corr.mat[touse₁, touse₂] * ψ₂
 
-    V  = adjfactor!(V₁₂' + V₁₂, corr)
-    V .= V₁ .+ V₂ .- V
+    adjfactor!(V₁₂, obj₁)
 
     output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
-    output.V = V
+    output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
 end
