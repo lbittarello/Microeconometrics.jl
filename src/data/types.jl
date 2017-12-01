@@ -4,12 +4,11 @@
 
 mutable struct Microdata{T <: CorrStructure}
     msng::BitVector
-    mat::Matrix{Float64}
+    mat::ModelMatrix{Matrix{Float64}}
     names::Vector{String}
     map::Dict{Symbol, Vector{Int}}
     corr::T
     terms::Terms
-    assign::Vector{Int}
 end
 
 #==========================================================================================#
@@ -68,7 +67,7 @@ function Microdata(
         map[i] = assign_columns(j, terms, mat.assign)
     end
 
-    return Microdata{T}(msng, mat.m, names, map, newcorr, terms, mat.assign)
+    return Microdata{T}(msng, mat, names, map, newcorr, terms)
 end
 
 #==========================================================================================#
@@ -80,8 +79,8 @@ function Microdata(MD::Microdata{T}; kwargs...) where {T}
     map = copy(MD.map)
 
     for (i, j) in kwargs
-        (j == "") ? pop!(map, i) : (map[i] = assign_columns(j, MD.terms, MD.assign))
+        (j == "") ? pop!(map, i) : (map[i] = assign_columns(j, MD.terms, MD.mat.assign))
     end
 
-    Microdata{T}(MD.msng, MD.mat, MD.names, map, MD.corr, MD.terms, MD.assign)
+    Microdata{T}(MD.msng, MD.mat, MD.names, map, MD.corr, MD.terms)
 end
