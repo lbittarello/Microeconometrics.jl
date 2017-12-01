@@ -13,9 +13,14 @@ end
 
 # KERNELS
 
+bartlett(x::Real)        = bartlett(float(x))
 bartlett(x::Float64)     = (abs(x) >= 1.0) ? 0.0 : (1.0 - abs(x))
+truncated(x::Real)       = truncated(float(x))
 truncated(x::Float64)    = (abs(x) >= 1.0) ? 0.0 : 1.0
+tukeyhanning(x::Real)    = tukeyhanning(float(x))
 tukeyhanning(x::Float64) = (abs(x) >= 1.0) ? 0.0 : 0.5 * (1.0 + cospi(x))
+
+parzen(x::Real) = parzen(float(x))
 
 function parzen(x::Float64)
     if abs(x) <= 0.5
@@ -27,4 +32,5 @@ function parzen(x::Float64)
     end
 end
 
+gallant(x::Real)    = parzen(float(x))
 gallant(x::Float64) = parzen(x)

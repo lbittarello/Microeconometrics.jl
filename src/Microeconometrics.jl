@@ -9,12 +9,12 @@ using Optim
 using Formatting
 
 import Base:        copy
-import StatsBase:   RegressionModel
+import StatsBase:   RegressionModel, CoefTable, coeftable
 import StatsBase:   fit, coef, confint, stderr, vcov
 import StatsBase:   loglikelihood, nullloglikelihood, deviance, nulldeviance
-import StatsBase:   aic, aicc, bic, dof, dof_residual, nobs, r2, r², adjr2, adjr², coeftable
+import StatsBase:   aic, aicc, bic, dof, dof_residual, nobs, r2, r², adjr2, adjr²
 import StatsBase:   model_response, predict, fitted, residuals
-import StatsModels: coefnames, Terms
+import StatsModels: Terms, coefnames
 
 include("./inference/corr.jl")
 include("./inference/utils.jl")
@@ -43,7 +43,6 @@ export
         Heteroscedastic,
         Clustered,
         CrossCorrelated,
-            cc_timespace,
     Kernel,
         Bartlett,
         Truncated,
@@ -56,6 +55,6 @@ export
     loglikelihood, nullloglikelihood, deviance, nulldeviance,
     aic, aicc, bic, dof, dof_residual, nobs, r2, r², adjr2, adjr²,
     model_response, predict, fitted, residuals,
-    coeftable, etable, coefnames
+    coefnames, coeftable, etable
 
 end # module
