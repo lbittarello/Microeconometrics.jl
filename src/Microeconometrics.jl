@@ -14,7 +14,7 @@ import StatsBase:   fit, coef, confint, stderr, vcov
 import StatsBase:   loglikelihood, nullloglikelihood, deviance, nulldeviance
 import StatsBase:   aic, aicc, bic, dof, dof_residual, nobs, r2, r², adjr2, adjr²
 import StatsBase:   model_response, predict, fitted, residuals
-import StatsModels: Terms, ModelMatrix, coefnames
+import StatsModels: Terms, coefnames
 
 include("./inference/corr.jl")
 include("./inference/utils.jl")
@@ -28,9 +28,10 @@ include("./general/etable.jl")
 include("./inference/adjfactor.jl")
 include("./inference/vcov.jl")
 include("./inference/hausman.jl")
+include("./estimation/ols.jl")
+include("./estimation/ipw.jl")
 include("./estimation/logit.jl")
 include("./estimation/probit.jl")
-include("./estimation/ols.jl")
 include("./estimation/iv.jl")
 include("./estimation/abadie.jl")
 include("./estimation/frölichmelly.jl")
@@ -49,7 +50,7 @@ export
         TukeyHanning,
         Parzen, Gallant,
     Microdata, Microdata!,
-    OLS, IV, Logit, Probit, Abadie, FrölichMelly, Tan,
+    OLS, IPW, Logit, Probit, IV, Abadie, FrölichMelly, Tan,
     fit, first_stage, second_stage, reduced_form,
     coef, confint, pval, stderr, tstat, vcov, hausman_1s, hausman_2s,
     loglikelihood, nullloglikelihood, deviance, nulldeviance,
