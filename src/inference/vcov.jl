@@ -48,7 +48,7 @@ end
 function _vcov!(obj::TwoStageModel{Heteroscedastic}, args...)
     ψ                  = influence(obj, args...)
     obj.second_stage.V = crossprod(ψ)
-    adjfactor!(obj.second_stage.V, Ω)
+    adjfactor!(obj.second_stage.V, obj)
 end
 
 function _vcov!(obj::TwoStageModel{<:ClusterOrCross}, args...)
