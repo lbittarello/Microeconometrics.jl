@@ -32,21 +32,6 @@ ClusterOrCross = Union{Clustered, CrossCorrelated}
 
 #==========================================================================================#
 
-# COPY
-
-copy(corr::Homoscedastic)   = Homoscedastic(corr.adj, corr.method)
-copy(corr::Heteroscedastic) = Heteroscedastic(corr.adj)
-
-function copy(corr::CrossCorrelated)
-    CrossCorrelated(corr.adj, copy(corr.msng), copy(corr.mat))
-end
-
-function copy(corr::Clustered)
-    Clustered(corr.adj, copy(corr.msng), copy(corr.mat), copy(corr.ic), copy(corr.nc))
-end
-
-#==========================================================================================#
-
 # HOMOSCEDASTIC
 
 Homoscedastic(method::String = "OIM"; adj::Bool = true) = Homoscedastic(adj, method)
@@ -65,16 +50,24 @@ function Clustered(df::DataFrame, x::Symbol; adj::Bool = true)
     msng .= .!ismissing.(df[x])
     ic    = Array(df[x][msng])
     n     = sum(msng)
-    iter  = unique(id)
+    iter  = unique(ic)
     nc    = length(iter)
-    mat   = spzeros(Float64, n, n)
+    idx₁  = Vector{Int}(1:n)
+    idx₂  = Vector{Int}(1:n)
 
-    for i in iter
-        ii = findin(id, [i])
-        mat[ii, ii] .= 1.0
+    @inbounds for i in iter
+        idx = findin(ic, [i])
+        for j = 1:length(idx)
+            for k = 1:(j - 1)
+                push!(idx₁, idx[k])
+                push!(idx₂, idx[j])
+            end
+        end
     end
 
-    return Clustered(adj, msng, mat, ic, nc)
+    val = fill(1.0, length(idx₁))
+
+    return Clustered(adj, msng, Symmetric(sparse(idx₁, idx₂, val)), ic, nc)
 end
 
 #==========================================================================================#
@@ -106,18 +99,33 @@ function cc_twowayclustering(df::DataFrame, x₁::Symbol, x₂::Symbol; adj::Boo
     n      = sum(msng)
     iter₁  = unique(ic₁)
     iter₂  = unique(ic₂)
-    mat    = spzeros(Float64, n, n)
+    idx₁   = Vector{Int}(1:n)
+    idx₂   = Vector{Int}(1:n)
 
-    for i in iter₁
-        ii = findin(id₁, [i])
-        mat[ii, ii] .= 1.0
+    @inbounds for i in iter₁
+        idx = findin(ic₁, [i])
+        nix  = length(idx)
+        for j = 1:nix
+            for k = 1:(j - 1)
+                push!(idx₁, idx[k])
+                push!(idx₂, idx[j])
+            end
+        end
     end
-    for i in iter₂
-        ii = findin(id₂, [i])
-        mat[ii, ii] .= 1.0
+    @inbounds for i in iter₂
+        idx = findin(ic₂, [i])
+        nix  = length(idx)
+        for j = 1:nix
+            for k = 1:(j - 1)
+                push!(idx₁, idx[k])
+                push!(idx₂, idx[j])
+            end
+        end
     end
 
-    return CrossCorrelated(adj, msng, mat)
+    val = fill(1.0, length(idx₁))
+
+    return CrossCorrelated(adj, msng, Symmetric(sparse(idx₁, idx₂, val, n, n, max)))
 end
 
 # CORRELATION ACROSS TIME
