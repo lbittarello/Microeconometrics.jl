@@ -29,7 +29,7 @@ function Microdata(
     msng    .= msng .* (.!iszero.(weights)) .* BitVector(subset)
     new_corr = adjmsng!(msng, vcov)
     new_wts  = parse_weights(weights, msng)
-    frame    = ModelFrame(df[msng, :], terms, msng)
+    frame    = ModelFrame(df[msng, terms.eterms], terms, msng)
     names    = StatsModels.coefnames(frame)
     mat      = ModelMatrix(frame)
 
