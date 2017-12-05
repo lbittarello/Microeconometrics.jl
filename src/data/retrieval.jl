@@ -17,7 +17,7 @@ function getmatrix(MD::Microdata, args...)
     n = length(args)
 
     for i in args
-        haskey(MD.map, i) || throw(string(x) * " not found")
+        haskey(MD.map, i) || throw(string(i) * " not found")
         iszero(MD.map[i]) && throw(string(i) * " not found")
     end
 
@@ -63,21 +63,21 @@ getnames(MM::TwoStageModel, args...) = getnames(second_stage(MM).sample, args...
 # GET CORRELATION STRUCTURE
 
 getcorr(obj::Microdata)     = obj.corr
-getcorr(obj::ParModel)      = obj.sample.corr
-getcorr(obj::TwoStageModel) = second_stage(obj).sample.corr
+getcorr(obj::ParModel)      = getcorr(obj.sample)
+getcorr(obj::TwoStageModel) = getcorr(second_stage(obj).sample)
 
 #==========================================================================================#
 
 # GET INDICATOR OF MISSING DATA
 
 getmsng(obj::Microdata)     = obj.msng
-getmsng(obj::ParModel)      = obj.sample.msng
-getmsng(obj::TwoStageModel) = second_stage(obj).sample.msng
+getmsng(obj::ParModel)      = getmsng(obj.sample)
+getmsng(obj::TwoStageModel) = getmsng(second_stage(obj).sample)
 
 #==========================================================================================#
 
-# CHECK WEIGHT
+# GET WEIGHT
 
-checkweight(MD::Microdata)     = (haskey(MD.map, :weight) && !iszero(MD.map[:weight]))
-checkweight(MM::Micromodel)    = checkweight(MM.sample)
-checkweight(MM::TwoStageModel) = checkweight(second_stage(MM))
+getweights(MD::Microdata)     = MD.weights
+getweights(MM::Micromodel)    = getweights(MM.sample)
+getweights(MM::TwoStageModel) = getweights(second_stage(MM).sample)

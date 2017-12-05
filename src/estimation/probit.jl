@@ -2,21 +2,21 @@
 
 # TYPE
 
-mutable struct Probit{T} <: MLE{T}
+mutable struct Probit <: MLE
 
-    sample::Microdata{T}
+    sample::Microdata
     β::Vector{Float64}
     V::Matrix{Float64}
 
-    Probit{T}() where {T} = new()
+    Probit() = new()
 end
 
 #==========================================================================================#
 
 # CONSTRUCTOR
 
-function Probit(MD::Microdata{T}) where {T}
-    obj        = Probit{T}()
+function Probit(MD::Microdata)
+    obj        = Probit()
     obj.sample = MD
     return obj
 end
@@ -25,7 +25,7 @@ end
 
 # ESTIMATION
 
-function _fit!(obj::Probit)
+function _fit!(obj::Probit, w::UnitWeights)
 
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
@@ -36,7 +36,7 @@ function _fit!(obj::Probit)
 
     μ  = x * β₀
     r  = similar(y)
-    ω  = similar(μ)
+    v  = similar(μ)
 
     function L(β::Vector)
 
@@ -86,10 +86,10 @@ function _fit!(obj::Probit)
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             ηi   = (iszero(yi) ? (normcdf(μi) - 1.0) : normcdf(μi))
             ηi   = normpdf(μi) / ηi
-            ω[i] = abs2(ηi) + μi * ηi
+            v[i] = abs2(ηi) + μi * ηi
         end
 
-        h[:, :] = crossprod(x, ω)
+        h[:, :] = crossprod(x, v)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!), β₀, Newton())
@@ -101,10 +101,11 @@ function _fit!(obj::Probit)
     end
 end
 
-function _fit!(obj::Probit, w::AbstractVector)
+function _fit!(obj::Probit, w::AbstractWeights)
 
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
+    w  = values(w)
 
     p  = mean(y)
     p  = 1.0 / normpdf(norminvcdf(p))
@@ -112,7 +113,7 @@ function _fit!(obj::Probit, w::AbstractVector)
 
     μ  = x * β₀
     r  = similar(y)
-    ω  = similar(μ)
+    v  = similar(μ)
 
     function L(β::Vector)
 
@@ -162,10 +163,10 @@ function _fit!(obj::Probit, w::AbstractVector)
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             ηi   = (iszero(yi) ? (normcdf(μi) - 1.0) : normcdf(μi))
             ηi   = normpdf(μi) / ηi
-            ω[i] = wi * (abs2(ηi) + μi * ηi)
+            v[i] = wi * (abs2(ηi) + μi * ηi)
         end
 
-        h[:, :] = crossprod(x, ω)
+        h[:, :] = crossprod(x, v)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!), β₀, Newton())
@@ -185,60 +186,46 @@ function score(obj::Probit)
 
     y = getvector(obj, :response)
     x = getmatrix(obj, :control)
-    ω = x * obj.β
+    v = x * obj.β
 
-    @inbounds for (i, (yi, ωi)) in enumerate(zip(y, ω))
-        ηi   = (iszero(yi) ? (normcdf(ωi) - 1.0) : normcdf(ωi))
-        ω[i] = normpdf(ωi) / ηi
+    @inbounds for (i, (yi, vi)) in enumerate(zip(y, v))
+        ηi   = (iszero(yi) ? (normcdf(vi) - 1.0) : normcdf(vi))
+        v[i] = normpdf(vi) / ηi
     end
 
-    return scale!(ω, copy(x))
-end
-
-function score(obj::Probit, w::AbstractVector)
-
-    y = getvector(obj, :response)
-    x = getmatrix(obj, :control)
-    ω = x * obj.β
-
-    @inbounds for (i, (yi, ωi, wi)) in enumerate(zip(y, ω, w))
-        ηi   = (iszero(yi) ? (normcdf(ωi) - 1.0) : normcdf(ωi))
-        ω[i] = wi * normpdf(ωi) / ηi
-    end
-
-    return scale!(ω, copy(x))
+    return scale!(v, copy(x))
 end
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-function jacobian(obj::Probit)
+function jacobian(obj::Probit, w::UnitWeights)
 
     y = getvector(obj, :response)
     x = getmatrix(obj, :control)
-    ω = x * obj.β
+    v = x * obj.β
 
-    @inbounds for (i, (yi, ωi)) in enumerate(zip(y, ω))
-        ηi   = (iszero(yi) ? (normcdf(ωi) - 1.0) : normcdf(ωi))
-        ηi   = normpdf(ωi) / ηi
-        ω[i] = abs2(ηi) + ωi * ηi
+    @inbounds for (i, (yi, vi)) in enumerate(zip(y, v))
+        ηi   = (iszero(yi) ? (normcdf(vi) - 1.0) : normcdf(vi))
+        ηi   = normpdf(vi) / ηi
+        v[i] = abs2(ηi) + vi * ηi
     end
 
-    return crossprod(x, ω, neg = true)
+    return crossprod(x, v, neg = true)
 end
 
-function jacobian(obj::Probit, w::AbstractVector)
+function jacobian(obj::Probit, w::AbstractWeights)
 
     y = getvector(obj, :response)
     x = getmatrix(obj, :control)
-    ω = x * obj.β
+    v = x * obj.β
 
-    @inbounds for (i, (yi, ωi, wi)) in enumerate(zip(y, ω, w))
-        ηi   = (iszero(yi) ? (normcdf(ωi) - 1.0) : normcdf(ωi))
-        ηi   = normpdf(ωi) / ηi
-        ω[i] = wi * (abs2(ηi) + ωi * ηi)
+    @inbounds for (i, (yi, vi, wi)) in enumerate(zip(y, v, values(w)))
+        ηi   = (iszero(yi) ? (normcdf(vi) - 1.0) : normcdf(vi))
+        ηi   = normpdf(vi) / ηi
+        v[i] = wi * (abs2(ηi) + vi * ηi)
     end
 
-    return crossprod(x, ω, neg = true)
+    return crossprod(x, v, neg = true)
 end
 
 #==========================================================================================#
@@ -268,7 +255,7 @@ coefnames(obj::Probit) = getnames(obj, :control)
 
 # LIKELIHOOD FUNCTION
 
-function _loglikelihood(obj::Probit)
+function _loglikelihood(obj::Probit, w::UnitWeights)
 
     y  = getvector(obj, :response)
     μ  = predict(obj)
@@ -281,13 +268,13 @@ function _loglikelihood(obj::Probit)
     return ll
 end
 
-function _loglikelihood(obj::Probit, w::AbstractVector)
+function _loglikelihood(obj::Probit, w::AbstractWeights)
 
     y  = getvector(obj, :response)
     μ  = predict(obj)
     ll = 0.0
 
-    @inbounds for (yi, μi, wi) in zip(y, μ, w)
+    @inbounds for (yi, μi, wi) in zip(y, μ, values(w))
         ll += wi * (iszero(yi) ? normlogccdf(μi) : normlogcdf(μi))
     end
 
@@ -296,27 +283,16 @@ end
 
 # LIKELIHOOD FUNCTION UNDER NULL MODEL
 
-function _nullloglikelihood(obj::Probit)
+function _nullloglikelihood(obj::Probit, w::AbstractWeights)
     y = getvector(obj, :response)
-    μ = mean(y)
-    return length(y) * (μ * log(μ) + (1.0 - μ) * log(1.0 - μ))
-end
-
-function _nullloglikelihood(obj::Probit, w::AbstractVector)
-    y  = getvector(obj, :response)
-    w₀ = view(w, y .== 0.0)
-    w₁ = view(w, y .== 1.0)
-    s₁ = sum(w₁)
-    μ₁ = mean(w₁) / s₁
-    return sum(w₁) * log(μ₁) + sum(w₀) * log(1.0 - μ₁)
+    μ = mean(y, w)
+    return nobs(obj) * (μ * log(μ) + (1.0 - μ) * log(1.0 - μ))
 end
 
 # DEVIANCE
 
-_deviance(obj::Probit)                    = - 2.0 * _loglikelihood(obj)
-_deviance(obj::Probit, w::AbstractVector) = - 2.0 * _loglikelihood(obj, w)
+deviance(obj::Probit) = - 2.0 * _loglikelihood(obj, getweights(obj))
 
 # DEVIANCE UNDER NULL MODEL
 
-_nulldeviance(obj::Probit)                    = - 2.0 * _nullloglikelihood(obj)
-_nulldeviance(obj::Probit, w::AbstractVector) = - 2.0 * _nullloglikelihood(obj, w)
+nulldeviance(obj::Probit) = - 2.0 * _nullloglikelihood(obj, getweights(obj))

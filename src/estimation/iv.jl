@@ -2,23 +2,23 @@
 
 # TYPE
 
-mutable struct IV{T} <: ParModel{T}
+mutable struct IV <: ParModel
 
     method::String
-    sample::Microdata{T}
+    sample::Microdata
     β::Vector{Float64}
     V::Matrix{Float64}
 
-    IV{T}() where {T} = new()
+    IV() = new()
 end
 
 #==========================================================================================#
 
 # CONSTRUCTOR
 
-function IV(MD::Microdata{T}; method::String = "TSLS") where {T}
+function IV(MD::Microdata; method::String = "TSLS")
 
-    obj        = IV{T}()
+    obj        = IV()
     obj.sample = MD
 
     if length(MD.map[:treatment]) == length(MD.map[:instrument])
@@ -48,14 +48,8 @@ function fit(::Type{IV}, MD::Microdata; novar::Bool = false, method::String = "T
         obj = IV(MD, method = method)
     end
 
-    if checkweight(MD)
-        w = getvector(MD, :weight)
-        _fit!(obj, w)
-        novar || _vcov!(obj, w)
-    else
-        _fit!(obj)
-        novar || _vcov!(obj)
-    end
+    _fit!(obj, getweights(obj))
+    novar || _vcov!(obj, getcorr(obj), getweights(obj))
 
     return obj
 end
@@ -64,7 +58,7 @@ end
 
 # ESTIMATION
 
-function _fit!(obj::IV)
+function _fit!(obj::IV, w::UnitWeights)
 
     y = getvector(obj, :response)
     x = getmatrix(obj, :treatment, :control)
@@ -79,12 +73,12 @@ function _fit!(obj::IV)
     end
 end
 
-function _fit!(obj::IV, w::AbstractVector)
+function _fit!(obj::IV, w::AbstractWeights)
 
     y = getvector(obj, :response)
     x = getmatrix(obj, :treatment, :control)
     z = getmatrix(obj, :instrument, :control)
-    v = scale!(w, copy(z))
+    v = scale!(values(w), copy(z))
 
     if obj.method == "Method of moments"
         obj.β = (v' * x) \ (v' * y)
@@ -113,24 +107,9 @@ function score(obj::IV)
     end
 end
 
-function score(obj::IV, w::AbstractVector)
-
-    z = getmatrix(obj, :instrument, :control)
-    v = scale!(w, copy(z))
-    s = scale!(residuals(obj), copy(v))
-
-    if obj.method == "Method of moments"
-        return s
-    elseif obj.method == "TSLS"
-        x = getmatrix(obj, :treatment, :control)
-        γ = (v' * z) \ (v' * x)
-        return s * γ
-    end
-end
-
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-function jacobian(obj::IV)
+function jacobian(obj::IV, w::UnitWeights)
 
     x = getmatrix(obj, :treatment, :control)
     z = getmatrix(obj, :instrument, :control)
@@ -144,11 +123,11 @@ function jacobian(obj::IV)
     end
 end
 
-function jacobian(obj::IV, w::AbstractVector)
+function jacobian(obj::IV, w::AbstractWeights)
 
     x = getmatrix(obj, :treatment, :control)
     z = getmatrix(obj, :instrument, :control)
-    v = scale!(w, copy(z))
+    v = scale!(values(w), copy(z))
 
     if obj.method == "Method of moments"
         return scale!(- 1.0, v' * x)
@@ -178,6 +157,25 @@ jacobexp(obj::IV) = getmatrix(obj, :treatment, :control)
 # UTILITIES
 
 coefnames(obj::IV) = getnames(obj, :treatment, :control)
+adjr2(obj::IV)     = 1.0 - (1.0 - r2(obj)) * (nobs(obj) - 1) / dof_residual(obj)
+r2(obj::IV)        = _r2(obj, getweights(obj))
+
+function _r2(obj::IV, w::UnitWeights)
+    y   = model_response(obj)
+    ŷ   = fitted(obj)
+    rss = sum(abs2, y .- ŷ)
+    tss = sum(abs2, y .- mean(y))
+    return 1.0 - rss / tss
+end
+
+function _r2(obj::IV, w::AbstractWeights)
+    y   = model_response(obj)
+    μ   = mean(y, w)
+    ŷ   = fitted(obj)
+    rss = sum(abs2.(y .- ŷ), w)
+    tss = sum(abs2.(y .- μ), w)
+    return 1.0 - rss / tss
+end
 
 # FIRST-STAGE (OLS, OUTCOME IS TREATMENT AND INSTRUMENTS ENTER AS CONTROLS)
 

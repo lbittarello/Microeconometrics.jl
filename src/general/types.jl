@@ -1,10 +1,10 @@
-abstract type Micromodel{T <: CorrStructure} <: RegressionModel end
+abstract type Micromodel <: RegressionModel end
 
-abstract type ParModel{T} <: Micromodel{T} end
+abstract type ParModel <: Micromodel end
 
-abstract type MLE{T} <: ParModel{T} end
+abstract type MLE <: ParModel end
 
-abstract type TwoStageModel{T} <: Micromodel{T} end
+abstract type TwoStageModel <: Micromodel end
 
 mutable struct ParObject
 
@@ -15,4 +15,4 @@ mutable struct ParObject
     ParObject() = new()
 end
 
-ParOr2Stage{T} = Union{ParModel{T}, TwoStageModel{T} where T}
+const ParOr2Stage = Union{ParModel, TwoStageModel}

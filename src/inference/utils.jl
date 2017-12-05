@@ -1,5 +1,35 @@
 #==========================================================================================#
 
+# COPY
+
+copy(corr::Homoscedastic)   = Homoscedastic(corr.adj, corr.method)
+copy(corr::Heteroscedastic) = Heteroscedastic(corr.adj)
+
+function copy(corr::CrossCorrelated)
+    CrossCorrelated(corr.adj, copy(corr.msng), copy(corr.mat))
+end
+
+function copy(corr::Clustered)
+    Clustered(corr.adj, copy(corr.msng), copy(corr.mat), copy(corr.ic), copy(corr.nc))
+end
+
+# EQUALITY
+
+function Base.isequal(corr₁::C, corr₂::C) where {C <: CorrStructure}
+
+    output = true
+
+    for k in fieldnames(corr₁)
+        output *= isequal(getfield(corr₁, k), getfield(corr₂, k))
+    end
+
+    return output
+end
+
+Base.isequal(corr₁::CorrStructure, corr₂::CorrStructure) = false
+
+#==========================================================================================#
+
 # DISTANCE ON THE GLOBE
 
 havd(x::Float64) = 0.5 * (1.0 - cosd(x))

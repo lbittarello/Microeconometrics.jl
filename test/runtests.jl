@@ -27,7 +27,11 @@ levels!(dst[:rank], [1; 2; 3; 4])
 
 # OLS (HOMOSCEDASTIC AND HETEROSCEDASTIC)
 
-dta = Microdata(dst, Homoscedastic(), response = "admit", control = "gre + gpa + rank + 1")
+dta = Microdata(dst,
+        vcov     = Homoscedastic(),
+        response = "admit",
+        control  = "gre + gpa + rank + 1"
+    )
 
 @testset "OLS" begin
 

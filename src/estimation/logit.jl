@@ -2,21 +2,21 @@
 
 # TYPE
 
-mutable struct Logit{T} <: MLE{T}
+mutable struct Logit <: MLE
 
-    sample::Microdata{T}
+    sample::Microdata
     β::Vector{Float64}
     V::Matrix{Float64}
 
-    Logit{T}() where {T} = new()
+    Logit() = new()
 end
 
 #==========================================================================================#
 
 # CONSTRUCTOR
 
-function Logit(MD::Microdata{T}) where {T}
-    obj        = Logit{T}()
+function Logit(MD::Microdata)
+    obj        = Logit()
     obj.sample = MD
     return obj
 end
@@ -25,7 +25,7 @@ end
 
 # ESTIMATION
 
-function _fit!(obj::Logit)
+function _fit!(obj::Logit, w::UnitWeights)
 
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
@@ -36,7 +36,7 @@ function _fit!(obj::Logit)
 
     μ  = x * β₀
     r  = similar(y)
-    ω  = similar(μ)
+    v  = similar(μ)
 
     function L(β::Vector)
 
@@ -84,10 +84,10 @@ function _fit!(obj::Logit)
 
         @inbounds for (i, μi) in enumerate(μ)
             ηi   = logistic(μi)
-            ω[i] = ηi * (1.0 - ηi)
+            v[i] = ηi * (1.0 - ηi)
         end
 
-        h[:, :] = crossprod(x, ω)
+        h[:, :] = crossprod(x, v)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!), β₀, Newton())
@@ -99,10 +99,11 @@ function _fit!(obj::Logit)
     end
 end
 
-function _fit!(obj::Logit, w::AbstractVector)
+function _fit!(obj::Logit, w::AbstractWeights)
 
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
+    w  = values(w)
 
     p  = mean(y)
     p  = 1.0 / (p * (1.0 - p))
@@ -110,7 +111,7 @@ function _fit!(obj::Logit, w::AbstractVector)
 
     μ  = x * β₀
     r  = similar(y)
-    ω  = similar(μ)
+    v  = similar(μ)
 
     function L(β::Vector)
 
@@ -157,10 +158,10 @@ function _fit!(obj::Logit, w::AbstractVector)
 
         @inbounds for (i, (μi, wi)) in enumerate(zip(μ, w))
             ηi   = logistic(μi)
-            ω[i] = wi * ηi * (1.0 - ηi)
+            v[i] = wi * ηi * (1.0 - ηi)
         end
 
-        h[:, :] = crossprod(x, ω)
+        h[:, :] = crossprod(x, v)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!), β₀, Newton())
@@ -178,36 +179,32 @@ end
 
 score(obj::Logit) = scale!(residuals(obj), copy(getmatrix(obj, :control)))
 
-function score(obj::Logit, w::AbstractVector)
-    return scale!(w, scale!(residuals(obj), copy(getmatrix(obj, :control))))
-end
-
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-function jacobian(obj::Logit)
+function jacobian(obj::Logit, w::UnitWeights)
 
-    x  = getmatrix(obj, :control)
-    ω  = x * obj.β
+    x = getmatrix(obj, :control)
+    v = x * obj.β
 
-    @inbounds for (i, ωi) in enumerate(ω)
-        ψ     = logistic(ωi)
-        ω[i] .= ψ * (1.0 - ψ)
+    @inbounds for (i, vi) in enumerate(v)
+        λ     = logistic(vi)
+        v[i] .= λ * (1.0 - λ)
     end
 
-    return crossprod(x, ω, neg = true)
+    return crossprod(x, v, neg = true)
 end
 
-function jacobian(obj::Logit, w::AbstractVector)
+function jacobian(obj::Logit, w::AbstractWeights)
 
-    x  = getmatrix(obj, :control)
-    ω  = x * obj.β
+    x = getmatrix(obj, :control)
+    v = x * obj.β
 
-    @inbounds for (i, (ωi, wi)) in enumerate(zip(ω, w))
-        ψ     = logistic(ωi)
-        ω[i] .= wi * ψ * (1.0 - ψ)
+    @inbounds for (i, (vi, wi)) in enumerate(zip(v, values(w)))
+        λ     = logistic(vi)
+        v[i] .= wi * λ * (1.0 - λ)
     end
 
-    return crossprod(x, ω, neg = true)
+    return crossprod(x, v, neg = true)
 end
 
 #==========================================================================================#
@@ -228,8 +225,8 @@ function jacobexp(obj::Logit)
     η = x * obj.β
 
     @inbounds for (i, ηi) in enumerate(η)
-        ψ     = logistic(ηi)
-        η[i] .= ψ * (1.0 - ψ)
+        λ     = logistic(ηi)
+        η[i] .= λ * (1.0 - λ)
     end
 
     return scale!(η, copy(x))
@@ -243,7 +240,7 @@ coefnames(obj::Logit) = getnames(obj, :control)
 
 # LIKELIHOOD FUNCTION
 
-function _loglikelihood(obj::Logit)
+function _loglikelihood(obj::Logit, w::UnitWeights)
 
     y  = getvector(obj, :response)
     μ  = predict(obj)
@@ -256,13 +253,13 @@ function _loglikelihood(obj::Logit)
     return ll
 end
 
-function _loglikelihood(obj::Logit, w::AbstractVector)
+function _loglikelihood(obj::Logit, w::AbstractWeights)
 
     y  = getvector(obj, :response)
     μ  = predict(obj)
     ll = 0.0
 
-    for (yi, μi, wi) in zip(y, μ, w)
+    for (yi, μi, wi) in zip(y, μ, values(w))
         ll -= wi * (iszero(yi) ? log1pexp(μi) : log1pexp(- μi))
     end
 
@@ -271,27 +268,16 @@ end
 
 # LIKELIHOOD FUNCTION UNDER NULL MODEL
 
-function _nullloglikelihood(obj::Logit)
+function _nullloglikelihood(obj::Logit, w::AbstractWeights)
     y = getvector(obj, :response)
-    μ = mean(y)
-    return length(y) * (μ * log(μ) + (1.0 - μ) * log(1.0 - μ))
-end
-
-function _nullloglikelihood(obj::Logit, w::AbstractVector)
-    y  = getvector(obj, :response)
-    w₀ = view(w, y .== 0.0)
-    w₁ = view(w, y .== 1.0)
-    s₁ = sum(w₁)
-    μ₁ = mean(w₁) / s₁
-    return sum(w₁) * log(μ₁) + sum(w₀) * log(1.0 - μ₁)
+    μ = mean(y, w)
+    return nobs(obj) * (μ * log(μ) + (1.0 - μ) * log(1.0 - μ))
 end
 
 # DEVIANCE
 
-_deviance(obj::Logit)                        = - 2.0 * _loglikelihood(obj)
-_deviance(obj::Logit, w::AbstractVector)     = - 2.0 * _loglikelihood(obj, w)
+deviance(obj::Logit) = - 2.0 * _loglikelihood(obj, getweights(obj))
 
 # DEVIANCE UNDER NULL MODEL
 
-_nulldeviance(obj::Logit)                    = - 2.0 * _nullloglikelihood(obj)
-_nulldeviance(obj::Logit, w::AbstractVector) = - 2.0 * _nullloglikelihood(obj, w)
+nulldeviance(obj::Logit) = - 2.0 * _nullloglikelihood(obj, getweights(obj))

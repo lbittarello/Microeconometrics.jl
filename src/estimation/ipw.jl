@@ -2,13 +2,14 @@
 
 # TYPE
 
-mutable struct IPW{T} <: TwoStageModel{T}
+mutable struct IPW <: TwoStageModel
 
-    first_stage::Micromodel{T}
-    second_stage::OLS{T}
-    mat::Matrix{Float64}
+    first_stage::Micromodel
+    second_stage::OLS
+    pscore::Vector{Float64}
+    weights::PWeights
 
-    IPW{T}() where {T} = new()
+    IPW() = new()
 end
 
 #==========================================================================================#
@@ -17,7 +18,7 @@ end
 
 function first_stage(
         ::Type{IPW}, ::Type{M}, MD::Microdata; kwargs...
-    ) where {M <: Micromodel{T} where T}
+    ) where {M <: Micromodel}
 
     FSD                = Microdata(MD)
     FSD.map[:response] = FSD.map[:treatment]
@@ -36,7 +37,7 @@ function fit(
         MD::Microdata;
         novar::Bool = false,
         kwargs...
-    ) where {M <: Micromodel{T} where T}
+    ) where {M <: Micromodel}
 
     m = first_stage(IPW, M, MD, novar = novar)
     return fit(IPW, m, MD; novar = novar, kwargs...)
@@ -44,41 +45,35 @@ end
 
 function fit(
         ::Type{IPW},
-        MM::Micromodel{T},
-        MD::Microdata{T};
+        MM::Micromodel,
+        MD::Microdata;
         novar::Bool = false,
         trim::AbstractFloat = 0.0,
         kwargs...
-    ) where {T}
-
-    SSD               = Microdata(MD)
-    SSD.map[:control] = vcat(SSD.map[:treatment], 1)
-    obj               = IPW{T}()
-    obj.first_stage   = MM
-    obj.second_stage  = OLS(SSD)
+    )
 
     invtrim = one(trim) - trim
-    t       = getvector(SSD, :treatment)
+    w       = getweights(MD)
+    d       = getvector(MD, :treatment)
     π       = fitted(MM)
+    v       = fill(0.0, size(MD, 1))
 
-    obj.mat       = Matrix{Float64}(nobs(SSD), 2)
-    obj.mat[:, 1] = π
-    obj.mat[:, 2] = 0.0
-
-    @inbounds for (i, (ti, πi)) in enumerate(zip(t, π))
+    @inbounds for (i, (di, πi)) in enumerate(zip(d, π))
         if trim <= πi <= invtrim
-            obj.mat[i, 2] = (iszero(ti) ? (1.0 / (1.0 - πi)) : (1.0 / πi))
+            v[i] = (iszero(di) ? (1.0 / (1.0 - πi)) : (1.0 / πi))
         end
     end
 
-    if checkweight(SSD)
-        w = getvector(SSD, :weight)
-        _fit!(second_stage(obj), w .* obj.mat[:, 2])
-        novar || _vcov!(obj, w)
-    else
-        _fit!(second_stage(obj), obj.mat[:, 2])
-        novar || _vcov!(obj)
-    end
+    SSD               = Microdata(MD)
+    SSD.map[:control] = vcat(SSD.map[:treatment], 1)
+    obj               = IPW()
+    obj.first_stage   = MM
+    obj.second_stage  = OLS(SSD)
+    obj.pscore        = π
+    obj.weights       = pweights(v)
+
+    _fit!(second_stage(obj), reweight(w, obj.weights))
+    novar || _vcov!(obj, getcorr(obj), w)
 
     return obj
 end
@@ -87,26 +82,28 @@ end
 
 # SCORE (MOMENT CONDITIONS)
 
-score(obj::IPW)                    = score(second_stage(obj), obj.mat[:, 2])
-score(obj::IPW, w::AbstractVector) = score(second_stage(obj), w .* obj.mat[:, 2])
+score(obj::IPW) = scale!(obj.weights, score(second_stage(obj)))
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-jacobian(obj::IPW)                    = jacobian(second_stage(obj), obj.mat[:, 2])
-jacobian(obj::IPW, w::AbstractVector) = jacobian(second_stage(obj), w .* obj.mat[:, 2])
+jacobian(obj::IPW, w::UnitWeights) = jacobian(second_stage(obj), obj.weights)
+
+function jacobian(obj::IPW, w::AbstractWeights)
+    return jacobian(second_stage(obj), reweight(w, obj.weights))
+end
 
 # EXPECTED JACOBIAN OF SCORE W.R.T. FIRST-STAGE PARAMETERS × NUMBER OF OBSERVATIONS
 
-function crossjacobian(obj::IPW)
+function crossjacobian(obj::IPW, w::UnitWeights)
 
-    t = getvector(obj, :treatment)
-    π = obj.mat[:, 1]
-    v = obj.mat[:, 2]
-    D = fill(0.0, nobs(obj))
+    d = getvector(obj, :treatment)
+    π = obj.pscore
+    v = obj.weights
+    D = fill(0.0, length(v))
 
-    @inbounds for (i, (ti, πi, vi)) in enumerate(zip(t, π, v))
+    @inbounds for (i, (di, πi, vi)) in enumerate(zip(d, π, v))
         if !iszero(vi)
-            D[i] = (iszero(ti) ? (1.0 / abs2(1.0 - πi)) : (- 1.0 / abs2(πi)))
+            D[i] = (iszero(di) ? (1.0 / abs2(1.0 - πi)) : (- 1.0 / abs2(πi)))
         end
     end
 
@@ -116,16 +113,16 @@ function crossjacobian(obj::IPW)
     return g₂' * scale!(D, g₁)
 end
 
-function crossjacobian(obj::IPW, w::AbstractVector)
+function crossjacobian(obj::IPW, w::AbstractWeights)
 
-    t = getvector(obj, :treatment)
-    π = obj.mat[:, 1]
-    v = obj.mat[:, 2]
-    D = fill(0.0, nobs(obj))
+    d = getvector(obj, :treatment)
+    π = obj.pscore
+    v = obj.weights
+    D = fill(0.0, length(v))
 
-    @inbounds for (i, (ti, πi, vi, wi)) in enumerate(zip(t, π, v, w))
+    @inbounds for (i, (di, πi, vi, wi)) in enumerate(zip(d, π, v, values(w)))
         if !iszero(vi)
-            D[i] = (iszero(ti) ? (wi / abs2(1.0 - πi)) : (- wi / abs2(πi)))
+            D[i] = (iszero(di) ? (wi / abs2(1.0 - πi)) : (- wi / abs2(πi)))
         end
     end
 

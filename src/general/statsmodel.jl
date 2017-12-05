@@ -6,14 +6,8 @@ function fit(::Type{M}, MD::Microdata; novar::Bool = false, kwargs...) where {M 
 
     obj = M(MD; kwargs...)
 
-    if checkweight(MD)
-        w = getvector(MD, :weight)
-        _fit!(obj, w)
-        novar || _vcov!(obj, w)
-    else
-        _fit!(obj)
-        novar || _vcov!(obj)
-    end
+    _fit!(obj, MD.weights)
+    novar || _vcov!(obj, getcorr(obj), MD.weights)
 
     return obj
 end
@@ -45,71 +39,24 @@ end
 
 # SUMMARY STATISTICS
 
-nobs(obj::Microdata)           = size(obj.mat, 1)
-nobs(obj::Micromodel)          = nobs(obj.sample)
-nobs(obj::TwoStageModel)       = nobs(second_stage(obj))
+nobs(obj::Microdata)     = sum(obj.weights)
+nobs(obj::Micromodel)    = nobs(obj.sample)
+nobs(obj::TwoStageModel) = nobs(second_stage(obj))
+
 dof(obj::ParModel)             = length(coef(obj))
 dof(obj::TwoStageModel)        = dof(second_stage(obj))
 dof_residual(obj::ParOr2Stage) = nobs(obj) - dof(obj)
 
-adjr2(obj::ParOr2Stage) = 1.0 - ((nobs(obj) - 1) / dof_residual(obj)) * (1.0 - r2(obj))
-r2(obj::Micromodel)     = (checkweight(obj) ? _r2(obj, getvector(obj, :weight)) : _r2(obj))
-
-function _r2(obj::Micromodel)
-    y   = model_response(obj)
-    fit = fitted(obj)
-    rss = sum(abs2, y .- fit)
-    tss = sum(abs2, y .- mean(y))
-    return 1.0 - rss / tss
-end
-
-function _r2(obj::Micromodel, w::AbstractVector)
-    y   = model_response(obj)
-    μ   = sum(w .* y) / sum(w)
-    fit = fitted(obj)
-    rss = sum(w .* abs2.(y .- fit))
-    tss = sum(w .* abs2.(y .- μ))
-    return 1.0 - rss / tss
-end
-
-function loglikelihood(obj::MLE)
-    if checkweight(obj)
-        _loglikelihood(obj, getvector(obj, :weight))
-    else
-        _loglikelihood(obj)
-    end
-end
-
-function nullloglikelihood(obj::MLE)
-    if checkweight(obj)
-        _nullloglikelihood(obj, getvector(obj, :weight))
-    else
-        _nullloglikelihood(obj)
-    end
-end
-
-function deviance(obj::MLE)
-    if checkweight(obj)
-        _deviance(obj, getvector(obj, :weight))
-    else
-        _deviance(obj)
-    end
-end
-
-function nulldeviance(obj::MLE)
-    if checkweight(obj)
-        _nulldeviance(obj, getvector(obj, :weight))
-    else
-        _nulldeviance(obj)
-    end
-end
+loglikelihood(obj::MLE)     = _loglikelihood(obj, getweights(obj))
+nullloglikelihood(obj::MLE) = _nullloglikelihood(obj::MLE, getweights(obj))
+deviance(obj::MLE)          = _deviance(obj::MLE, getweights(obj))
+nulldeviance(obj::MLE)      = _nulldeviance(obj::MLE, getweights(obj))
 
 #==========================================================================================#
 
 # PREDICTION
 
-model_response(obj::Micromodel)    = getvector(obj, :response)
-model_response(obj::TwoStageModel) = getvector(second_stage(obj), :response)
+model_response(obj::Micromodel) = getvector(obj, :response)
 
 function residuals(obj::Micromodel)
     r  = fitted(obj)
