@@ -75,13 +75,13 @@ end
 # CROSS CORRELATED: GENERAL CONSTRUCTOR
 
 function CrossCorrelated(variant::String, args...; kwargs...)
-    if variant == "twoway clustering"
+    if variant == "Two-way clustering"
         return cc_twowayclustering(args...; kwargs...)
-    elseif variant == "time"
+    elseif variant == "Time"
         return cc_time(args...; kwargs...)
-    elseif variant == "space"
+    elseif variant == "Space"
         return cc_space(args...; kwargs...)
-    elseif variant == "time and space"
+    elseif variant == "Time and space"
         return cc_timespace(args...; kwargs...)
     else
         throw("unknown variant")
