@@ -11,7 +11,7 @@ Microeconometric estimation in Julia.
 **Documentation**: [![][docs-stable-img]][docs-stable-url] [![][docs-latest-img]][docs-latest-url]
 
 [docs-latest-img]: https://img.shields.io/badge/docs-latest-blue.svg
-[docs-latest-url]: http://JuliaData.github.io/DataFrames.jl/latest/
+[docs-latest-url]: http://lbittarello.github.io/Microeconometris.jl/latest/
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[docs-stable-url]: http://JuliaData.github.io/DataFrames.jl/stable/
+[docs-stable-url]: http://lbittarello.github.io/Microeconometris.jl/stable/
