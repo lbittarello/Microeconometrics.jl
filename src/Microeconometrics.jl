@@ -55,7 +55,7 @@ export
         Parzen, Gallant,
     Microdata, Microdata!,
     OLS, IPW, Logit, Probit, IV, Abadie, FrölichMelly, Tan,
-    fit, first_stage, second_stage, reduced_form,
+    fit, first_stage, second_stage,
     coef, confint, pval, stderr, tstat, vcov, hausman_1s, hausman_2s,
     loglikelihood, nullloglikelihood, deviance, nulldeviance,
     aic, aicc, bic, dof, dof_residual, nobs, r2, r², adjr2, adjr²,

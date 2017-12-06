@@ -44,6 +44,19 @@ function fit(::Type{IV}, MD::Microdata; novar::Bool = false, method::String = "T
         pop!(FSD.map, :treatment)
         pop!(FSD.map, :instrument)
         obj = OLS(FSD)
+    elseif method == "Reduced form"
+        FSD               = Microdata(MD)
+        FSD.map[:control] = vcat(FSD.map[:instrument], FSD.map[:control])
+        pop!(FSD.map, :treatment)
+        pop!(FSD.map, :instrument)
+        obj = OLS(FSD)
+    elseif method == "First stage"
+        FSD                = Microdata(MD)
+        FSD.map[:response] = FSD.map[:treatment]
+        FSD.map[:control]  = vcat(FSD.map[:instrument], FSD.map[:control])
+        pop!(FSD.map, :treatment)
+        pop!(FSD.map, :instrument)
+        obj = OLS(FSD)
     else
         obj = IV(MD, method = method)
     end
@@ -176,28 +189,3 @@ function _r2(obj::IV, w::AbstractWeights)
     tss = sum(abs2.(y .- μ), w)
     return 1.0 - rss / tss
 end
-
-# FIRST-STAGE (OLS, OUTCOME IS TREATMENT AND INSTRUMENTS ENTER AS CONTROLS)
-
-function first_stage(::Type{IV}, MD::Microdata)
-    FSD                = Microdata(MD)
-    FSD.map[:response] = FSD.map[:treatment]
-    FSD.map[:control]  = vcat(FSD.map[:instrument], FSD.map[:control])
-    pop!(FSD.map, :treatment)
-    pop!(FSD.map, :instrument)
-    return fit(OLS, FSD)
-end
-
-first_stage(MM::IV) = first_stage(IV, MM.sample)
-
-# REDUCED FORM (OLS, INSTRUMENTS REPLACE TREATMENTS)
-
-function reduced_form(::Type{IV}, MD::Microdata)
-    RF               = Microdata(MD)
-    RF.map[:control] = vcat(FSD.map[:instrument], FSD.map[:control])
-    pop!(RF.map, :treatment)
-    pop!(RF.map, :instrument)
-    return fit(OLS, RF)
-end
-
-reduced_form(MM::IV) = reduced_form(IV, MM.sample)
