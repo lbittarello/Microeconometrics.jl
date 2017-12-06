@@ -39,8 +39,8 @@ function fit(
         kwargs...
     ) where {M <: Micromodel}
 
-    m = first_stage(IPW, M, MD, novar = novar)
-    return fit(IPW, m, MD; novar = novar, kwargs...)
+    m = first_stage(IPW, M, MD; novar = novar, kwargs...)
+    return fit(IPW, m, MD; novar = novar)
 end
 
 function fit(
@@ -49,7 +49,6 @@ function fit(
         MD::Microdata;
         novar::Bool = false,
         trim::AbstractFloat = 0.0,
-        kwargs...
     )
 
     invtrim = one(trim) - trim
