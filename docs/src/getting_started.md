@@ -49,9 +49,9 @@ julia> corr = Homoscedastic();
 We next specify the model by constructing a [`Microdata`](#microdata):
 ```julia
 julia> dta = Microdata(dst,
-    vcov = corr,
-    response = "admit",
-    control = "gre + gpa + rank + 1");
+                vcov = corr,
+                response = "admit",
+                control = "gre + gpa + rank + 1");
 ```
 
 We can finally fit the model and visualize the results:

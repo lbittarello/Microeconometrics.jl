@@ -10,13 +10,12 @@ It determines the calculation of standard errors.
 
 All constructors accept the Boolean keyword `adj`, which defaults to `true`.
 If `true`, a finite-sample adjustment is applied to the variance matrix.
-The adjustment factor is  / (n - 1),
-where n is the number of clusters for clustered data
+The adjustment factor is n / (n - 1), where n is the number of clusters for clustered data
 and the number of observations otherwise.
 
 Four subtypes are currently available:
 
-### Homoscedastic
+### `Homoscedastic`
 
 ```julia
 Homoscedastic(method::String = "OIM"; adj::Bool = true)
@@ -29,7 +28,7 @@ whereas `"OPG"` uses the outer product of the gradient.
 (They are equivalent for OLS.)
 Only OLS and maximum-likelihood estimators support homoscedastic errors.
 
-### Heteroscedastic
+### `Heteroscedastic`
 
 ```julia
 Heteroscedastic(; adj::Bool = true)
@@ -38,7 +37,7 @@ Heteroscedastic(; adj::Bool = true)
 Observations are independent, but they may differ in distribution.
 This structure leads to sandwich covariance matrices (a.k.a. Huber-Eicker-White).
 
-### Clustered
+### `Clustered`
 
 ```julia
 Clustered(DF::Microdata, cluster::Symbol; adj::Bool = true)
@@ -48,7 +47,7 @@ Observations are independent across clusters,
 but their joint distribution within clusters is arbitrary.
 `cluster` specifies the column of `DF` to cluster on.
 
-### CrossCorrelated
+### `CrossCorrelated`
 
 This structure accommodates other correlation structures.
 The first argument determines the precise pattern.
@@ -61,8 +60,16 @@ CrossCorrelated("Two-way clustering", DF::DataFrame, cluster₁::Symbol, cluster
 Observations may be arbitrarily correlated if they share any cluster.
 
 ```julia
-CrossCorrelated("Time", DF::DataFrame, time::Symbol, bandwidth::Real; adj::Bool = true)
-CrossCorrelated("Time", DF::DataFrame, time::Symbol, kernel::function; adj::Bool = true)
+CrossCorrelated("Time",
+    DF::DataFrame,
+    time::Symbol,
+    bandwidth::Real;
+    adj::Bool = true)
+CrossCorrelated("Time",
+    DF::DataFrame,
+    time::Symbol,
+    kernel::function;
+    adj::Bool = true)
 ```
 
 The maximum possible correlation between two observations declines
@@ -79,8 +86,18 @@ and Tukey-Hanning (`tukeyhanning`).
 See [Andrews (1991)](http://jstor.org/stable/2938229) for formulae.
 
 ```julia
-CrossCorrelated("Space", DF::DataFrame, latitude::Symbol, longitude::Symbol, bandwidth::Real; adj::Bool = true)
-CrossCorrelated("Space", DF::DataFrame, latitude::Symbol, longitude::Symbol, kernel::function; adj::Bool = true)
+CrossCorrelated("Space",
+    DF::DataFrame,
+    latitude::Symbol,
+    longitude::Symbol,
+    bandwidth::Real;
+    adj::Bool = true)
+CrossCorrelated("Space",
+    DF::DataFrame,
+    latitude::Symbol,
+    longitude::Symbol,
+    kernel::function;
+    adj::Bool = true)
 ```
 
 The maximum possible correlation between two observations declines
