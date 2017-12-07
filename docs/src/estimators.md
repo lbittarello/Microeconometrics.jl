@@ -1,12 +1,11 @@
 # Estimators
 
 The function `fit` estimates models. It returns a model structure, which contains
-the estimation sample, coefficients and their variance matrix (inter alia).
+the estimation sample, coefficients and their covariance matrix (inter alia).
 For example, the output of `fit(OLS, MD)` has type `OLS`.
-Some have additional fields: for instance, the structures of
-two-stage models carry estimates from the first stage.
-These structure are instances of broader abstract types, such as
-`MLE` or `TwoStageModel`, which belong in turn to the supertype `Micromodel`.
+Some have additional fields: e.g., two-stage models carry estimates from the first stage.
+These structures are instances of broader abstract types, such as
+`MLE` or `TwoStageModel`, which belong to the supertype `Micromodel` in their turn.
 
 If you only need coefficients, set `novar = true`.
 
@@ -19,7 +18,7 @@ fit(OLS, MD::Microdata; novar::Bool = false)
 ```
 
 The `Microdata` must contain: `response` and `control`.
-`OLS` is a subtype of `ParModel`.
+`OLS` is a subtype of `ParModel`. It supports `predict` and `fitted`.
 
 ### Binary choice
 
@@ -28,14 +27,14 @@ fit(Logit, MD::Microdata; novar::Bool = false)
 ```
 
 The `Microdata` must contain: `response` and `control`.
-`Logit` is a subtype of `MLE` and `ParModel`.
+`Logit` is a subtype of `MLE` and `ParModel`. It supports `predict` and `fitted`.
 
 ```julia
 fit(Probit, MD::Microdata; novar::Bool = false)
 ```
 
 The `Microdata` must contain: `response` and `control`.
-`Probit` is a subtype of `MLE` and `ParModel`.
+`Probit` is a subtype of `MLE` and `ParModel`. It supports `predict` and `fitted`.
 
 ### Treatment evaluation
 

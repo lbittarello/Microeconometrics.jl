@@ -6,9 +6,11 @@ This package supports the
 [methods for regression models](http://juliastats.github.io/StatsBase.jl/stable/statmodels.html)
 of *StatsBase*.
 
-These following functions are available for all parametric models: `nobs`, `dof`,
-`dof_residual`, `model_response`, `coef`, `stderr`, `vcov`, `confint`, `coefnames`
-and `coeftable`. Three keywords customize the behavior of `coeftable`:
+The following functions are available for all models: `nobs` and `model_response`.
+
+The following functions are available for parametric models: , `dof`, `dof_residual`,
+`coef`, `stderr`, `vcov`, `confint`, `coefnames` and `coeftable`.
+Three keywords customize the behavior of `coeftable`:
 `verbose` (Boolean: suppresses printing),
 `digits` (integer: controls rounding) and
 `level` (float: controls the level of the confidence interval – 0.0 for none).
@@ -16,14 +18,17 @@ Note that all methods refer to the second stage of two-stage models.
 
 The following functions are available for maximum-likelihood estimators:
 `aic`, `aicc`, `bic`, `deviance`, `nulldeviance`, `loglikelihood`, `nullloglikelihood`,
-`r2` and `adjr2`. Both R² functions are also available for OLS and IV.
+`r2` and `adjr2`. There are also R² methods for OLS and IV.
 
-Some models support `predict`, `fitted` and `residuals`. `predict` estimates the index
-of single-index models. `fitted` estimates the conditional outcome expectation.
-For example, `predict` estimates the Xβ of a logit model, whereas
-`fitted` estimates logistic(Xβ).
+Some models support `predict` and `fitted` (see the documentation).
+`predict` estimates the index of single-index models.
+`fitted` estimates the conditional outcome expectation.
+For example, `predict` estimates the Xβ of a logit model,
+whereas `fitted` estimates logistic(Xβ).
+Support for `residuals` depends on the availability of `fitted`.
+Out-of-sample forecast is planned for a future release.
 
-We also implement additional methods:
+## Additional methods
 
 - `tstat`: the *t*-statistic (i.e., the ratio of coefficients to standard error);
 - `pval`: the *p*-value of a two-sided significance test;
@@ -31,8 +36,8 @@ We also implement additional methods:
 
 ## Hausman test
 
-These function computes the difference in coefficients between two parametric models.
-They return a `ParObject`, which contains the vector of differences, their variance matrix
+This function computes the difference in coefficients between two parametric models.
+They return a `ParObject`, which contains the vector of differences, their covariance matrix
 and labels. Our implementation is based on the GMM representation of the joint estimation
 problem (see Subsection 8.3.2 of Cameron and Trivedi (2005)).
 
@@ -53,7 +58,7 @@ hausman_2s(
     names::Vector{String} = intersect(coefnames(obj₁), coefnames(obj₂)))
 ```
 
-This function is appropriate when both `model₁` and `model₂` were based on independent samples.
+This function is appropriate when `model₁` and `model₂` were based on independent samples.
 For example, the samples might consist of independent observations with no overlap.
 
 ```julia
@@ -64,9 +69,9 @@ hausman_2s(
     names::Vector{String} = intersect(coefnames(obj₁), coefnames(obj₂)))
 ```
 
-This function is appropriate when both `model₁` and `model₂` were based on dependent samples.
+This function is appropriate when `model₁` and `model₂` were based on dependent samples.
 For example, the samples might consist of independent observations with some overlap
 or clustered observations with common clusters.
 The correlation structure `corr` must specify the correlation between all observations of
-both estimation samples. For example, you could precompute `corr` for the entire dataset
-and construct the two estimation samples via the `subset` keyword to `Microdata`.
+both estimation samples. For example, you could construct `corr` for the entire dataset
+and construct the samples via the `subset` keyword to `Microdata`.

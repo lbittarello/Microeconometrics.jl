@@ -7,7 +7,6 @@ We will analyze the implementation of OLS.
 Although it is a simple model, other models follow the same steps.
 
 The first step is defining the output `struct`:
-
 ```julia
 mutable struct OLS <: ParModel
 
@@ -18,13 +17,11 @@ mutable struct OLS <: ParModel
     OLS() = new()
 end
 ```
-
 Every estimator has these fields. Internal utilities rely on them.
 Some have additional fields (e.g., `IV` stores the estimation method).
 Two-stage models store the estimators for each stage instead.
 
 We the define an uninitialized constructor:
-
 ```julia
 function OLS(MD::Microdata)
     obj        = OLS()
@@ -32,11 +29,9 @@ function OLS(MD::Microdata)
     return obj
 end
 ```
-
 The functions `_fit!` and `_vcov!` will later set `β` and `V`.
 
 The next step is overloading the function `fit` from *StatsBase*:
-
 ```julia
 function fit(::OLS, MD::Microdata; novar::Bool = false)
 
@@ -48,7 +43,6 @@ function fit(::OLS, MD::Microdata; novar::Bool = false)
     return obj
 end
 ```
-
 For OLS, we only need to initialize the output object and pass it to `_fit!` and `_vcov!`.
 (It is not actually necessary to extend `fit` unless you need to perform additional steps
 before the estimation, as the default implementation will suffice.)
@@ -56,7 +50,6 @@ Note the utilities `getcorr` and `getweights`.
 
 We can now estimate the coefficients.
 For efficiency, we write separate functions for unweighted and weighted data.
-
 ```julia
 function _fit!(obj::OLS, w::UnitWeights)
     y     = getvector(obj, :response)
@@ -71,7 +64,6 @@ function _fit!(obj::OLS, w::AbstractWeights)
     obj.β =  (v' * x) \ (v' * y)
 end
 ```
-
 Notice the internal utilities `getvector` and `getmatrix`.
 Their first argument is a `Microdata` or a model structure.
 The following arguments are the model components of interest.
@@ -84,7 +76,7 @@ A single matrix is returned in all cases.
 
     `getvector` and `getmatrix` return views into the underlying data matrix.
     You should never modify their output, as you would irremediably alter the data.
-    If you need to perform some operation, make a copy beforehand.
+    If you need to perform an in-place operation, make a copy beforehand.
 
 OLS does not require nonlinear optimization. If your estimator needs it,
 you can use the tools of [*Optim*](http://julianlsolvers.github.io/Optim.jl/stable/).
@@ -93,12 +85,11 @@ See the implementation of `Logit` for an example.
 We must now define `score` and `jacobian`.
 These functions are the building blocks of the variance estimator.
 The score is the vector of moment conditions.
-For OLS, it is −xᵢ (yᵢ - xᵢ'β) (the derivative of the objective function).
+For OLS, it is −xᵢ (yᵢ − xᵢ'β) (the derivative of the objective function).
 `score` should return the matrix of score vectors (in row form).
 The Jacobian matrix is the derivative of the moment conditions.
 For OLS, it is xᵢ'xᵢ. `jacobian` should return the weighted sum of Jacobians
 (i.e., the expected Jacobian × the number of observations).
-
 ```julia
 function score(obj::OLS)
     x = copy(getmatrix(obj, :control))

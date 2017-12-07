@@ -151,7 +151,7 @@ and observations in different subgroups may correlate
 `hausman_2s` will account for that correlation
 if the `Microdata`s were constructed with `subset`.
 
-`weights` is a [weight vectors](http://juliastats.github.io/StatsBase.jl/stable/weights.html).
+`weights` is a [weight vector](http://juliastats.github.io/StatsBase.jl/stable/weights.html).
 Except for frequency weights, the weight vector is normalized
 to sum up to the number of observations in the sample.
 

@@ -48,7 +48,10 @@ julia> corr = Homoscedastic();
 ```
 We next specify the model by constructing a [`Microdata`](#microdata):
 ```julia
-julia> dta = Microdata(dst, vcov = corr, response = "admit", control = "gre + gpa + rank + 1");
+julia> dta = Microdata(dst,
+    vcov = corr,
+    response = "admit",
+    control = "gre + gpa + rank + 1");
 ```
 
 We can finally fit the model and visualize the results:
@@ -102,7 +105,6 @@ rank: 4         -0.323     0.078   -4.1408    <1e-99   -0.4759 -0.1701
 (Intercept)    -0.2589     0.211   -1.2268    0.2199   -0.6725  0.1547
 ```
 
-
 Before we estimate the reduced model, we need to redefine the control set.
 There are two approaches to this task.
 We can construct a new `Microdata` from scratch:
@@ -112,18 +114,15 @@ julia> dta₂ = Microdata(dst, vcov = corr, response = "admit", control = "gre +
 ```
 
 Or we can modify the control set of our existing `Microdata`:
-
 ```julia
 julia> dta₂ = Microdata(dta₁, control = "gre + gpa + 1");
 ```
-
 The second approach does not reconstruct the underlying data matrix.
 Therefore, it is faster and uses less memory.
 On the other hand, it only allows us to reassign existing variables across variable sets.
 We cannot add new variables or modify the correlation structure of the error term.
 
 We next fit the reduced model:
-
 ```julia
 julia> e₂ = fit(OLS, dta₂);
 julia> coeftable(e₂);
@@ -133,11 +132,9 @@ gre             0.0005    0.0002    2.5642    0.0103    0.0001   0.001
 gpa             0.1542     0.065    2.3737    0.0176    0.0269  0.2816
 (Intercept)    -0.5279    0.2087   -2.5293    0.0114    -0.937 -0.1188
 ```
-
 The coeffients on `gre` and `gpa` seem to be robust.
 
 For a formal equality test, we use a Hausman test:
-
 ```julia
 julia> ht = hausman_1s(e₁, e₂, ["gre", "gpa"]);
 julia> tstat(ht)
@@ -146,14 +143,10 @@ julia> tstat(ht)
  -2.07838
   0.0749552
 ```
-
-The function `hausman_1s` estimates the difference between two estimates
-based on the same sample. As it turns out,
-the difference between the coefficients on `gre` is statistically significant.
+As it turns out, the difference between the coefficients on `gre` is statistically significant.
 
 To further investigate this result, we wish to estimate separate effects by rank.
 The keyword `subset` helps us construct the appropriate `Microdata`s:
-
 ```julia
 julia> idx₁ = (dst[:rank] .== 1);
 julia> dta₁ = Microdata(dst, subset = idx₁, vcov = corr, response = "admit", control = "gre + gpa + 1");
@@ -182,6 +175,5 @@ julia> tstat(ht)
  0.334261
  0.337304
 ```
-
 We used the function `hausman_2s` because these estimates are based on different samples.
 The difference in the effect of `gre` between ranks 1 and 2 is not significant.

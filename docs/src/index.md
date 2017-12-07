@@ -1,6 +1,6 @@
 # Microeconometrics.jl
 
-This package provides support for microeconometric models.
+This package provides support for microeconometric estimation.
 It supports complex covariance structures (clustered, etc.) and weighted data.
 Please report bugs by
 [opening an issue](https://github.com/lbittarello/Microeconometrics.jl/issues/new).
@@ -14,15 +14,12 @@ If your preferred model is not currently available,
 [file an issue](https://github.com/lbittarello/Microeconometrics.jl/issues/new) or
 [contribute](#contributing)!
 
-* [Models for exogenous regressors](#models-for-exogenous-regressors)
-
-    - Ordinary least squares (OLS)
+- [Models for exogenous regressors](estimators.md#Models-for-exogenous-regressors-1)
+    - Ordinary least squares
     - Logit
     - Probit
-    - Inverse probability weighting (IPW)
-
-* [Models for endogenous regressors](#models-for-endogenous-regressors)
-
+    - Inverse probability weighting
+- [Models for endogenous regressors](estimators.md#Models-for-endogenous-regressors-1)
     - Two-stage least squares
     - Abadie (2002)
     - Frölich and Melly (2013)
