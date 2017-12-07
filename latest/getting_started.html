@@ -3,9 +3,9 @@
 julia&gt; using DataFrames
 julia&gt; using Microeconometrics</code></pre><p>We then load the data:</p><pre><code class="language-julia">julia&gt; dst = CSV.read(&quot;admit.csv&quot;)
 julia&gt; categorical!(dst, :rank)</code></pre><p>This sample is available <a href="http://github.com/lbittarello/Microeconometrics.jl/tree/master/data">here</a>, if you wish to replicate this exercise. The last line converts <code>dst[:rank]</code> into a <a href="http://juliadata.github.io/DataFrames.jl/stable/man/categorical.html">categorical array</a>.</p><p>We now define the <a href="#corrstructure">correlation structure</a> of the error term. Let&#39;s assume that observations are independent and identically distributed, so that errors are homoscedastic:</p><pre><code class="language-julia">julia&gt; corr = Homoscedastic();</code></pre><p>We next specify the model by constructing a <a href="#microdata"><code>Microdata</code></a>:</p><pre><code class="language-julia">julia&gt; dta = Microdata(dst,
-    vcov = corr,
-    response = &quot;admit&quot;,
-    control = &quot;gre + gpa + rank + 1&quot;);</code></pre><p>We can finally fit the model and visualize the results:</p><pre><code class="language-julia">julia&gt; e_ols = fit(OLS, dta);
+                vcov = corr,
+                response = &quot;admit&quot;,
+                control = &quot;gre + gpa + rank + 1&quot;);</code></pre><p>We can finally fit the model and visualize the results:</p><pre><code class="language-julia">julia&gt; e_ols = fit(OLS, dta);
 julia&gt; coeftable(e_ols);
 
               Estimate  St. Err.   t-stat.   p-value      C.I. (95%)  
