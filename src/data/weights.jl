@@ -16,16 +16,6 @@ end
 
 #==========================================================================================#
 
-# EQUALITY TEST
-
-function Base.isequal(w₁::W, w₂::W) where {W <: AbstractWeights}
-    return isequal(values(w₁), values(w₂)) & isequal(sum(w₁), sum(w₂))
-end
-
-Base.isequal(w₁::AbstractWeights, w₂::AbstractWeights) = false
-
-#==========================================================================================#
-
 # CONVERT WEIGHTS
 
 function parse_weights(w::AnalyticWeights, msng::BitVector)
