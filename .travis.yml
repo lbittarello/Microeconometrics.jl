@@ -8,6 +8,9 @@ julia:
 matrix:
  allow_failures:
  - julia: nightly
+branches:
+  except:
+  - development
 notifications:
   email: false
 # script:
