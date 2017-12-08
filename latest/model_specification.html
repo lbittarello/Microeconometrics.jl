@@ -7,7 +7,7 @@
 CrossCorrelated(&quot;Time&quot;,
     DF::DataFrame,
     time::Symbol,
-    kernel::function;
+    kernel::Function;
     adj::Bool = true)</code></pre><p>The maximum possible correlation between two observations declines with the time difference between them. Correlation is arbitrary below that limit. The bandwidth and the kernel function control the upper bound. <code>time</code> specifies the column of <code>DF</code> that contains the date of each observation (<code>Date</code>).</p><p>The first method takes a bandwidth and uses the Parzen kernel. The second method takes a kernel function instead, which must incorporate the bandwidth. The first method is equivalent to setting <code>x -&gt; parzen(x / bandwidth)</code>. The following kernels are predefined for convenience: Bartlett (<code>bartlett</code>), Parzen (<code>parzen</code>), Truncated (<code>truncated</code>) and Tukey-Hanning (<code>tukeyhanning</code>). See <a href="http://jstor.org/stable/2938229">Andrews (1991)</a> for formulae.</p><pre><code class="language-julia">CrossCorrelated(&quot;Space&quot;,
     DF::DataFrame,
     latitude::Symbol,
@@ -18,7 +18,7 @@ CrossCorrelated(&quot;Space&quot;,
     DF::DataFrame,
     latitude::Symbol,
     longitude::Symbol,
-    kernel::function;
+    kernel::Function;
     adj::Bool = true)</code></pre><p>The maximum possible correlation between two observations declines with the spatial distance between them. Correlation is arbitrary below that limit. The bandwidth and the kernel function control the upper bound. <code>latitude</code> and <code>longitude</code> specify the columns of <code>DF</code> that contain the coordinates of each observation (<code>Float64</code>).</p><p>For an explanation of the difference between the two methods, see <code>CrossCorrelated(&quot;time&quot;, args...)</code> above.</p><pre><code class="language-julia">CrossCorrelated(&quot;Time and space&quot;,
     DF::DataFrame,
     time::Symbol,
