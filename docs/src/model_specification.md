@@ -68,7 +68,7 @@ CrossCorrelated("Time",
 CrossCorrelated("Time",
     DF::DataFrame,
     time::Symbol,
-    kernel::function;
+    kernel::Function;
     adj::Bool = true)
 ```
 
@@ -96,7 +96,7 @@ CrossCorrelated("Space",
     DF::DataFrame,
     latitude::Symbol,
     longitude::Symbol,
-    kernel::function;
+    kernel::Function;
     adj::Bool = true)
 ```
 

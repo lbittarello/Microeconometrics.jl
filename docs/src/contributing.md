@@ -45,7 +45,7 @@ end
 ```
 For OLS, we only need to initialize the output object and pass it to `_fit!` and `_vcov!`.
 (It is not actually necessary to extend `fit` unless you need to perform additional steps
-before the estimation, as the default implementation will suffice.)
+before the estimation, as the fallback will suffice.)
 Note the utilities `getcorr` and `getweights`.
 
 We can now estimate the coefficients.
@@ -133,6 +133,7 @@ We conclude with a function to retrieve coefficient labels:
 ```julia
 coefnames(obj::OLS) = getnames(obj, :control)
 ```
+The syntax of `getnames` is similar to that of `getmatrix`. 
 
 You can implement additional methods.
 For example, *Microeconometrics* extends `r2` and `adjr2` to OLS
