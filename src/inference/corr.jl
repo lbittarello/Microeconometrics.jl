@@ -141,17 +141,23 @@ function cc_time(df::DataFrame, x::Symbol, k::Function; adj::Bool = true)
     msng .= .!ismissing.(df[x])
     xx    = df[x][msng] :: Vector{Date}
     n     = sum(msng)
-    mat   = speye(Float64, n, n)
+    idx₁  = Vector{Int}(1:n)
+    idx₂  = Vector{Int}(1:n)
+    val   = fill(1.0, n)
 
     for i = 1:n
         for j = 1:(i - 1)
             w = Dates.value(xx[i] - xx[j])
             w = k(w)
-            (w > 0.0) && (mat[j, i] = w)
+            if w > 0.0
+                push!(idx₁, j)
+                push!(idx₂, i)
+                push!(val, w)
+            end
         end
     end
 
-    return CrossCorrelated(adj, msng, Symmetric(mat))
+    return CrossCorrelated(adj, msng, Symmetric(sparse(idx₁, idx₂, val)))
 end
 
 # CORRELATION ACROSS SPACE
@@ -168,17 +174,23 @@ function cc_space(df::DataFrame, y::Symbol, x::Symbol, k::Function; adj::Bool = 
     yy    = df[y][msng] :: Vector{Float64}
     xx    = df[x][msng] :: Vector{Float64}
     n     = sum(msng)
-    mat   = speye(Float64, n, n)
+    idx₁  = Vector{Int}(1:n)
+    idx₂  = Vector{Int}(1:n)
+    val   = fill(1.0, n)
 
     for i = 1:n
         for j = 1:(i - 1)
             w = geodistance(yy[i], xx[i], yy[j], xx[j])
             w = k(w)
-            (w > 0.0) && (mat[j, i] = w)
+            if w > 0.0
+                push!(idx₁, j)
+                push!(idx₂, i)
+                push!(val, w)
+            end
         end
     end
 
-    return CrossCorrelated(adj, msng, Symmetric(mat))
+    return CrossCorrelated(adj, msng, Symmetric(sparse(idx₁, idx₂, val)))
 end
 
 # CORRELATION ACROSS TIME AND SPACE
@@ -209,7 +221,9 @@ function cc_timespace(
     yy₂   = df[y₂][msng] :: Vector{Float64}
     xx₂   = df[x₂][msng] :: Vector{Float64}
     n     = sum(msng)
-    mat   = speye(Float64, n, n)
+    idx₁  = Vector{Int}(1:n)
+    idx₂  = Vector{Int}(1:n)
+    val   = fill(1.0, n)
 
     for i = 1:n
         for j = 1:(i - 1)
@@ -219,11 +233,13 @@ function cc_timespace(
                 w₂ = geodistance(yy₂[i], xx₂[i], yy₂[j], xx₂[j])
                 w₂ = k₂(w₂)
                 if w₂ > 0.0
-                    mat[j, i] = w₁ * w₂
+                    push!(idx₁, j)
+                    push!(idx₂, i)
+                    push!(val, w₁ * w₂)
                 end
             end
         end
     end
 
-    return CrossCorrelated(adj, msng, Symmetric(mat))
+    return CrossCorrelated(adj, msng, Symmetric(sparse(idx₁, idx₂, val)))
 end
