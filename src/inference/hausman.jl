@@ -283,7 +283,7 @@ function _hausman_2s!(
     ψ₁  = view(Ψ₁, :, i₁)
     Ψ₂  = influence(obj₂, w₂)
     ψ₂  = view(Ψ₂, :, i₂)
-    V₁₂ = ψ₁' * corr.mat[msng₁, msng₂] * ψ₂
+    V₁₂ = ψ₁' * view(corr.mat, msng₁, msng₂) * ψ₂
 
     adjfactor!(V₁₂, obj₁, obj₂, corr)
 
@@ -309,7 +309,7 @@ function _hausman_2s!(
     ψ₁  = view(Ψ₁, :, i₁) ; scale!(w₁, ψ₁)
     Ψ₂  = influence(obj₂, w₂)
     ψ₂  = view(Ψ₂, :, i₂) ; scale!(w₂, ψ₂)
-    V₁₂ = ψ₁' * corr.mat[msng₁, msng₂] * ψ₂
+    V₁₂ = ψ₁' * view(corr.mat, msng₁, msng₂) * ψ₂
 
     adjfactor!(V₁₂, obj₁, obj₂, corr)
 
