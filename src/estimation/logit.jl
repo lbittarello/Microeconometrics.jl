@@ -90,7 +90,7 @@ function _fit!(obj::Logit, w::UnitWeights)
         h[:, :] = crossprod(x, v)
     end
 
-    res = optimize(TwiceDifferentiable(L, G!, LG!, H!), β₀, Newton())
+    res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
 
     if Optim.converged(res)
         obj.β = Optim.minimizer(res)
@@ -164,7 +164,7 @@ function _fit!(obj::Logit, w::AbstractWeights)
         h[:, :] = crossprod(x, v)
     end
 
-    res = optimize(TwiceDifferentiable(L, G!, LG!, H!), β₀, Newton())
+    res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
 
     if Optim.converged(res)
         obj.β = Optim.minimizer(res)
