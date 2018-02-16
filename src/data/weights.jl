@@ -65,3 +65,8 @@ reweight(w::AbstractWeights, v::ProbabilityWeights) = pweights(w .* v)
 
 Base.sum(v::AbstractArray, w::UnitWeights)  = sum(v)
 Base.mean(v::AbstractArray, w::UnitWeights) = mean(v)
+Base.:(==)(x::UnitWeights, y::UnitWeights)  = (x.sum == y.sum) && (x.values == y.values)
+
+function Base.isequal(x::UnitWeights, y::UnitWeights)
+    return isequal(x.sum, y.sum) && isequal(x.values, y.values)
+end
