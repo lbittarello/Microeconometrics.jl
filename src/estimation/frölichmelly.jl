@@ -52,28 +52,13 @@ function fit(
         trim::AbstractFloat = 0.0,
     )
 
-    invtrim = one(trim) - trim
-    w       = getweights(MD)
-    d       = getvector(MD, :treatment)
-    z       = getvector(MD, :instrument)
-    π       = fitted(MM)
-    v       = fill(0.0, size(MD, 1))
+    w = getweights(MD)
+    d = getvector(MD, :treatment)
+    z = getvector(MD, :instrument)
+    π = fitted(MM)
+    v = [(2.0 * di - 1.0) * (zi - πi) / (πi * (1.0 - πi)) for (di, zi, πi) in zip(d, z, π)]
 
-    @inbounds for (i, (di, zi, πi)) in enumerate(zip(d, z, π))
-        d0 = iszero(di)
-        z0 = iszero(zi)
-        if trim <= πi <= invtrim
-            if d0 & z0
-                v[i] = 1.0 / (1.0 - πi)
-            elseif d0 & !z0
-                v[i] = - 1.0 / πi
-            elseif !d0 & z0
-                v[i] = - 1.0 / (1.0 - πi)
-            elseif !d0 & !z0
-                v[i] = 1.0 / πi
-            end
-        end
-    end
+    v[find((trim .> π) .| (1.0 - trim .< π))] .= 0.0
 
     SSD               = Microdata(MD)
     SSD.map[:control] = vcat(SSD.map[:treatment], 1)
@@ -111,23 +96,10 @@ function crossjacobian(obj::FrölichMelly, w::UnitWeights)
     z = getvector(obj, :instrument)
     π = obj.pscore
     v = obj.weights
-    D = fill(0.0, length(v))
+    D = [(2.0 * di - 1.0) * ((2.0 * zi - πi) * πi - zi) / abs2(πi * (1.0 - πi))
+         for (di, zi, πi) in zip(d, z, π)]
 
-    @inbounds for (i, (di, zi, πi, vi)) in enumerate(zip(d, z, π, v))
-        if !iszero(vi)
-            d0 = iszero(di)
-            z0 = iszero(zi)
-            if d0 & z0
-                D[i] = 1.0 / abs2(1.0 - πi)
-            elseif d0 & !z0
-                D[i] = 1.0 / abs2(πi)
-            elseif !d0 & z0
-                D[i] = - 1.0 / abs2(1.0 - πi)
-            elseif !d0 & !z0
-                D[i] = - 1.0 / abs2(πi)
-            end
-        end
-    end
+    D[find(v .== 0)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)
@@ -141,23 +113,10 @@ function crossjacobian(obj::FrölichMelly, w::AbstractWeights)
     z = getvector(obj, :instrument)
     π = obj.pscore
     v = obj.weights
-    D = fill(0.0, length(v))
+    D = [wi * (2.0 * di - 1.0) * ((2.0 * zi - πi) * πi - zi) / abs2(πi * (1.0 - πi))
+         for (di, zi, πi, wi) in zip(d, z, π, w)]
 
-    @inbounds for (i, (di, zi, πi, vi, wi)) in enumerate(zip(d, z, π, v, values(w)))
-        if !iszero(vi)
-            d0 = iszero(di)
-            z0 = iszero(zi)
-            if d0 & z0
-                D[i] = wi / abs2(1.0 - πi)
-            elseif d0 & !z0
-                D[i] = wi / abs2(πi)
-            elseif !d0 & z0
-                D[i] = - wi / abs2(1.0 - πi)
-            elseif !d0 & !z0
-                D[i] = - wi / abs2(πi)
-            end
-        end
-    end
+    D[find(v .== 0)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)

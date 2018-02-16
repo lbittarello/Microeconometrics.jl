@@ -52,18 +52,13 @@ function fit(
         trim::AbstractFloat = 0.0,
     )
 
-    invtrim = one(trim) - trim
-    w       = getweights(MD)
-    z       = getvector(SSD, :instrument)
-    p       = mean(z, getweights(MD))
-    π       = fitted(MM)
-    v       = fill(0.0, size(MD, 1))
+    w = getweights(MD)
+    z = getvector(MD, :instrument)
+    p = mean(z, getweights(MD))
+    π = fitted(MM)
+    v = [iszero(zi) ? ((1.0 - p) / (1.0 - πi)) : (p / πi) for (zi, πi) in zip(z, π)]
 
-    @inbounds for (i, (zi, πi)) in enumerate(zip(z, π))
-        if trim <= πi <= invtrim
-            v[i] = (iszero(zi) ? ((1.0 - p) / (1.0 - πi)) : (p / πi))
-        end
-    end
+    v[find((trim .> π) .| (1.0 - trim .< π))] .= 0.0
 
     SSD              = Microdata(MD, control = "1")
     obj              = Tan()
@@ -100,7 +95,10 @@ function crossjacobian(obj::Tan, w::UnitWeights)
     p = mean(z)
     π = obj.pscore
     v = obj.weights
-    D = fill(0.0, length(v))
+    D = [iszero(zi) ? ((1.0 - p) / abs2(1.0 - πi)) : (- p / abs2(πi))
+         for (zi, πi) in zip(z, π)]
+
+    D[find(v .== 0)] .= 0.0
 
     @inbounds for (i, (zi, πi, vi)) in enumerate(zip(z, π, v))
         if !iszero(vi)
@@ -120,13 +118,10 @@ function crossjacobian(obj::Tan, w::AbstractWeights)
     p = mean(z, w)
     π = obj.pscore
     v = obj.weights
-    D = fill(0.0, length(v))
+    D = [iszero(zi) ? (wi * (1.0 - p) / abs2(1.0 - πi)) : (- wi * p / abs2(πi))
+         for (zi, πi, wi) in zip(z, π, w)]
 
-    @inbounds for (i, (zi, πi, vi, wi)) in enumerate(zip(z, π, v, values(w)))
-        if !iszero(vi)
-            D[i] = (iszero(zi) ? (wi * (1.0 - p) / abs2(1.0 - πi)) : (- wi * p / abs2(πi)))
-        end
-    end
+    D[find(v .== 0)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)
