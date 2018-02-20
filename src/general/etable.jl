@@ -6,7 +6,7 @@ function etable(args...;
         digits::Int = 4,
         aux::Union{Function, Void} = nothing,
         stars::Matrix{Any} = [0.1 "*"; 0.05 "**"; 0.01 "***"],
-        titles::Vector{String} = Nullable{Vector{String}}()
+        titles::Nullable{Vector{String}} = Nullable{Vector{String}}()
     )
 
     N                  = length(args)

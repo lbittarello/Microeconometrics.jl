@@ -36,7 +36,7 @@ Out-of-sample forecast is planned for a future release.
 
 ## Hausman test
 
-This function computes the difference in coefficients between two parametric models.
+These functions compute the difference in coefficients between two parametric models.
 They return a `ParObject`, which contains the vector of differences, their covariance matrix
 and labels. Our implementation is based on the GMM representation of the joint estimation
 problem (see Subsection 8.3.2 of Cameron and Trivedi (2005)).
@@ -48,7 +48,7 @@ hausman_1s(
     names::Vector{String} = intersect(coefnames(obj₁), coefnames(obj₂)))
 ```
 
-This function is appropriate when both `model₁` and `model₂` were based on
+This function is appropriate when `model₁` and `model₂` were both based on
 the same estimation sample.
 
 ```julia
@@ -71,7 +71,7 @@ hausman_2s(
 
 This function is appropriate when `model₁` and `model₂` were based on dependent samples.
 For example, the samples might consist of independent observations with some overlap
-or clustered observations with common clusters.
+or clustered observations with shared clusters.
 The correlation structure `corr` must specify the correlation between all observations of
 both estimation samples. For example, you could construct `corr` for the entire dataset
 and construct the samples via the `subset` keyword to `Microdata`.
