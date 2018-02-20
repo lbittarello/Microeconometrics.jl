@@ -6,14 +6,14 @@ function etable(args...;
         digits::Int = 4,
         aux::Union{Function, Void} = nothing,
         stars::Matrix{Any} = [0.1 "*"; 0.05 "**"; 0.01 "***"],
-        titles::Vector{String} = []
+        titles::Vector{String} = Nullable{Vector{String}}()
     )
 
     N                  = length(args)
     fspec              = FormatSpec("0.$(digits)f")
     cutpoints, symbols = _parsestars(stars)
 
-    (titles == []) && (titles = String["(" * string(i) * ")" for i = 1:N])
+    isnull(titles) && (titles = String["(" * string(i) * ")" for i = 1:N])
 
     μ = Vector{Vector{String}}(N)
     β = Vector{Vector{String}}(N)
