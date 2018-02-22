@@ -40,8 +40,8 @@ function fit(
         kwargs...
     ) where {M <: Micromodel}
 
-    m = first_stage(Tan, M, MD; novar = novar, kwargs...)
-    return fit(Tan, m, MD; novar = novar)
+    m = first_stage(Tan, M, MD; novar = novar)
+    return fit(Tan, m, MD; novar = novar, kwargs...)
 end
 
 function fit(
@@ -94,17 +94,10 @@ function crossjacobian(obj::Tan, w::UnitWeights)
     z = getvector(obj, :instrument)
     p = mean(z)
     π = obj.pscore
-    v = obj.weights
-    D = [iszero(zi) ? ((1.0 - p) / abs2(1.0 - πi)) : (- p / abs2(πi))
+    D = [(1.0 - zi) * (1.0 - p) / abs2(1.0 - πi) - zi * p / abs2(πi)
          for (zi, πi) in zip(z, π)]
 
-    D[find(v .== 0)] .= 0.0
-
-    @inbounds for (i, (zi, πi, vi)) in enumerate(zip(z, π, v))
-        if !iszero(vi)
-            D[i] = (iszero(zi) ? ((1.0 - p) / abs2(1.0 - πi)) : (- p / abs2(πi)))
-        end
-    end
+    D[find(obj.weights .== 0)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)
@@ -117,11 +110,10 @@ function crossjacobian(obj::Tan, w::AbstractWeights)
     z = getvector(obj, :instrument)
     p = mean(z, w)
     π = obj.pscore
-    v = obj.weights
-    D = [iszero(zi) ? (wi * (1.0 - p) / abs2(1.0 - πi)) : (- wi * p / abs2(πi))
+    D = [wi * ((1.0 - zi) * (1.0 - p) / abs2(1.0 - πi) - zi * p / abs2(πi))
          for (zi, πi, wi) in zip(z, π, w)]
 
-    D[find(v .== 0)] .= 0.0
+    D[find(obj.weights .== 0)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)

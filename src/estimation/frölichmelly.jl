@@ -40,8 +40,8 @@ function fit(
         kwargs...
     ) where {M <: Micromodel}
 
-    m = first_stage(FrölichMelly, M, MD; novar = novar, kwargs...)
-    return fit(FrölichMelly, m, MD; novar = novar)
+    m = first_stage(FrölichMelly, M, MD; novar = novar)
+    return fit(FrölichMelly, m, MD; novar = novar, kwargs...)
 end
 
 function fit(
@@ -95,11 +95,10 @@ function crossjacobian(obj::FrölichMelly, w::UnitWeights)
     d = getvector(obj, :treatment)
     z = getvector(obj, :instrument)
     π = obj.pscore
-    v = obj.weights
     D = [(2.0 * di - 1.0) * ((2.0 * zi - πi) * πi - zi) / abs2(πi * (1.0 - πi))
          for (di, zi, πi) in zip(d, z, π)]
 
-    D[find(v .== 0)] .= 0.0
+    D[find(obj.weights .== 0)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)
@@ -112,11 +111,10 @@ function crossjacobian(obj::FrölichMelly, w::AbstractWeights)
     d = getvector(obj, :treatment)
     z = getvector(obj, :instrument)
     π = obj.pscore
-    v = obj.weights
     D = [wi * (2.0 * di - 1.0) * ((2.0 * zi - πi) * πi - zi) / abs2(πi * (1.0 - πi))
          for (di, zi, πi, wi) in zip(d, z, π, w)]
 
-    D[find(v .== 0)] .= 0.0
+    D[find(obj.weights .== 0)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)

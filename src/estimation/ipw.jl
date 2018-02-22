@@ -39,8 +39,8 @@ function fit(
         kwargs...
     ) where {M <: Micromodel}
 
-    m = first_stage(IPW, M, MD; novar = novar, kwargs...)
-    return fit(IPW, m, MD; novar = novar)
+    m = first_stage(IPW, M, MD; novar = novar)
+    return fit(IPW, m, MD; novar = novar, kwargs...)
 end
 
 function fit(
@@ -51,17 +51,12 @@ function fit(
         trim::AbstractFloat = 0.0,
     )
 
-    invtrim = one(trim) - trim
-    w       = getweights(MD)
-    d       = getvector(MD, :treatment)
-    π       = fitted(MM)
-    v       = fill(0.0, size(MD, 1))
+    w = getweights(MD)
+    d = getvector(MD, :treatment)
+    π = fitted(MM)
+    v = [(1.0 - di) / (1.0 - πi) + di / πi for (di, πi) in zip(d, π)]
 
-    @inbounds for (i, (di, πi)) in enumerate(zip(d, π))
-        if trim <= πi <= invtrim
-            v[i] = (iszero(di) ? (1.0 / (1.0 - πi)) : (1.0 / πi))
-        end
-    end
+    v[find((trim .> π) .| (1.0 - trim .< π))] .= 0.0
 
     SSD               = Microdata(MD)
     SSD.map[:control] = vcat(SSD.map[:treatment], 1)
@@ -97,14 +92,9 @@ function crossjacobian(obj::IPW, w::UnitWeights)
 
     d = getvector(obj, :treatment)
     π = obj.pscore
-    v = obj.weights
-    D = fill(0.0, length(v))
+    D = [(1.0 - di) / abs2(1.0 - πi) - di / abs2(πi) for (di, πi) in zip(d, π)]
 
-    @inbounds for (i, (di, πi, vi)) in enumerate(zip(d, π, v))
-        if !iszero(vi)
-            D[i] = (iszero(di) ? (1.0 / abs2(1.0 - πi)) : (- 1.0 / abs2(πi)))
-        end
-    end
+    D[find(obj.weights .== 0)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)
@@ -116,14 +106,10 @@ function crossjacobian(obj::IPW, w::AbstractWeights)
 
     d = getvector(obj, :treatment)
     π = obj.pscore
-    v = obj.weights
-    D = fill(0.0, length(v))
+    D = [wi * ((1.0 - di) / abs2(1.0 - πi) - di / abs2(πi)) for (di, πi, wi)
+         in zip(d, z, π, w)]
 
-    @inbounds for (i, (di, πi, vi, wi)) in enumerate(zip(d, π, v, values(w)))
-        if !iszero(vi)
-            D[i] = (iszero(di) ? (wi / abs2(1.0 - πi)) : (- wi / abs2(πi)))
-        end
-    end
+    D[find(obj.weights .== 0)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)

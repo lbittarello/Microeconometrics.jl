@@ -98,11 +98,10 @@ function crossjacobian(obj::Abadie, w::UnitWeights)
     d = getvector(obj, :treatment)
     z = getvector(obj, :instrument)
     π = obj.pscore
-    v = obj.weights
     D = [(1.0 - di) * zi / abs2(πi) - di * (1.0 - zi) / abs2(1.0 - πi)
          for (di, zi, πi) in zip(d, z, π)]
 
-    D[find(v .== 0)] .= 0.0
+    D[find(obj.weights .== 0)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)
@@ -115,11 +114,10 @@ function crossjacobian(obj::Abadie, w::AbstractWeights)
     d = getvector(obj, :treatment)
     z = getvector(obj, :instrument)
     π = obj.pscore
-    v = obj.weights
     D = [wi * ((1.0 - di) * zi / abs2(πi) - di * (1.0 - zi) / abs2(1.0 - πi))
          for (di, zi, πi, wi) in zip(d, z, π, w)]
 
-    D[find(v .== 0)] .= 0.0
+    D[find(obj.weights .== 0)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)
