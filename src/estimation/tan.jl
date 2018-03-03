@@ -56,7 +56,7 @@ function fit(
     z = getvector(MD, :instrument)
     p = mean(z, getweights(MD))
     π = fitted(MM)
-    v = [iszero(zi) ? ((1.0 - p) / (1.0 - πi)) : (p / πi) for (zi, πi) in zip(z, π)]
+    v = [(1.0 - zi) * (1.0 - p) / (1.0 - πi) + zi * p / πi for (zi, πi) in zip(z, π)]
 
     v[find((trim .> π) .| (1.0 - trim .< π))] .= 0.0
 

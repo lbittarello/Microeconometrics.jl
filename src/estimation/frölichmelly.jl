@@ -95,7 +95,7 @@ function crossjacobian(obj::FrölichMelly, w::UnitWeights)
     d = getvector(obj, :treatment)
     z = getvector(obj, :instrument)
     π = obj.pscore
-    D = [(2.0 * di - 1.0) * ((2.0 * zi - πi) * πi - zi) / abs2(πi * (1.0 - πi))
+    D = [- (2.0 * di - 1.0) * (zi / abs2(πi) + (1.0 - zi) / abs2(1.0 - πi))
          for (di, zi, πi) in zip(d, z, π)]
 
     D[find(obj.weights .== 0)] .= 0.0
@@ -111,7 +111,7 @@ function crossjacobian(obj::FrölichMelly, w::AbstractWeights)
     d = getvector(obj, :treatment)
     z = getvector(obj, :instrument)
     π = obj.pscore
-    D = [wi * (2.0 * di - 1.0) * ((2.0 * zi - πi) * πi - zi) / abs2(πi * (1.0 - πi))
+    D = [- wi * (2.0 * di - 1.0) * (zi / abs2(πi) + (1.0 - zi) / abs2(1.0 - πi))
          for (di, zi, πi, wi) in zip(d, z, π, w)]
 
     D[find(obj.weights .== 0)] .= 0.0
