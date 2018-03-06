@@ -123,9 +123,9 @@ fitted(obj::OLS)  = predict(obj)
 The next step is optional. We extend `jacobexp`,
 which computes the derivative of fitted values.
 ```julia
-jacobexp(obj::OLS) = getmatrix(obj, :control)
+jacobexp(obj::OLS) = copy(getmatrix(obj, :control))
 ```
-`jacobexp` is only necessary when the estimator in question serves as the first stage of
+`jacobexp` is only necessary when the estimator serves as the first stage of
 a two-stage estimator. By extending it, you make your estimator available to
 two-stage estimators.
 
@@ -133,7 +133,7 @@ We conclude with a function to retrieve coefficient labels:
 ```julia
 coefnames(obj::OLS) = getnames(obj, :control)
 ```
-The syntax of `getnames` is similar to that of `getmatrix`. 
+The syntax of `getnames` is similar to that of `getmatrix`.
 
 You can implement additional methods.
 For example, *Microeconometrics* extends `r2` and `adjr2` to OLS

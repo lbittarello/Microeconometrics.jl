@@ -76,7 +76,7 @@ fitted(obj::OLS) = predict(obj)
 
 # DERIVATIVE OF FITTED VALUES
 
-jacobexp(obj::OLS) = getmatrix(obj, :control)
+jacobexp(obj::OLS) = copy(getmatrix(obj, :control))
 
 #==========================================================================================#
 
