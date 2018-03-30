@@ -75,8 +75,7 @@ coefnames(obj::ParObject) = obj.names
 function coeftable(
         obj::Union{ParOr2Stage, ParObject};
         level::Float64 = 0.95,
-        digits::Int = 4,
-        verbose::Bool = true
+        digits::Int = 4
     )
 
     table = round.(hcat(coef(obj), stderr(obj), tstat(obj), pval(obj)), digits)
@@ -89,8 +88,6 @@ function coeftable(
     end
 
     CT = CoefTable(table, label, coefnames(obj), 4)
-
-    verbose && println(CT)
 
     return CT
 end
