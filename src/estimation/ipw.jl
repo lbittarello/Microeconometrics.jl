@@ -107,7 +107,7 @@ function crossjacobian(obj::IPW, w::AbstractWeights)
     d = getvector(obj, :treatment)
     π = obj.pscore
     D = [wi * ((1.0 - di) / abs2(1.0 - πi) - di / abs2(πi)) for (di, πi, wi)
-         in zip(d, z, π, w)]
+         in zip(d, π, w)]
 
     D[find(obj.weights .== 0)] .= 0.0
 
