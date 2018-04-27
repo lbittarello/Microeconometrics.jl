@@ -23,7 +23,7 @@ function Microdata(
     )
 
     input    = reduce((x, y) -> x * " + " * y[2], "", kwargs)
-    formula  = Formula(nothing, parse(input))
+    formula  = @eval @formula $nothing ~ $(parse(input))
     terms    = Terms(formula)
     msng     = BitVector(completecases(df[:, terms.eterms]))
     msng    .= msng .* (.!iszero.(weights)) .* BitVector(subset)
