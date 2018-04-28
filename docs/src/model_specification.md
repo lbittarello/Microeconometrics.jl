@@ -63,12 +63,8 @@ Observations may be arbitrarily correlated if they share any cluster.
 CrossCorrelated("Time",
     DF::DataFrame,
     time::Symbol,
-    bandwidth::Real;
-    adj::Bool = true)
-CrossCorrelated("Time",
-    DF::DataFrame,
-    time::Symbol,
-    kernel::Function;
+    bandwidth::Real,
+    [kernel::Function = parzen];
     adj::Bool = true)
 ```
 
@@ -77,9 +73,6 @@ with the time difference between them. Correlation is arbitrary below that limit
 The bandwidth and the kernel function control the upper bound.
 `time` specifies the column of `DF` that contains the date of each observation (`Date`).
 
-The first method takes a bandwidth and uses the Parzen kernel.
-The second method takes a kernel function instead, which must incorporate the bandwidth.
-The first method is equivalent to setting `x -> parzen(x / bandwidth)`.
 The following kernels are predefined for convenience:
 Bartlett (`bartlett`), Parzen (`parzen`), Truncated (`truncated`)
 and Tukey-Hanning (`tukeyhanning`).
@@ -90,13 +83,8 @@ CrossCorrelated("Space",
     DF::DataFrame,
     latitude::Symbol,
     longitude::Symbol,
-    bandwidth::Real;
-    adj::Bool = true)
-CrossCorrelated("Space",
-    DF::DataFrame,
-    latitude::Symbol,
-    longitude::Symbol,
-    kernel::Function;
+    bandwidth::Real,
+    [kernel::Function = parzen];
     adj::Bool = true)
 ```
 
@@ -104,10 +92,9 @@ The maximum possible correlation between two observations declines
 with the spatial distance between them. Correlation is arbitrary below that limit.
 The bandwidth and the kernel function control the upper bound.
 `latitude` and `longitude` specify the columns of `DF`
-that contain the coordinates of each observation (`Float64`).
+that contain the coordinates of each observation in radians (`Float64`).
 
-For an explanation of the difference between the two methods,
-see `CrossCorrelated("time", args...)` above.
+For a list of predefined kernels, see `CrossCorrelated("time", args...)` above.
 
 ```julia
 CrossCorrelated("Time and space",
@@ -116,28 +103,20 @@ CrossCorrelated("Time and space",
     bandwidth_time::Real,
     latitude::Symbol,
     longitude::Symbol,
-    bandwidth_space::Real;
-    adj::Bool = true)
-CrossCorrelated("Time and space",
-    DF::DataFrame,
-    time::Symbol,
-    kernel_time::Function,
-    latitude::Symbol,
-    longitude::Symbol,
-    kernel_space::Function;
+    bandwidth_space::Real,
+    [kernel::Function = parzen];
     adj::Bool = true)
 ```
 
 The maximum possible correlation between two observations declines
 with the time difference and the spatial distance between them.
 Correlation is arbitrary below that limit.
-The bandwidths and the kernel functions control the upper bound.
+The bandwidths and the kernel function control the upper bound.
 `time` specifies the column of `DF` that contains the date of each observation.
 `latitude` and `longitude` specify the columns of `DF`
-that contain the coordinates of each observation (`Float64`).
+that contain the coordinates of each observation in radians (`Float64`).
 
-For an explanation of the difference between the two methods,
-see `CrossCorrelated("time", args...)` above.
+For a list of predefined kernels, see `CrossCorrelated("time", args...)` above.
 
 ## `Microdata`
 

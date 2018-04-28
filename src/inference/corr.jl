@@ -130,20 +130,23 @@ end
 
 # CORRELATION ACROSS TIME
 
-function cc_time(df::DataFrame, x::Symbol, b::Real; kwargs...)
-    k(z) = parzen(z / float(b))
-    return cc_time(df, x, k; kwargs...)
-end
-
-function cc_time(df::DataFrame, x::Symbol, k::Function; adj::Bool = true)
+function cc_time(
+        df::DataFrame,
+        x::Symbol,
+        b::Real,
+        k::Function;
+        adj::Bool = true
+    )
 
     msng  = BitVector(size(df, 1))
     msng .= .!ismissing.(df[x])
-    xx    = df[x][msng] :: Vector{Date}
+    xx    = Vector{Date}(df[x][msng])
     n     = sum(msng)
     idx₁  = Vector{Int}(1:n)
     idx₂  = Vector{Int}(1:n)
     val   = fill(1.0, n)
+
+    kernel(z) = k(z / float(b))
 
     for i = 1:n
         for j = 1:(i - 1)
@@ -162,26 +165,30 @@ end
 
 # CORRELATION ACROSS SPACE
 
-function cc_space(df::DataFrame, y::Symbol, x::Symbol, b::Real; kwargs...)
-    k(z) = parzen(z / float(b))
-    return cc_space(df, y, x, k; kwargs...)
-end
-
-function cc_space(df::DataFrame, y::Symbol, x::Symbol, k::Function; adj::Bool = true)
+function cc_space(
+        df::DataFrame,
+        y::Symbol,
+        x::Symbol,
+        b::Real,
+        k::Function = parzen;
+        adj::Bool = true
+    )
 
     msng  = BitVector(size(df, 1))
     msng .= .!(ismissing.(df[y]) .& ismissing.(df[x]))
-    yy    = df[y][msng] :: Vector{Float64}
-    xx    = df[x][msng] :: Vector{Float64}
+    yy    = Vector{Float64}(df[y][msng])
+    xx    = Vector{Float64}(df[x][msng])
     n     = sum(msng)
     idx₁  = Vector{Int}(1:n)
     idx₂  = Vector{Int}(1:n)
     val   = fill(1.0, n)
 
+    kernel(z) = k(z / float(b))
+
     for i = 1:n
         for j = 1:(i - 1)
             w = geodistance(yy[i], xx[i], yy[j], xx[j])
-            w = k(w)
+            w = kernel(w)
             if w > 0.0
                 push!(idx₁, j)
                 push!(idx₂, i)
@@ -196,46 +203,40 @@ end
 # CORRELATION ACROSS TIME AND SPACE
 
 function cc_timespace(
-        df::DataFrame, x₁::Symbol, b₁::Real, y₂::Symbol, x₂::Symbol, b₂::Real; kwargs...
-    )
-
-    k₁(z) = parzen(z / float(b₁))
-    k₂(z) = parzen(z / float(b₂))
-
-    cc_timespace(df, x₁, k₁, y₂, x₂, k₂; kwargs...)
-end
-
-function cc_timespace(
         df::DataFrame,
         x₁::Symbol,
-        k₁::Function,
+        b₁::Real,
         y₂::Symbol,
         x₂::Symbol,
-        k₂::Function;
+        b₂::Real,
+        k::Function = parzen;
         adj::Bool = true
     )
 
     msng  = BitVector(size(df, 1))
     msng .= .!(ismissing.(df[x₁]) .& ismissing.(df[y₂]) .& ismissing.(df[x₂]))
-    xx₁   = df[x₁][msng] :: Vector{Date}
-    yy₂   = df[y₂][msng] :: Vector{Float64}
-    xx₂   = df[x₂][msng] :: Vector{Float64}
+    xx₁   = Vector{Date}(df[x₁][msng])
+    yy₂   = Vector{Float64}(df[y₂][msng])
+    xx₂   = Vector{Float64}(df[x₂][msng])
     n     = sum(msng)
     idx₁  = Vector{Int}(1:n)
     idx₂  = Vector{Int}(1:n)
     val   = fill(1.0, n)
 
+    b₁ = float(b₁)
+    b₂ = float(b₂)
+
+    kernel(z₁, z₂) = k(sqrt(abs2(z₁) + abs2(z₂)))
+
     for i = 1:n
         for j = 1:(i - 1)
-            w₁ = Dates.value(xx₁[i] - xx₁[j])
-            w₁ = k₁(w₁)
-            if w₁ > 0.0
-                w₂ = geodistance(yy₂[i], xx₂[i], yy₂[j], xx₂[j])
-                w₂ = k₂(w₂)
-                if w₂ > 0.0
+            w₁ = Dates.value(xx₁[i] - xx₁[j]) / b₁
+            if w₁ <= 1.0
+                w₂ = geodistance(yy₂[i], xx₂[i], yy₂[j], xx₂[j]) / b₂
+                if w₂ <= 1.0
                     push!(idx₁, j)
                     push!(idx₂, i)
-                    push!(val, w₁ * w₂)
+                    push!(val, kernel(w₁, w₂))
                 end
             end
         end
