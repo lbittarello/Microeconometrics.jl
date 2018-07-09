@@ -15,7 +15,7 @@ import StatsBase:   fit, coef, confint, stderr, vcov
 import StatsBase:   loglikelihood, nullloglikelihood, deviance, nulldeviance
 import StatsBase:   aic, aicc, bic, dof, dof_residual, nobs, r2, r², adjr2, adjr²
 import StatsBase:   model_response, predict, fitted, residuals
-import StatsModels: Terms
+import StatsModels: Terms, evalcontrasts
 
 const PWeights = ProbabilityWeights{Float64, Float64, Vector{Float64}}
 

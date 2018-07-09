@@ -20,7 +20,7 @@ function first_stage(
         ::Type{Tan}, ::Type{M}, MD::Microdata; kwargs...
     ) where {M <: Micromodel}
 
-    FSD                = Microdata(MD)
+    FSD                = Microdata(MD, Dict{Symbol,String}())
     FSD.map[:response] = FSD.map[:instrument]
     pop!(FSD.map, :treatment)
     pop!(FSD.map, :instrument)

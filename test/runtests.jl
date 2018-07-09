@@ -1,18 +1,16 @@
 #==========================================================================================#
 
-# MISE EN PLACE
+# This file replicates tests from the official documentation of Stata
+# Some DOF adjustements are necessary because Stata uses different corrections
 
-# This file replicates tests of GLM.jl
-# Benchmark estimates from Stata
-# The comparison of coefficients and variances fails on Travis but passes on my computer.
-# The comparison of summary statistics (R², etc.) passes on Travis though. 
+#==========================================================================================#
+
+# MISE EN PLACE
 
 using Base.Test
 using CSV
 using DataFrames
 using Microeconometrics
-
-# using RDatasets
 
 function test_show(x)
     io = IOBuffer()
@@ -21,109 +19,168 @@ end
 
 const datadir = joinpath(dirname(@__FILE__), "..", "data")
 
-dst = CSV.read(joinpath(datadir, "admit.csv"))
-categorical!(dst, :rank)
-levels!(dst[:rank], [1; 2; 3; 4])
+#==========================================================================================#
+
+S        = CSV.read(joinpath(datadir, "auto.csv"))
+S[:gpmw] = ((1.0 ./ S[:mpg]) ./ S[:weight]) * 100000
+M        = Dict(:response => "gpmw", :control => "foreign + 1")
+
+@testset "OLS_Homoscedastic" begin
+
+    D = Microdata(S, M, vcov = Homoscedastic())
+    E = fit(OLS, D)
+
+    β = [0.24615258;  1.60900394]
+    t = [4.47967818; 53.70367955]
+
+    test_show(E)
+    @test isapprox(coef(E), β, atol = 1e-7)
+    @test isapprox(tstat(E), t, atol = 1e-7)
+    @test isapprox(r2(E), 0.21796522, atol = 1e-7)
+    @test isapprox(adjr2(E), 0.20710363, atol = 1e-7)
+    @test dof(E) == 2
+end
+
+@testset "OLS_Heteroscedastic" begin
+    
+    D = Microdata(S, M, vcov = Heteroscedastic())
+    E = fit(OLS, D)
+
+    β = [0.24615258;  1.60900394]
+    t = [3.62395001; 68.60409513]
+    c = (nobs(D) - dof(E)) / (nobs(D) - 1)
+    t = t / sqrt(c)
+
+    test_show(E)
+    @test isapprox(coef(E), β, atol = 1e-7)
+    @test isapprox(vcov(E), Σ, atol = 1e-7)
+    @test isapprox(r2(E), 0.21796522, atol = 1e-7)
+    @test isapprox(adjr2(E), 0.20710363, atol = 1e-7)
+    @test dof(E) == 2
+end
+
+T        = Dict("age" => Union{Int, Missing})
+S        = CSV.read(joinpath(datadir, "regsmpl.csv"), types = T)
+S[:age2] = Array{eltype(S[:age])}(S[:age].^2)
+W        = Clustered(S, :idcode)
+M        = Dict(:response => "ln_wage", :control => "age + age2 + tenure + 1")
+
+@testset "OLS_Clustered" begin
+
+    D = Microdata(S, M, vcov = W)
+    E = fit(OLS, D)
+
+    β = [ 0.07521723; - 0.00108513;  0.03908767; 0.33398213]
+    t = [16.45483785; -13.93935551; 27.09636359; 5.20287523]
+    c = (nobs(D) - dof(E)) / (nobs(D) - 1)
+    t = t / sqrt(c)
+
+    test_show(E)
+    @test isapprox(coef(E), β, atol = 1e-7)
+    @test isapprox(tstat(E), t, atol = 1e-7)
+    @test isapprox(r2(E), 0.16438516, atol = 1e-7)
+    @test isapprox(adjr2(E), 0.16429594, atol = 1e-7)
+    @test dof(E) == 4
+end
 
 #==========================================================================================#
 
-# OLS (HOMOSCEDASTIC AND HETEROSCEDASTIC)
-
-dta = Microdata(dst,
-        vcov     = Homoscedastic(),
-        response = "admit",
-        control  = "gre + gpa + rank + 1"
-    )
-
-@testset "OLS" begin
-
-    β = [ 0.000429571929473655,   0.15553504461108347,  -0.16236534900556865,   -0.29057048097027482,  -0.32302636447611138,   -0.25891026592052002]
-    Σ = [ 4.4409112846844833e-08 -5.2061877517127125e-06 2.2447984689419577e-07  1.5346257161799411e-06 1.1482504422320791e-06 -9.1920770963497e-06;
-         -5.2061877517127125e-06  0.0040911163546319476  0.00029203296933483263 -0.00010951885403627599 0.00033444601376508913 -0.010941931515982465;
-          2.2447984689419577e-07  0.00029203296933483263 0.0045852505832302227   0.0032585581285509767  0.0032930670027127977  -0.004390124022720909;
-          1.5346257161799411e-06 -0.00010951885403627599 0.0032585581285509767   0.0049344059905648422  0.0032935281167461705  -0.003805071034601715;
-          1.1482504422320791e-06  0.00033444601376508913 0.0032930670027127977   0.0032935281167461705  0.0062910843775486735  -0.005101747011265963;
-         -9.1920770963497217e-06 -0.010941931515982465  -0.0043901240227209089  -0.0038050710346017153 -0.0051017470112659632   0.046651851241290704]
-
-    e_ols = fit(OLS, dta)
-    test_show(e_ols)
-    # @test isapprox(coef(e_ols), β, rtol = 1e-6)
-    # @test isapprox(vcov(e_ols), Σ, rtol = 1e-6)
-    @test dof(e_ols) == 6
-    @test r²(e_ols) == r2(e_ols)
-    @test isapprox(r2(e_ols), 0.10040063215283745, rtol = 1e-6)
-    @test adjr²(e_ols) == adjr2(e_ols)
-    @test isapprox(adjr2(e_ols), 0.088984396520259246, rtol = 1e-6)
-end
-
-dta = Microdata(dst, response = "admit", control = "gre + gpa + rank + 1")
-
-@testset "OLS" begin
-
-    β = [ 0.000429571929473655, 0.15553504461108347, -0.16236534900556865, -0.29057048097027482, -0.32302636447611138, -0.25891026592052002]
-    Σ = [ 4.4462798049183e-08  -6.3043353267136e-06  -1.8900448858879e-07   2.2539381327485e-06   1.1981548484179e-06  -5.0950052858552e-06;
-         -6.3043353267136e-06   0.004312799902146202  0.000475148552298712 -0.000013338201954415  0.000585560122944092 -0.011071699480791437;
-         -1.8900448858879e-07   0.000475148552298712  0.005384700529964127  0.003862674769727536  0.003919944075260557 -0.005359364320204422;
-          2.2539381327485e-06  -0.000013338201954415  0.003862674769727536  0.005390383877554103  0.003940994731760461 -0.005157444298089597;
-          1.1981548484179e-06   0.000585560122944092  0.003919944075260557  0.003940994731760461  0.006162907798355558 -0.006582117075004828;
-         -5.0950052858552e-06  -0.011071699480791437 -0.005359364320204422 -0.005157444298089597 -0.006582117075004828  0.045103276992234202]
-    Σ = Σ * (nobs(dta) - 6) / (nobs(dta) - 1)
-
-    e_ols = fit(OLS, dta)
-    test_show(e_ols)
-    # @test isapprox(coef(e_ols), β, rtol = 1e-6)
-    # @test isapprox(vcov(e_ols), Σ, rtol = 1e-6)
-    @test dof(e_ols) == 6
-    @test r²(e_ols) == r2(e_ols)
-    @test isapprox(r2(e_ols), 0.10040063215283745, rtol = 1e-6)
-    @test adjr²(e_ols) == adjr2(e_ols)
-    @test isapprox(adjr2(e_ols), 0.088984396520259246, rtol = 1e-6)
-end
-
-#==========================================================================================#
-
-# BINARY MODELS (LOGIT AND PROBIT)
+S = CSV.read(joinpath(datadir, "lbw.csv"))
+M = Dict(:response => "low", :control => "age + lwt + race + smoke + ptl + ht + ui + 1")
+C = Dict(:race => DummyCoding(base = "white"))
 
 @testset "Logit" begin
 
-    β = [ 0.002264425686851301, 0.80403765432250718, -0.67544293014419832, -1.3402039302354818,  -1.5514636766000955,  -3.9899793751140131]
-    Σ = [ 1.2159203067002e-06  -0.000148638107859156 -0.000020595591827649  0.000019832589620778  6.2784736791789e-07  -0.000216216988528764;
-         -0.000148638107859156  0.11911876954323979   0.005560546674430834 -0.013123463377009276  0.007183175701477629 -0.31995634410624479;
-         -0.000020595591827649  0.005560546674430834  0.098890501693438132  0.067664905730811062  0.068467194540213536 -0.074953973404830176;
-          0.000019832589620778 -0.013123463377009276  0.067664905730811062  0.11869799089189373   0.067675852608231432 -0.035144567287278612;
-          6.2784736791789e-07   0.007183175701477629  0.068467194540213536  0.067675852608231432  0.17310124480641462  -0.093326165113204448;
-         -0.000216216988528764 -0.31995634410624479  -0.074953973404830176 -0.035144567287278612 -0.093326165113204448  1.2952465434985325]
+    D = Microdata(S, M, vcov = Homoscedastic(), contrasts = C)
+    E = fit(Logit, D)
 
-    e_logit = fit(Logit, dta)
-    test_show(e_logit)
-    # @test isapprox(coef(e_logit), β, rtol = 1e-6)
-    # @test isapprox(vcov(e_logit), Σ, rtol = 1e-6)
-    @test dof(e_logit) == 6
-    @test isapprox(deviance(e_logit), 458.5174924758994, rtol = 1e-6)
-    @test isapprox(loglikelihood(e_logit), -229.25874623794968, rtol = 1e-6)
-    @test isapprox(aic(e_logit), 470.51749247589936, rtol = 1e-6)
-    @test isapprox(aicc(e_logit), 470.7312329339146, rtol = 1e-6)
-    @test isapprox(bic(e_logit), 494.4662797585473, rtol = 1e-6)
+    β = [-0.02710031; -0.01515082; 1.26264728; 0.86207916; 0.92334482;
+          0.54183656;  1.83251780; 0.75851348; 0.46122388]
+    t = [-0.74348404; -2.18756627; 2.39859983; 1.96304899; 2.30360141;
+          1.56487547;  2.64956671; 1.65117944; 0.38288876]
+
+    test_show(E)
+    @test isapprox(coef(E), β, atol = 1e-7)
+    @test isapprox(tsat(E), Σ, atol = 1e-7)
+    @test isapprox(deviance(E), 201.44799113, atol = 1e-7)
+    @test isapprox(loglikelihood(E), -100.72399557, atol = 1e-7)
+    @test isapprox(aic(E), 219.44799113, atol = 1e-7)
+    @test isapprox(aicc(E), 220.45357772, atol = 1e-7)
+    @test isapprox(bic(E), 248.62371427, atol = 1e-7)
+    @test dof(E) == 9
 end
 
 @testset "Probit" begin
 
-    β = [ 0.001375591384186339, 0.47773021931968979, -0.41539915385378845, -0.81213797661899356, -0.93589902632410449, -2.3868375065868439]
-    Σ = [ 4.2634875235575e-07  -0.000051654658511982 -3.9403792424547e-06   0.00001089975642175   4.2631140400057e-06  -0.000079586034209565;
-         -0.000051654658511982  0.041072500931241956  0.002277485205101849 -0.003466426007569626  0.002716683202061262 -0.11009373454569867;
-         -3.9403792424547e-06   0.002277485205101849  0.037677217834765742  0.026113012145273659  0.026423791441382519 -0.031726724582951657;
-          0.00001089975642175  -0.003466426007569626  0.026113012145273659  0.043262565138014235  0.026257130518589956 -0.020975264118571712;
-          4.2631140400057e-06   0.002716683202061262  0.026423791441382519  0.026257130518589956  0.059621019115050258 -0.038223591042383265;
-         -0.000079586034209565 -0.11009373454569867  -0.031726724582951657 -0.020975264118571712 -0.038223591042383265  0.45295238159591533]
+    E = fit(Probit, D) ;
 
-    e_probit = fit(Probit, dta)
-    test_show(e_probit)
-    # @test isapprox(coef(e_probit), β, rtol = 1e-6)
-    # @test isapprox(vcov(e_probit), Σ, rtol = 1e-6)
-    @test dof(e_probit) == 6
-    @test isapprox(deviance(e_probit), 458.4131713833386, rtol = 1e-6)
-    @test isapprox(loglikelihood(e_probit), -229.20658569166932, rtol = 1e-6)
-    @test isapprox(aic(e_probit), 470.41317138333864, rtol = 1e-6)
-    @test isapprox(aicc(e_probit), 470.6269118413539, rtol = 1e-6)
-    @test isapprox(bic(e_probit), 494.36195866598655, rtol = 1e-6)
+    β = [-0.01754447; -0.00882045; 0.74752563; 0.51447107; 0.56276006;
+          0.31782665; 1.09945075; 0.46279438; 0.26827531]
+    t = [-0.81114596; -2.21985717; 2.36080203; 2.01293659; 2.38681919;
+          1.58813858; 2.62223933; 1.67916817; 0.38241710]
+
+    test_show(E)
+    @test isapprox(coef(E), β, atol = 1e-7)
+    @test isapprox(tstat(E), t, atol = 1e-7)
+    @test isapprox(deviance(E), 201.12189887, atol = 1e-7)
+    @test isapprox(loglikelihood(E), -100.56094943, atol = 1e-7)
+    @test isapprox(aic(E), 219.12189887, atol = 1e-7)
+    @test isapprox(aicc(E), 220.12748546, atol = 1e-7)
+    @test isapprox(bic(E), 248.29762201, atol = 1e-7)
+    @test dof(E) == 9
+end
+
+#==========================================================================================#
+
+S         = CSV.read(joinpath(datadir, "cattaneo2.csv"))
+S[:mage2] = S[:mage].^2
+
+M = Dict(
+        :response  => "bweight",
+        :control   => "mmarried + mage + mage2 + fbaby + medu + 1",
+        :treatment => "mbsmoke",
+    )
+
+@testset "IPW" begin
+
+    D = Microdata(S, M)
+    E = fit(IPW, Probit, D)
+
+    β = [-230.68863780; 3403.46270868]
+    t = [  -8.93614020; 355.58787307]
+    c = nobs(E) / (nobs(E) - 1)
+    t = t / sqrt(c)
+
+    test_show(E)
+    @test isapprox(coef(E), β, atol = 1e-7)
+    @test isapprox(tstat(E), t, atol = 1e-7)
+    @test dof(E) == 2
+end
+
+#==========================================================================================#
+
+S = CSV.read(joinpath(datadir, "hsng2.csv"))
+M = Dict(
+        :response   => "rent",
+        :control    => "pcturban + 1",
+        :treatment  => "hsngval",
+        :instrument => "faminc + region"
+    )
+
+@testset "TSLS" begin
+
+    D = Microdata(S, M)
+    E = fit(IV, D)
+
+    β = [0.00223983; 0.08151597]
+    t = [3.33306931; 0.18334930]
+    c = nobs(E) / (nobs(E) - 1)
+    t = t / sqrt(c)
+
+    test_show(E)
+    @test isapprox(coef(E), β, atol = 1e-7)
+    @test isapprox(tstat(E), t, atol = 1e-7)
+    @test isapprox(r2(E), 0.59888202, atol = 1e-7)
+    @test isapprox(adjr2(E), 0.58181317, atol = 1e-7)
+    @test dof(E) == 2
 end

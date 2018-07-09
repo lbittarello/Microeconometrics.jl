@@ -15,14 +15,14 @@ end
 # CONSTRUCTOR
 
 function Microdata(
-        df::DataFrame;
-        vcov::CorrStructure = Heteroscedastic(),
-        weights::AbstractWeights = UnitWeights(fill(1.0, size(df, 1))),
+        df::DataFrame, model::Dict{Symbol, String};
+        contrasts::Dict = Dict(),
         subset::AbstractVector{Bool} = trues(size(df, 1)),
-        kwargs...
+        vcov::CorrStructure = Heteroscedastic(),
+        weights::AbstractWeights = UnitWeights(fill(1.0, size(df, 1)))
     )
 
-    input    = reduce((x, y) -> x * " + " * y[2], "", kwargs)
+    input    = reduce((x, y) -> x * " + " * model[y], "", keys(model))
     formula  = @eval @formula $nothing ~ $(parse(input))
     terms    = Terms(formula)
     eterms   = terms.eterms
@@ -31,13 +31,12 @@ function Microdata(
     new_corr = adjmsng!(msng, vcov)
     new_wts  = parse_weights(weights, msng)
     new_df   = DataFrame(map(x -> disallowmissing(df[x][msng]), eterms), Symbol.(eterms))
-    frame    = ModelFrame(new_df, terms, msng)
+    frame    = ModelFrame(new_df, terms, msng, evalcontrasts(df, contrasts))
     names    = StatsModels.coefnames(frame)
     mat      = ModelMatrix(frame)
+    new_map  = Dict{Symbol, Vector{Int}}()
 
-    new_map = Dict{Symbol, Vector{Int}}()
-
-    for (i, j) in kwargs
+    for (i, j) in model
         new_map[i] = assign_columns(j, terms, mat.assign)
     end
 
@@ -46,11 +45,11 @@ end
 
 # REASSIGN VARIABLE SETS
 
-function Microdata(MD::Microdata; kwargs...)
+function Microdata(MD::Microdata, model::Dict{Symbol, String})
 
     new_map = copy(MD.map)
 
-    for (i, j) in kwargs
+    for (i, j) in model
         if j == ""
             pop!(new_map, i)
         else
