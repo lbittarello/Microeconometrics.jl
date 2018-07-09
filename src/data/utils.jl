@@ -21,26 +21,24 @@ function adjmsng!(msng::BitVector, corr::Clustered)
 
     (msng == corr.msng) && (return copy(corr))
 
-    intersect = msng .* corr.msng
-    msng     .= intersect
-    touse     = intersect[corr.msng]
-    new_ic    = copy(corr.ic[touse])
-    new_nc    = length(unique(new_ic))
-    new_mat   = copy(corr.mat[touse, touse])
+    msng  .*= corr.msng
+    touse   = msng[corr.msng]
+    new_ic  = corr.ic[touse]
+    new_nc  = length(unique(new_ic))
+    new_mat = Symmetric(corr.mat[touse, touse])
 
-    return Clustered(corr.adj, intersect, new_mat, new_ic, new_nc)
+    return Clustered(corr.adj, msng, new_mat, new_ic, new_nc)
 end
 
 function adjmsng!(msng::BitVector, corr::CrossCorrelated)
 
     (msng == corr.msng) && (return copy(corr))
 
-    intersect = msng .* corr.msng
-    msng     .= intersect
-    touse     = intersect[corr.msng]
-    new_mat   = copy(corr.mat[touse, touse])
+    msng  .*= corr.msng
+    touse   = msng[corr.msng]
+    new_mat = Symmetric(corr.mat[touse, touse])
 
-    return CrossCorrelated(corr.adj, intersect, new_mat)
+    return CrossCorrelated(corr.adj, msng, new_mat)
 end
 
 #==========================================================================================#

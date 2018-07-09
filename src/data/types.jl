@@ -25,32 +25,38 @@ function Microdata(
     input    = reduce((x, y) -> x * " + " * y[2], "", kwargs)
     formula  = @eval @formula $nothing ~ $(parse(input))
     terms    = Terms(formula)
+    eterms   = terms.eterms
     msng     = BitVector(completecases(df[:, terms.eterms]))
     msng    .= msng .* (.!iszero.(weights)) .* BitVector(subset)
     new_corr = adjmsng!(msng, vcov)
     new_wts  = parse_weights(weights, msng)
-    frame    = ModelFrame(df[msng, terms.eterms], terms, msng)
+    new_df   = DataFrame(map(x -> disallowmissing(df[x][msng]), eterms), Symbol.(eterms))
+    frame    = ModelFrame(new_df, terms, msng)
     names    = StatsModels.coefnames(frame)
     mat      = ModelMatrix(frame)
 
-    map = Dict{Symbol, Vector{Int}}()
+    new_map = Dict{Symbol, Vector{Int}}()
 
     for (i, j) in kwargs
-        map[i] = assign_columns(j, terms, mat.assign)
+        new_map[i] = assign_columns(j, terms, mat.assign)
     end
 
-    return Microdata(msng, mat, new_corr, new_wts, names, map, terms)
+    return Microdata(msng, mat, new_corr, new_wts, names, new_map, terms)
 end
 
 # REASSIGN VARIABLE SETS
 
 function Microdata(MD::Microdata; kwargs...)
 
-    map = copy(MD.map)
+    new_map = copy(MD.map)
 
     for (i, j) in kwargs
-        (j == "") ? pop!(map, i) : (map[i] = assign_columns(j, MD.terms, MD.mat.assign))
+        if j == ""
+            pop!(new_map, i)
+        else
+            new_map[i] = assign_columns(j, MD.terms, MD.mat.assign)
+        end
     end
 
-    Microdata(MD.msng, MD.mat, MD.corr, MD.weights, MD.names, map, MD.terms)
+    Microdata(MD.msng, MD.mat, MD.corr, MD.weights, MD.names, new_map, MD.terms)
 end

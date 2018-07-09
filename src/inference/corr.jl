@@ -48,19 +48,28 @@ function Clustered(df::DataFrame, x::Symbol; adj::Bool = true)
 
     msng  = BitVector(size(df, 1))
     msng .= .!ismissing.(df[x])
-    ic    = Array(df[x][msng])
+    ic    = disallowmissing(df[x][msng])
     n     = sum(msng)
     iter  = unique(ic)
     nc    = length(iter)
     idx₁  = Vector{Int}(1:n)
     idx₂  = Vector{Int}(1:n)
+    nn    = n
 
     @inbounds for i in iter
+
         idx = findin(ic, [i])
-        for j = 1:length(idx)
+        nix = length(idx)
+        nel = Int(nix * (nix - 1) / 2)
+
+        append!(idx₁, Vector{Int}(nel))
+        append!(idx₂, Vector{Int}(nel))
+
+        for j = 1:nix
             for k = 1:(j - 1)
-                push!(idx₁, idx[k])
-                push!(idx₂, idx[j])
+                nn += 1
+                idx₁[nn] = idx[k]
+                idx₂[nn] = idx[j]
             end
         end
     end
@@ -94,31 +103,47 @@ function cc_twowayclustering(df::DataFrame, x₁::Symbol, x₂::Symbol; adj::Boo
 
     msng   = BitVector(size(df, 1))
     msng  .= .!(ismissing.(df[x₁]) .& ismissing.(df[x₂]))
-    ic₁    = df[x₁][msng]
-    ic₂    = df[x₂][msng]
+    ic₁    = disallowmissing(df[x₁][msng])
+    ic₂    = disallowmissing(df[x₂][msng])
     n      = sum(msng)
     iter₁  = unique(ic₁)
     iter₂  = unique(ic₂)
     idx₁   = Vector{Int}(1:n)
     idx₂   = Vector{Int}(1:n)
+    nn     = n
 
     @inbounds for i in iter₁
+
         idx = findin(ic₁, [i])
-        nix  = length(idx)
+        nix = length(idx)
+        nel = Int(nix * (nix - 1) / 2)
+
+        append!(idx₁, Vector{Int}(nel))
+        append!(idx₂, Vector{Int}(nel))
+
         for j = 1:nix
             for k = 1:(j - 1)
-                push!(idx₁, idx[k])
-                push!(idx₂, idx[j])
+                nn += 1
+                idx₁[nn] = idx[k]
+                idx₂[nn] = idx[j]
             end
         end
     end
+
     @inbounds for i in iter₂
+
         idx = findin(ic₂, [i])
-        nix  = length(idx)
+        nix = length(idx)
+        nel = Int(nix * (nix - 1) / 2)
+
+        append!(idx₁, Vector{Int}(nel))
+        append!(idx₂, Vector{Int}(nel))
+
         for j = 1:nix
             for k = 1:(j - 1)
-                push!(idx₁, idx[k])
-                push!(idx₂, idx[j])
+                nn += 1
+                idx₁[nn] = idx[k]
+                idx₂[nn] = idx[j]
             end
         end
     end
