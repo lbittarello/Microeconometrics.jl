@@ -54,8 +54,7 @@ function _fit!(obj::Logit, w::UnitWeights)
         A_mul_B!(μ, x, β)
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
-            ηi   = logistic(μi)
-            r[i] = ηi - yi
+            r[i] = logistic(μi) - yi
         end
 
         g[:] = x' * r
@@ -69,7 +68,7 @@ function _fit!(obj::Logit, w::UnitWeights)
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             ηi   = logistic(μi)
             r[i] = ηi - yi
-            ll  += (iszero(yi) ? log(1.0 - ηi) : log(ηi))
+            ll  -= (iszero(yi) ? log(1.0 - ηi) : log(ηi))
         end
 
         g[:] = x' * r
@@ -117,7 +116,7 @@ function _fit!(obj::Logit, w::AbstractWeights)
         ll = 0.0
 
         @inbounds for (yi, μi, wi) in zip(y, μ, w)
-            ll += wi * (iszero(yi) ? log(1.0 - ηi) : log(ηi))
+            ll += wi * (iszero(yi) ? log1pexp(μi) : log1pexp(- μi))
         end
 
         return ll
@@ -142,7 +141,7 @@ function _fit!(obj::Logit, w::AbstractWeights)
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             ηi   = logistic(μi)
             r[i] = wi * (ηi - yi)
-            ll  += wi * (iszero(yi) ? log(1.0 - ηi) : log(ηi))
+            ll  -= wi * (iszero(yi) ? log(1.0 - ηi) : log(ηi))
         end
 
         g[:] = x' * r
