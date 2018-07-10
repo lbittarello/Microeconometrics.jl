@@ -13,11 +13,6 @@ using DataFrames
 using Microeconometrics
 using StatsModels
 
-function test_show(x)
-    io = IOBuffer()
-    show(io, x)
-end
-
 const datadir = joinpath(dirname(@__FILE__), "..", "data")
 
 #==========================================================================================#
@@ -34,7 +29,6 @@ M        = Dict(:response => "gpmw", :control => "foreign + 1")
     β = [0.24615258; 1.60900394]
     s = [0.05494872; 0.02996078]
 
-    test_show(E)
     @test isapprox(coef(E), β, atol = 1e-7)
     @test isapprox(stderr(E), s, atol = 1e-7)
     @test isapprox(r2(E), 0.21796522, atol = 1e-7)
@@ -52,7 +46,6 @@ end
     c = (nobs(E) - dof(E)) / (nobs(E) - 1)
     s = s * sqrt(c)
 
-    test_show(E)
     @test isapprox(coef(E), β, atol = 1e-7)
     @test isapprox(stderr(E), s, atol = 1e-7)
     @test isapprox(r2(E), 0.21796522, atol = 1e-7)
@@ -99,7 +92,6 @@ C = Dict(:race => DummyCoding(base = "white"))
     s = [ 0.03645043;  0.00692588; 0.52641014; 0.43915315; 0.40082664;
           0.34624900; 0.69162923; 0.45937677; 1.20458975]
 
-    test_show(E)
     @test isapprox(coef(E), β, atol = 1e-7)
     @test isapprox(stderr(E), s, atol = 1e-7)
     @test isapprox(deviance(E), 201.44799113, atol = 1e-7)
@@ -112,14 +104,14 @@ end
 
 @testset "Probit" begin
 
-    E = fit(Probit, D) ;
+    D = Microdata(S, M, vcov = Homoscedastic(), contrasts = C)
+    E = fit(Probit, D)
 
     β = [-0.01754447; -0.00882045; 0.74752563; 0.51447107; 0.56276006;
           0.31782665;  1.09945075; 0.46279438; 0.26827531]
     s = [ 0.02162924;  0.00397343; 0.31664054; 0.25558235; 0.23577825;
           0.20012526;  0.41927933; 0.27560931; 0.70152540]
 
-    test_show(E)
     @test isapprox(coef(E), β, atol = 1e-7)
     @test isapprox(stderr(E), s, atol = 1e-7)
     @test isapprox(deviance(E), 201.12189887, atol = 1e-7)
@@ -151,7 +143,6 @@ M = Dict(
     c = nobs(E) / (nobs(E) - 1)
     s = s * sqrt(c)
 
-    test_show(E)
     @test isapprox(coef(E), β, atol = 1e-7)
     @test isapprox(stderr(E), s, atol = 1e-7)
     @test dof(E) == 2
@@ -177,7 +168,6 @@ M = Dict(
     c = nobs(E) / (nobs(E) - 1)
     s = s * sqrt(c)
 
-    test_show(E)
     @test isapprox(coef(E), β, atol = 1e-7)
     @test isapprox(stderr(E), s, atol = 1e-7)
     @test isapprox(r2(E), 0.59888202, atol = 1e-7)
