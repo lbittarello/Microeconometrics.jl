@@ -53,7 +53,7 @@ end
 
     test_show(E)
     @test isapprox(coef(E), β, atol = 1e-7)
-    @test isapprox(vcov(E), Σ, atol = 1e-7)
+    @test isapprox(tstat(E), t, atol = 1e-7)
     @test isapprox(r2(E), 0.21796522, atol = 1e-7)
     @test isapprox(adjr2(E), 0.20710363, atol = 1e-7)
     @test dof(E) == 2
@@ -101,7 +101,7 @@ C = Dict(:race => DummyCoding(base = "white"))
 
     test_show(E)
     @test isapprox(coef(E), β, atol = 1e-7)
-    @test isapprox(tsat(E), Σ, atol = 1e-7)
+    @test isapprox(tstat(E), t, atol = 1e-7)
     @test isapprox(deviance(E), 201.44799113, atol = 1e-7)
     @test isapprox(loglikelihood(E), -100.72399557, atol = 1e-7)
     @test isapprox(aic(E), 219.44799113, atol = 1e-7)
