@@ -16,16 +16,14 @@ end
 
 # FIRST STAGE
 
-function first_stage(
-        ::Type{FrölichMelly}, ::Type{M}, MD::Microdata; kwargs...
-    ) where {M <: Micromodel}
+function first_stage(::Type{FrölichMelly}, MM::Type{<:Micromodel}, MD::Microdata; kwargs...)
 
     FSD                = Microdata(MD, Dict{Symbol,String}())
     FSD.map[:response] = FSD.map[:instrument]
     pop!(FSD.map, :treatment)
     pop!(FSD.map, :instrument)
 
-    return fit(M, FSD; kwargs...)
+    return fit(MM, FSD; kwargs...)
 end
 
 #==========================================================================================#
@@ -34,13 +32,13 @@ end
 
 function fit(
         ::Type{FrölichMelly},
-        ::Type{M},
+        MM::Type{<:Micromodel},
         MD::Microdata;
         novar::Bool = false,
         kwargs...
-    ) where {M <: Micromodel}
+    )
 
-    m = first_stage(FrölichMelly, M, MD; novar = novar)
+    m = first_stage(FrölichMelly, MM, MD; novar = novar)
     return fit(FrölichMelly, m, MD; novar = novar, kwargs...)
 end
 

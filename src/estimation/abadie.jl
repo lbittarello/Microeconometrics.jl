@@ -16,15 +16,14 @@ end
 
 # FIRST STAGE
 
-function first_stage(
-        ::Type{Abadie}, ::Type{M}, MD::Microdata; kwargs...
-    ) where {M <: Micromodel}
+function first_stage(::Type{Abadie}, M₁::Type{<:Micromodel}, MD::Microdata; kwargs...)
 
     FSD                = Microdata(MD, Dict{Symbol,String}())
     FSD.map[:response] = FSD.map[:instrument]
     pop!(FSD.map, :treatment)
     pop!(FSD.map, :instrument)
-    return fit(M, FSD; kwargs...)
+
+    return fit(M₁, FSD; kwargs...)
 end
 
 #==========================================================================================#
@@ -33,12 +32,12 @@ end
 
 function fit(
         ::Type{Abadie},
-        ::Type{M₂},
-        ::Type{M₁},
+        M₂::Type{<:Micromodel},
+        M₁::Type{<:ParModel},
         MD::Microdata;
         novar::Bool = false,
         kwargs...
-    ) where {M₂ <: Micromodel, M₁ <: ParModel}
+    )
 
     m₁ = first_stage(Abadie, M₁, MD, novar = novar)
     return fit(Abadie, M₂, m₁, MD; novar = novar, kwargs...)
@@ -46,18 +45,18 @@ end
 
 function fit(
         ::Type{Abadie},
-        ::Type{M},
-        MM::Micromodel,
+        M₂::Type{<:Micromodel},
+        M₁::Micromodel,
         MD::Microdata;
         novar::Bool = false,
         trim::AbstractFloat = 0.0,
         kwargs...
-    ) where {M <: Micromodel}
+    )
 
     w = getweights(MD)
     d = getvector(MD, :treatment)
     z = getvector(MD, :instrument)
-    π = fitted(MM)
+    π = fitted(M₁)
     v = [1.0 - (1.0 - di) * zi / πi - di * (1.0 - zi) / (1.0 - πi)
          for (di, zi, πi) in zip(d, z, π)]
 
@@ -66,8 +65,8 @@ function fit(
     SSD               = Microdata(MD)
     SSD.map[:control] = vcat(SSD.map[:treatment], SSD.map[:control])
     obj               = Abadie()
-    obj.first_stage   = MM
-    obj.second_stage  = M(SSD; kwargs...)
+    obj.first_stage   = M₁
+    obj.second_stage  = M₂(SSD; kwargs...)
     obj.pscore        = π
     obj.weights       = pweights(v)
 

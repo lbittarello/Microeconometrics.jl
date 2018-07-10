@@ -16,15 +16,13 @@ end
 
 # FIRST STAGE
 
-function first_stage(
-        ::Type{IPW}, ::Type{M}, MD::Microdata; kwargs...
-    ) where {M <: Micromodel}
+function first_stage(::Type{IPW}, MM::Type{<:Micromodel}, MD::Microdata; kwargs...)
 
     FSD                = Microdata(MD, Dict{Symbol,String}())
     FSD.map[:response] = FSD.map[:treatment]
     pop!(FSD.map, :treatment)
 
-    return fit(M, FSD; kwargs...)
+    return fit(MM, FSD; kwargs...)
 end
 
 #==========================================================================================#
@@ -32,14 +30,10 @@ end
 # ESTIMATION
 
 function fit(
-        ::Type{IPW},
-        ::Type{M},
-        MD::Microdata;
-        novar::Bool = false,
-        kwargs...
-    ) where {M <: Micromodel}
+        ::Type{IPW}, MM::Type{<:Micromodel}, MD::Microdata; novar::Bool = false, kwargs...
+    )
 
-    m = first_stage(IPW, M, MD; novar = novar)
+    m = first_stage(IPW, MM, MD; novar = novar)
     return fit(IPW, m, MD; novar = novar, kwargs...)
 end
 

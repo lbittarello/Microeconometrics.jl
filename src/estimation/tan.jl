@@ -16,16 +16,14 @@ end
 
 # FIRST STAGE
 
-function first_stage(
-        ::Type{Tan}, ::Type{M}, MD::Microdata; kwargs...
-    ) where {M <: Micromodel}
+function first_stage(::Type{Tan}, MM::Type{<:Micromodel}, MD::Microdata; kwargs...)
 
     FSD                = Microdata(MD, Dict{Symbol,String}())
     FSD.map[:response] = FSD.map[:instrument]
     pop!(FSD.map, :treatment)
     pop!(FSD.map, :instrument)
 
-    return fit(M, FSD; kwargs...)
+    return fit(MM, FSD; kwargs...)
 end
 
 #==========================================================================================#
@@ -33,14 +31,10 @@ end
 # ESTIMATION
 
 function fit(
-        ::Type{Tan},
-        ::Type{M},
-        MD::Microdata;
-        novar::Bool = false,
-        kwargs...
-    ) where {M <: Micromodel}
+        ::Type{Tan}, MM::Type{<:Micromodel}, MD::Microdata; novar::Bool = false, kwargs...
+    )
 
-    m = first_stage(Tan, M, MD; novar = novar)
+    m = first_stage(Tan, MM, MD; novar = novar)
     return fit(Tan, m, MD; novar = novar, kwargs...)
 end
 
