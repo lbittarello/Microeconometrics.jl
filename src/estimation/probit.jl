@@ -35,8 +35,7 @@ function _fit!(obj::Probit, w::UnitWeights)
     β₀ = scale!(p, x \ y)
 
     μ  = x * β₀
-    r  = similar(y)
-    v  = similar(μ)
+    r  = similar(μ)
 
     function L(β::Vector)
 
@@ -86,10 +85,10 @@ function _fit!(obj::Probit, w::UnitWeights)
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             ηi   = (iszero(yi) ? (normcdf(μi) - 1.0) : normcdf(μi))
             ηi   = normpdf(μi) / ηi
-            v[i] = abs2(ηi) + μi * ηi
+            r[i] = abs2(ηi) + μi * ηi
         end
 
-        h[:, :] = crossprod(x, v)
+        h[:, :] = crossprod(x, r)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
@@ -112,8 +111,7 @@ function _fit!(obj::Probit, w::AbstractWeights)
     β₀ = scale!(p, x \ y)
 
     μ  = x * β₀
-    r  = similar(y)
-    v  = similar(μ)
+    r  = similar(μ)
 
     function L(β::Vector)
 
@@ -163,10 +161,10 @@ function _fit!(obj::Probit, w::AbstractWeights)
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             ηi   = (iszero(yi) ? (normcdf(μi) - 1.0) : normcdf(μi))
             ηi   = normpdf(μi) / ηi
-            v[i] = wi * (abs2(ηi) + μi * ηi)
+            r[i] = wi * (abs2(ηi) + μi * ηi)
         end
 
-        h[:, :] = crossprod(x, v)
+        h[:, :] = crossprod(x, r)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())

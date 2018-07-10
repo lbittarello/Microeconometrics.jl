@@ -35,8 +35,7 @@ function _fit!(obj::Logit, w::UnitWeights)
     β₀ = scale!(p, x \ y)
 
     μ  = x * β₀
-    r  = similar(y)
-    v  = similar(μ)
+    r  = similar(μ)
 
     function L(β::Vector)
 
@@ -84,10 +83,10 @@ function _fit!(obj::Logit, w::UnitWeights)
 
         @inbounds for (i, μi) in enumerate(μ)
             ηi   = logistic(μi)
-            v[i] = ηi * (1.0 - ηi)
+            r[i] = ηi * (1.0 - ηi)
         end
 
-        h[:, :] = crossprod(x, v)
+        h[:, :] = crossprod(x, r)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
@@ -110,8 +109,7 @@ function _fit!(obj::Logit, w::AbstractWeights)
     β₀ = scale!(p, x \ y)
 
     μ  = x * β₀
-    r  = similar(y)
-    v  = similar(μ)
+    r  = similar(μ)
 
     function L(β::Vector)
 
@@ -158,10 +156,10 @@ function _fit!(obj::Logit, w::AbstractWeights)
 
         @inbounds for (i, (μi, wi)) in enumerate(zip(μ, w))
             ηi   = logistic(μi)
-            v[i] = wi * ηi * (1.0 - ηi)
+            r[i] = wi * ηi * (1.0 - ηi)
         end
 
-        h[:, :] = crossprod(x, v)
+        h[:, :] = crossprod(x, r)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
