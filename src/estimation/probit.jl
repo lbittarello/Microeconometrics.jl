@@ -27,7 +27,7 @@ end
 
 function _fit!(obj::Probit, w::UnitWeights)
 
-    y  = getvector(obj, :response)
+    y  = iszero.(getvector(obj, :response))
     x  = getmatrix(obj, :control)
 
     p  = mean(y)
@@ -43,7 +43,7 @@ function _fit!(obj::Probit, w::UnitWeights)
         ll = 0.0
 
         @inbounds for (yi, μi) in zip(y, μ)
-            ll -= (iszero(yi) ? normlogccdf(μi) : normlogcdf(μi))
+            ll -= (yi ? normlogccdf(μi) : normlogcdf(μi))
         end
 
         return ll
@@ -54,7 +54,7 @@ function _fit!(obj::Probit, w::UnitWeights)
         A_mul_B!(μ, x, β)
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
-            ηi   = (iszero(yi) ? (normcdf(μi) - 1.0) : normcdf(μi))
+            ηi   = (yi ? (normcdf(μi) - 1.0) : normcdf(μi))
             r[i] = - normpdf(μi) / ηi
         end
 
@@ -68,9 +68,9 @@ function _fit!(obj::Probit, w::UnitWeights)
         ll = 0.0
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
-            ηi   = (iszero(yi) ? (normcdf(μi) - 1.0) : normcdf(μi))
+            ηi   = (yi ? (normcdf(μi) - 1.0) : normcdf(μi))
             r[i] = - normpdf(μi) / ηi
-            ll  -= (iszero(yi) ? log(- ηi) : log(ηi))
+            ll  -= (yi ? log(- ηi) : log(ηi))
         end
 
         g[:] = x' * r
@@ -83,7 +83,7 @@ function _fit!(obj::Probit, w::UnitWeights)
         A_mul_B!(μ, x, β)
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
-            ηi   = (iszero(yi) ? (normcdf(μi) - 1.0) : normcdf(μi))
+            ηi   = (yi ? (normcdf(μi) - 1.0) : normcdf(μi))
             ηi   = normpdf(μi) / ηi
             r[i] = abs2(ηi) + μi * ηi
         end
@@ -119,7 +119,7 @@ function _fit!(obj::Probit, w::AbstractWeights)
         ll = 0.0
 
         @inbounds for (yi, μi, wi) in zip(y, μ, w)
-            ll -= wi * (iszero(yi) ? normlogccdf(μi) : normlogcdf(μi))
+            ll -= wi * (yi ? normlogccdf(μi) : normlogcdf(μi))
         end
 
         return ll
@@ -130,7 +130,7 @@ function _fit!(obj::Probit, w::AbstractWeights)
         A_mul_B!(μ, x, β)
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
-            ηi   = (iszero(yi) ? (normcdf(μi) - 1.0) : normcdf(μi))
+            ηi   = (yi ? (normcdf(μi) - 1.0) : normcdf(μi))
             r[i] = - wi * normpdf(μi) / ηi
         end
 
@@ -144,9 +144,9 @@ function _fit!(obj::Probit, w::AbstractWeights)
         ll = 0.0
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
-            ηi   = (iszero(yi) ? (normcdf(μi) - 1.0) : normcdf(μi))
+            ηi   = (yi ? (normcdf(μi) - 1.0) : normcdf(μi))
             r[i] = - wi * normpdf(μi) / ηi
-            ll  -= wi * (iszero(yi) ? log(- ηi) : log(ηi))
+            ll  -= wi * (yi ? log(- ηi) : log(ηi))
         end
 
         g[:] = x' * r
@@ -159,7 +159,7 @@ function _fit!(obj::Probit, w::AbstractWeights)
         A_mul_B!(μ, x, β)
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
-            ηi   = (iszero(yi) ? (normcdf(μi) - 1.0) : normcdf(μi))
+            ηi   = (yi ? (normcdf(μi) - 1.0) : normcdf(μi))
             ηi   = normpdf(μi) / ηi
             r[i] = wi * (abs2(ηi) + μi * ηi)
         end
