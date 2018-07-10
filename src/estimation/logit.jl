@@ -44,10 +44,10 @@ function _fit!(obj::Logit, w::UnitWeights)
         ll = 0.0
 
         @inbounds for (yi, μi) in zip(y, μ)
-            ll -= (iszero(yi) ? log1pexp(μi) : log1pexp(- μi))
+            ll += (iszero(yi) ? log1pexp(μi) : log1pexp(- μi))
         end
 
-        return - ll
+        return ll
     end
 
     function G!(g::Vector, β::Vector)
@@ -75,7 +75,7 @@ function _fit!(obj::Logit, w::UnitWeights)
 
         g[:] = x' * r
 
-        return - ll
+        return ll
     end
 
     function H!(h::Matrix, β::Vector)
@@ -119,10 +119,10 @@ function _fit!(obj::Logit, w::AbstractWeights)
         ll = 0.0
 
         @inbounds for (yi, μi, wi) in zip(y, μ, w)
-            ll -= wi * (iszero(yi) ? log(1.0 - ηi) : log(ηi))
+            ll += wi * (iszero(yi) ? log(1.0 - ηi) : log(ηi))
         end
 
-        return - ll
+        return ll
     end
 
     function G!(g::Vector, β::Vector)
@@ -149,7 +149,7 @@ function _fit!(obj::Logit, w::AbstractWeights)
 
         g[:] = x' * r
 
-        return - ll
+        return ll
     end
 
     function H!(h::Matrix, β::Vector)
