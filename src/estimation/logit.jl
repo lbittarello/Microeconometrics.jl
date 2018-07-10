@@ -184,8 +184,8 @@ function jacobian(obj::Logit, w::UnitWeights)
     v = x * obj.β
 
     @inbounds for (i, vi) in enumerate(v)
-        λ     = logistic(vi)
-        v[i] .= λ * (1.0 - λ)
+        ηi    = logistic(vi)
+        v[i] .= ηi * (1.0 - ηi)
     end
 
     return crossprod(x, v, neg = true)
@@ -196,9 +196,9 @@ function jacobian(obj::Logit, w::AbstractWeights)
     x = getmatrix(obj, :control)
     v = x * obj.β
 
-    @inbounds for (i, (vi, wi)) in enumerate(zip(v, values(w)))
-        λ     = logistic(vi)
-        v[i] .= wi * λ * (1.0 - λ)
+    @inbounds for (i, (vi, wi)) in enumerate(zip(v, w))
+        ηi    = logistic(vi)
+        v[i] .= wi * ηi * (1.0 - ηi)
     end
 
     return crossprod(x, v, neg = true)
@@ -226,14 +226,14 @@ fitted(obj::Logit, MD::Microdata) = logistic.(predict(obj, MD))
 function jacobexp(obj::Logit)
 
     x = getmatrix(obj, :control)
-    η = x * obj.β
+    v = x * obj.β
 
-    @inbounds for (i, ηi) in enumerate(η)
-        λ     = logistic(ηi)
-        η[i] .= λ * (1.0 - λ)
+    @inbounds for (i, vi) in enumerate(v)
+        ηi    = logistic(vi)
+        v[i] .= ηi * (1.0 - ηi)
     end
 
-    return scale!(η, copy(x))
+    return scale!(v, copy(x))
 end
 
 #==========================================================================================#
@@ -263,7 +263,7 @@ function _loglikelihood(obj::Logit, w::AbstractWeights)
     μ  = predict(obj)
     ll = 0.0
 
-    for (yi, μi, wi) in zip(y, μ, values(w))
+    for (yi, μi, wi) in zip(y, μ, w)
         ll -= wi * (iszero(yi) ? log1pexp(μi) : log1pexp(- μi))
     end
 

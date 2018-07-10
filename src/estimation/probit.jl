@@ -217,7 +217,7 @@ function jacobian(obj::Probit, w::AbstractWeights)
     x = getmatrix(obj, :control)
     v = x * obj.β
 
-    @inbounds for (i, (yi, vi, wi)) in enumerate(zip(y, v, values(w)))
+    @inbounds for (i, (yi, vi, wi)) in enumerate(zip(y, v, w))
         ηi   = (iszero(yi) ? (normcdf(vi) - 1.0) : normcdf(vi))
         ηi   = normpdf(vi) / ηi
         v[i] = wi * (abs2(ηi) + vi * ηi)
@@ -247,9 +247,9 @@ fitted(obj::Probit, MD::Microdata) = normcdf.(predict(obj, MD))
 
 function jacobexp(obj::Probit)
     x  = copy(getmatrix(obj, :control))
-    ϕ  = x * obj.β
-    ϕ .= normpdf.(ϕ)
-    return scale!(ϕ, x)
+    v  = x * obj.β
+    v .= normpdf.(v)
+    return scale!(v, x)
 end
 
 #==========================================================================================#
@@ -279,7 +279,7 @@ function _loglikelihood(obj::Probit, w::AbstractWeights)
     μ  = predict(obj)
     ll = 0.0
 
-    @inbounds for (yi, μi, wi) in zip(y, μ, values(w))
+    @inbounds for (yi, μi, wi) in zip(y, μ, w)
         ll += wi * (iszero(yi) ? normlogccdf(μi) : normlogcdf(μi))
     end
 
