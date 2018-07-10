@@ -232,11 +232,18 @@ end
 
 # LINEAR PREDICTOR
 
-predict(obj::Probit) = getmatrix(obj, :control) * obj.β
+function predict(obj::Probit, MD::Microdata)
+
+    if getnames(obj, :control) != getnames(MD, :control)
+        throw("some variables are missing")
+    end
+
+    getmatrix(MD, :control) * obj.β
+end
 
 # FITTED VALUES
 
-fitted(obj::Probit) = normcdf.(predict(obj))
+fitted(obj::Probit, MD::Microdata) = normcdf.(predict(obj, MD))
 
 # DERIVATIVE OF FITTED VALUES
 

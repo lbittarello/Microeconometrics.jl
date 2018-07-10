@@ -211,11 +211,18 @@ end
 
 # LINEAR PREDICTOR
 
-predict(obj::Logit) = getmatrix(obj, :control) * obj.β
+function predict(obj::Logit, MD::Microdata)
+
+    if getnames(obj, :control) != getnames(MD, :control)
+        throw("some variables are missing")
+    end
+
+    getmatrix(MD, :control) * obj.β
+end
 
 # FITTED VALUES
 
-fitted(obj::Logit) = logistic.(predict(obj))
+fitted(obj::Logit, MD::Microdata) = logistic.(predict(obj, MD))
 
 # DERIVATIVE OF FITTED VALUES
 

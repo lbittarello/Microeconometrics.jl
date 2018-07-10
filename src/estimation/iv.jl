@@ -155,11 +155,18 @@ end
 
 # LINEAR PREDICTOR
 
-predict(obj::IV) = getmatrix(obj, :treatment, :control) * obj.β
+function predict(obj::IV, MD::Microdata)
+
+    if getnames(obj, :treatment, :control) != getnames(MD, :treatment, :control)
+        throw("some variables are missing")
+    end
+
+    getmatrix(MD, :treatment, :control) * obj.β
+end
 
 # FITTED VALUES
 
-fitted(obj::IV) = predict(obj)
+fitted(obj::IV, MD::Microdata) = predict(obj, MD)
 
 # DERIVATIVE OF FITTED VALUES
 

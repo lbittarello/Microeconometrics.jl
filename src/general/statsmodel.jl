@@ -56,6 +56,9 @@ nulldeviance(obj::MLE)      = _nulldeviance(obj::MLE, getweights(obj))
 
 # PREDICTION
 
+predict(obj::ParModel) = predict(obj, obj.sample)
+fitted(obj::ParModel)  = fitted(obj, obj.sample)
+
 model_response(obj::Micromodel) = getvector(obj, :response)
 
 function residuals(obj::Micromodel)

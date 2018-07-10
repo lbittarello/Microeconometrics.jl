@@ -68,11 +68,18 @@ end
 
 # LINEAR PREDICTOR
 
-predict(obj::OLS) = getmatrix(obj, :control) * obj.β
+function predict(obj::OLS, MD::Microdata)
+
+    if getnames(obj, :control) != getnames(MD, :control)
+        throw("some variables are missing")
+    end
+
+    getmatrix(MD, :control) * obj.β
+end
 
 # FITTED VALUES
 
-fitted(obj::OLS) = predict(obj)
+fitted(obj::OLS, MD::Microdata) = predict(obj, MD)
 
 # DERIVATIVE OF FITTED VALUES
 
