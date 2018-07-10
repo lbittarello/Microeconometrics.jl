@@ -11,6 +11,7 @@ using Base.Test
 using CSV
 using DataFrames
 using Microeconometrics
+using StatsModels
 
 function test_show(x)
     io = IOBuffer()
@@ -30,30 +31,30 @@ M        = Dict(:response => "gpmw", :control => "foreign + 1")
     D = Microdata(S, M, vcov = Homoscedastic())
     E = fit(OLS, D)
 
-    β = [0.24615258;  1.60900394]
-    t = [4.47967818; 53.70367955]
+    β = [0.24615258; 1.60900394]
+    s = [0.05494872; 0.02996078]
 
     test_show(E)
     @test isapprox(coef(E), β, atol = 1e-7)
-    @test isapprox(tstat(E), t, atol = 1e-7)
+    @test isapprox(stderr(E), s, atol = 1e-7)
     @test isapprox(r2(E), 0.21796522, atol = 1e-7)
     @test isapprox(adjr2(E), 0.20710363, atol = 1e-7)
     @test dof(E) == 2
 end
 
 @testset "OLS_Heteroscedastic" begin
-    
+
     D = Microdata(S, M, vcov = Heteroscedastic())
     E = fit(OLS, D)
 
-    β = [0.24615258;  1.60900394]
-    t = [3.62395001; 68.60409513]
-    c = (nobs(D) - dof(E)) / (nobs(D) - 1)
-    t = t / sqrt(c)
+    β = [0.24615258; 1.60900394]
+    s = [0.06792384; 0.02345347]
+    c = (nobs(E) - dof(E)) / (nobs(E) - 1)
+    s = s * sqrt(c)
 
     test_show(E)
     @test isapprox(coef(E), β, atol = 1e-7)
-    @test isapprox(tstat(E), t, atol = 1e-7)
+    @test isapprox(stderr(E), s, atol = 1e-7)
     @test isapprox(r2(E), 0.21796522, atol = 1e-7)
     @test isapprox(adjr2(E), 0.20710363, atol = 1e-7)
     @test dof(E) == 2
@@ -70,14 +71,13 @@ M        = Dict(:response => "ln_wage", :control => "age + age2 + tenure + 1")
     D = Microdata(S, M, vcov = W)
     E = fit(OLS, D)
 
-    β = [ 0.07521723; - 0.00108513;  0.03908767; 0.33398213]
-    t = [16.45483785; -13.93935551; 27.09636359; 5.20287523]
-    c = (nobs(D) - dof(E)) / (nobs(D) - 1)
-    t = t / sqrt(c)
+    β = [0.07521723; -0.00108513; 0.03908767; 0.33398213]
+    s = [0.00457113;  0.00007785; 0.00144254; 0.06419184]
+    c = (nobs(E) - dof(E)) / (nobs(E) - 1)
+    s = s * sqrt(c)
 
-    test_show(E)
     @test isapprox(coef(E), β, atol = 1e-7)
-    @test isapprox(tstat(E), t, atol = 1e-7)
+    @test isapprox(stderr(E), s, atol = 1e-7)
     @test isapprox(r2(E), 0.16438516, atol = 1e-7)
     @test isapprox(adjr2(E), 0.16429594, atol = 1e-7)
     @test dof(E) == 4
@@ -96,12 +96,12 @@ C = Dict(:race => DummyCoding(base = "white"))
 
     β = [-0.02710031; -0.01515082; 1.26264728; 0.86207916; 0.92334482;
           0.54183656;  1.83251780; 0.75851348; 0.46122388]
-    t = [-0.74348404; -2.18756627; 2.39859983; 1.96304899; 2.30360141;
-          1.56487547;  2.64956671; 1.65117944; 0.38288876]
+    s = [ 0.03645043;  0.00692588; 0.52641014; 0.43915315; 0.40082664;
+          0.34624900; 0.69162923; 0.45937677; 1.20458975]
 
     test_show(E)
     @test isapprox(coef(E), β, atol = 1e-7)
-    @test isapprox(tstat(E), t, atol = 1e-7)
+    @test isapprox(stderr(E), s, atol = 1e-7)
     @test isapprox(deviance(E), 201.44799113, atol = 1e-7)
     @test isapprox(loglikelihood(E), -100.72399557, atol = 1e-7)
     @test isapprox(aic(E), 219.44799113, atol = 1e-7)
@@ -115,13 +115,13 @@ end
     E = fit(Probit, D) ;
 
     β = [-0.01754447; -0.00882045; 0.74752563; 0.51447107; 0.56276006;
-          0.31782665; 1.09945075; 0.46279438; 0.26827531]
-    t = [-0.81114596; -2.21985717; 2.36080203; 2.01293659; 2.38681919;
-          1.58813858; 2.62223933; 1.67916817; 0.38241710]
+          0.31782665;  1.09945075; 0.46279438; 0.26827531]
+    s = [ 0.02162924;  0.00397343; 0.31664054; 0.25558235; 0.23577825;
+          0.20012526;  0.41927933; 0.27560931; 0.70152540]
 
     test_show(E)
     @test isapprox(coef(E), β, atol = 1e-7)
-    @test isapprox(tstat(E), t, atol = 1e-7)
+    @test isapprox(stderr(E), s, atol = 1e-7)
     @test isapprox(deviance(E), 201.12189887, atol = 1e-7)
     @test isapprox(loglikelihood(E), -100.56094943, atol = 1e-7)
     @test isapprox(aic(E), 219.12189887, atol = 1e-7)
@@ -147,13 +147,13 @@ M = Dict(
     E = fit(IPW, Probit, D)
 
     β = [-230.68863780; 3403.46270868]
-    t = [  -8.93614020; 355.58787307]
+    s = [  25.81524380;    9.57136890]
     c = nobs(E) / (nobs(E) - 1)
-    t = t / sqrt(c)
+    s = s * sqrt(c)
 
     test_show(E)
     @test isapprox(coef(E), β, atol = 1e-7)
-    @test isapprox(tstat(E), t, atol = 1e-7)
+    @test isapprox(stderr(E), s, atol = 1e-7)
     @test dof(E) == 2
 end
 
@@ -172,15 +172,15 @@ M = Dict(
     D = Microdata(S, M)
     E = fit(IV, D)
 
-    β = [0.00223983; 0.08151597]
-    t = [3.33306931; 0.18334930]
+    β = [0.00223983; 0.08151597; 120.70651454]
+    s = [0.00067200; 0.44459385;  15.25545871]
     c = nobs(E) / (nobs(E) - 1)
-    t = t / sqrt(c)
+    s = s * sqrt(c)
 
     test_show(E)
     @test isapprox(coef(E), β, atol = 1e-7)
-    @test isapprox(tstat(E), t, atol = 1e-7)
+    @test isapprox(stderr(E), s, atol = 1e-7)
     @test isapprox(r2(E), 0.59888202, atol = 1e-7)
     @test isapprox(adjr2(E), 0.58181317, atol = 1e-7)
-    @test dof(E) == 2
+    @test dof(E) == 3
 end
