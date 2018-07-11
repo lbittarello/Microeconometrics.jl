@@ -4,11 +4,11 @@
 
 mutable struct Poisson <: MLE
 
-sample::Microdata
-β::Vector{Float64}
-V::Matrix{Float64}
+    sample::Microdata
+    β::Vector{Float64}
+    V::Matrix{Float64}
 
-Poisson() = new()
+    Poisson() = new()
 end
 
 #==========================================================================================#
@@ -16,9 +16,9 @@ end
 # CONSTRUCTOR
 
 function Poisson(MD::Microdata)
-obj        = Poisson()
-obj.sample = MD
-return obj
+    obj        = Poisson()
+    obj.sample = MD
+    return obj
 end
 
 #==========================================================================================#
