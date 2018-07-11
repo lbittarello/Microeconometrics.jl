@@ -81,10 +81,10 @@ end
 S = CSV.read(joinpath(datadir, "lbw.csv"))
 M = Dict(:response => "low", :control => "age + lwt + race + smoke + ptl + ht + ui + 1")
 C = Dict(:race => DummyCoding(base = "white"))
+D = Microdata(S, M, vcov = Homoscedastic(), contrasts = C)
 
 @testset "Logit" begin
 
-    D = Microdata(S, M, vcov = Homoscedastic(), contrasts = C)
     E = fit(Logit, D)
 
     β = [-0.02710031; -0.01515082; 1.26264728; 0.86207916; 0.92334482;
@@ -105,7 +105,6 @@ end
 
 @testset "Probit" begin
 
-    D = Microdata(S, M, vcov = Homoscedastic(), contrasts = C)
     E = fit(Probit, D)
 
     β = [-0.01754447; -0.00882045; 0.74752563; 0.51447107; 0.56276006;
@@ -121,6 +120,26 @@ end
     @test isapprox(aic(E), 219.12189887, atol = 1e-7)
     @test isapprox(aicc(E), 220.12748546, atol = 1e-7)
     @test isapprox(bic(E), 248.29762201, atol = 1e-7)
+    @test dof(E) == 9
+end
+
+@testset "Cloglog" begin
+
+    E = fit(Cloglog, D)
+
+    β = [-0.02309612; -0.01129839; 1.07937099; 0.72856146; 0.73324598;
+          0.33131635;  1.42557598; 0.56457925; -0.09224780]
+    s = [0.02906676; 0.00521572; 0.40185917; 0.32942310; 0.30247340;
+         0.20833347; 0.45334563; 0.34357409; 0.90994949]
+
+    @test isapprox(coef(E), β, atol = 1e-7)
+    @test isapprox(stderr(E), s, atol = 1e-7)
+    @test isapprox(deviance(E), 202.16661013, atol = 1e-7)
+    @test isapprox(loglikelihood(E), -101.08330506, atol = 1e-7)
+    @test isapprox(nullloglikelihood(E), -117.33599810, atol = 1e-7)
+    @test isapprox(aic(E), 220.16661013, atol = 1e-7)
+    @test isapprox(aicc(E), 221.17219672, atol = 1e-7)
+    @test isapprox(bic(E), 249.34233326, atol = 1e-7)
     @test dof(E) == 9
 end
 

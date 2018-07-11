@@ -36,6 +36,7 @@ include("./estimation/ols.jl")
 include("./estimation/iv.jl")
 include("./estimation/logit.jl")
 include("./estimation/probit.jl")
+include("./estimation/cloglog.jl")
 include("./estimation/poisson.jl")
 include("./estimation/ipw.jl")
 include("./estimation/abadie.jl")
@@ -55,7 +56,8 @@ export
         TukeyHanning,
         Parzen, Gallant,
     Microdata, Microdata!,
-    OLS, IV, Logit, Probit, Poisson, IPW, Abadie, FrölichMelly, Tan,
+    OLS, IV, Logit, Probit, Cloglog, Poisson,
+    IPW, Abadie, FrölichMelly, Tan,
     fit, first_stage, second_stage,
     coef, confint, pval, stderr, tstat, vcov, hausman_1s, hausman_2s,
     loglikelihood, nullloglikelihood, deviance, nulldeviance,
