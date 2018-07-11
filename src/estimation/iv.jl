@@ -139,8 +139,8 @@ end
 function jacobian(obj::IV, w::AbstractWeights)
 
     x = getmatrix(obj, :treatment, :control)
-    z = getmatrix(obj, :instrument, :control)
-    v = scale!(values(w), copy(z))
+    z = copy(getmatrix(obj, :instrument, :control))
+    v = scale!(w, z)
 
     if obj.method == "Method of moments"
         return scale!(- 1.0, v' * x)
@@ -149,6 +149,18 @@ function jacobian(obj::IV, w::AbstractWeights)
         vγ = v * γ
         return scale!(- 1.0, vγ' * x)
     end
+end
+
+# HOMOSCEDASTIC VARIANCE MATRIX
+
+function _vcov!(obj::IV, corr::Homoscedastic, w::UnitWeights)
+    σ²    = sum(abs2, residuals(obj)) / dof_residual(obj)
+    obj.V = scale!(-σ², inv(jacobian(obj, w)))
+end
+
+function _vcov!(obj::IV, corr::Homoscedastic, w::AbstractWeights)
+    σ²    = sum(abs2.(residuals(obj)), w) / dof_residual(obj)
+    obj.V = scale!(-σ², inv(jacobian(obj, w)))
 end
 
 #==========================================================================================#

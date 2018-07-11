@@ -78,6 +78,31 @@ end
 
 #==========================================================================================#
 
+S = CSV.read(joinpath(datadir, "hsng2.csv"))
+M = Dict(
+        :response   => "rent",
+        :control    => "pcturban + 1",
+        :treatment  => "hsngval",
+        :instrument => "faminc + region"
+    )
+
+@testset "TSLS" begin
+
+    D = Microdata(S, M, vcov = Homoscedastic())
+    E = fit(IV, D)
+
+    β = [0.00223983; 0.08151597; 120.70651454]
+    s = [0.00033876; 0.30815277;  15.70688390]
+
+    @test isapprox(coef(E), β, atol = 1e-7)
+    @test isapprox(stderr(E), s, atol = 1e-7)
+    @test isapprox(r2(E), 0.59888202, atol = 1e-7)
+    @test isapprox(adjr2(E), 0.58181317, atol = 1e-7)
+    @test dof(E) == 3
+end
+
+#==========================================================================================#
+
 S = CSV.read(joinpath(datadir, "lbw.csv"))
 M = Dict(:response => "low", :control => "age + lwt + race + smoke + ptl + ht + ui + 1")
 C = Dict(:race => DummyCoding(base = "white"))
@@ -197,31 +222,4 @@ M = Dict(
     @test isapprox(coef(E), β, atol = 1e-7)
     @test isapprox(stderr(E), s, atol = 1e-7)
     @test dof(E) == 2
-end
-
-#==========================================================================================#
-
-S = CSV.read(joinpath(datadir, "hsng2.csv"))
-M = Dict(
-        :response   => "rent",
-        :control    => "pcturban + 1",
-        :treatment  => "hsngval",
-        :instrument => "faminc + region"
-    )
-
-@testset "TSLS" begin
-
-    D = Microdata(S, M)
-    E = fit(IV, D)
-
-    β = [0.00223983; 0.08151597; 120.70651454]
-    s = [0.00067200; 0.44459385;  15.25545871]
-    c = nobs(E) / (nobs(E) - 1)
-    s = s * sqrt(c)
-
-    @test isapprox(coef(E), β, atol = 1e-7)
-    @test isapprox(stderr(E), s, atol = 1e-7)
-    @test isapprox(r2(E), 0.59888202, atol = 1e-7)
-    @test isapprox(adjr2(E), 0.58181317, atol = 1e-7)
-    @test dof(E) == 3
 end
