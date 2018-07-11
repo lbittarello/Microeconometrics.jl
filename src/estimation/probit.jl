@@ -29,13 +29,12 @@ function _fit!(obj::Probit, w::UnitWeights)
 
     y  = iszero.(getvector(obj, :response))
     x  = getmatrix(obj, :control)
+    μ  = Array{Float64}(length(y))
+    r  = Array{Float64}(length(y))
 
     p  = mean(y)
     p  = 1.0 / normpdf(norminvcdf(p))
     β₀ = scale!(p, x \ y)
-
-    μ  = x * β₀
-    r  = similar(μ)
 
     function L(β::Vector)
 
@@ -104,14 +103,12 @@ function _fit!(obj::Probit, w::AbstractWeights)
 
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
-    w  = values(w)
-
+    μ  = Array{Float64}(length(y))
+    r  = Array{Float64}(length(y))
+    
     p  = mean(y)
     p  = 1.0 / normpdf(norminvcdf(p))
     β₀ = scale!(p, x \ y)
-
-    μ  = x * β₀
-    r  = similar(μ)
 
     function L(β::Vector)
 
@@ -183,7 +180,7 @@ end
 function score(obj::Probit)
 
     y = getvector(obj, :response)
-    x = getmatrix(obj, :control)
+    x = copy(getmatrix(obj, :control))
     v = x * obj.β
 
     @inbounds for (i, (yi, vi)) in enumerate(zip(y, v))
@@ -191,7 +188,7 @@ function score(obj::Probit)
         v[i] = normpdf(vi) / ηi
     end
 
-    return scale!(v, copy(x))
+    return scale!(v, x)
 end
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
@@ -231,11 +228,9 @@ end
 # LINEAR PREDICTOR
 
 function predict(obj::Probit, MD::Microdata)
-
     if getnames(obj, :control) != getnames(MD, :control)
         throw("some variables are missing")
     end
-
     getmatrix(MD, :control) * obj.β
 end
 

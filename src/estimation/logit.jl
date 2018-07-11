@@ -29,13 +29,12 @@ function _fit!(obj::Logit, w::UnitWeights)
 
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
+    μ  = similar(y)
+    r  = similar(y)
 
     p  = mean(y)
     p  = 1.0 / (p * (1.0 - p))
     β₀ = scale!(p, x \ y)
-
-    μ  = x * β₀
-    r  = similar(μ)
 
     function L(β::Vector)
 
@@ -101,14 +100,12 @@ function _fit!(obj::Logit, w::AbstractWeights)
 
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
-    w  = values(w)
+    μ  = similar(y)
+    r  = similar(y)
 
     p  = mean(y)
     p  = 1.0 / (p * (1.0 - p))
     β₀ = scale!(p, x \ y)
-
-    μ  = x * β₀
-    r  = similar(μ)
 
     function L(β::Vector)
 
@@ -209,11 +206,9 @@ end
 # LINEAR PREDICTOR
 
 function predict(obj::Logit, MD::Microdata)
-
     if getnames(obj, :control) != getnames(MD, :control)
         throw("some variables are missing")
     end
-
     getmatrix(MD, :control) * obj.β
 end
 
@@ -225,7 +220,7 @@ fitted(obj::Logit, MD::Microdata) = logistic.(predict(obj, MD))
 
 function jacobexp(obj::Logit)
 
-    x = getmatrix(obj, :control)
+    x = copy(getmatrix(obj, :control))
     v = x * obj.β
 
     @inbounds for (i, vi) in enumerate(v)
@@ -233,7 +228,7 @@ function jacobexp(obj::Logit)
         v[i] .= ηi * (1.0 - ηi)
     end
 
-    return scale!(v, copy(x))
+    return scale!(v, x)
 end
 
 #==========================================================================================#
