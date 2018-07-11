@@ -96,6 +96,7 @@ C = Dict(:race => DummyCoding(base = "white"))
     @test isapprox(stderr(E), s, atol = 1e-7)
     @test isapprox(deviance(E), 201.44799113, atol = 1e-7)
     @test isapprox(loglikelihood(E), -100.72399557, atol = 1e-7)
+    @test isapprox(nullloglikelihood(E), -117.33599810, atol = 1e-7)
     @test isapprox(aic(E), 219.44799113, atol = 1e-7)
     @test isapprox(aicc(E), 220.45357772, atol = 1e-7)
     @test isapprox(bic(E), 248.62371427, atol = 1e-7)
@@ -116,10 +117,41 @@ end
     @test isapprox(stderr(E), s, atol = 1e-7)
     @test isapprox(deviance(E), 201.12189887, atol = 1e-7)
     @test isapprox(loglikelihood(E), -100.56094943, atol = 1e-7)
+    @test isapprox(nullloglikelihood(E), -117.33599810, atol = 1e-7)
     @test isapprox(aic(E), 219.12189887, atol = 1e-7)
     @test isapprox(aicc(E), 220.12748546, atol = 1e-7)
     @test isapprox(bic(E), 248.29762201, atol = 1e-7)
     @test dof(E) == 9
+end
+
+#==========================================================================================#
+
+S          = CSV.read(joinpath(datadir, "dollhill3.csv"))
+S[:pyears] = log.(S[:pyears])
+
+M  = Dict(
+        :response => "deaths",
+        :control => "smokes + agecat + 1",
+        :offset => "pyears"
+    )
+
+@testset "Poisson" begin
+
+    D = Microdata(S, M, vcov = Homoscedastic())
+    E = fit(Poisson, D)
+
+    β = [0.35453564; 1.48400701; 2.62750512; 3.35049279; 3.70009645; -7.91932571]
+    s = [0.10737412; 0.19510337; 0.18372727; 0.18479918; 0.19221951;  0.19176182]
+
+    @test isapprox(coef(E), β, atol = 1e-7)
+    @test isapprox(stderr(E), s, atol = 1e-7)
+    @test isapprox(deviance(E), 12.13236640, atol = 1e-7)
+    @test isapprox(loglikelihood(E), -33.60015344, atol = 1e-7)
+    @test isapprox(nullloglikelihood(E), -495.06763568, atol = 1e-7)
+    @test isapprox(aic(E), 79.20030688, atol = 1e-7)
+    @test isapprox(aicc(E), 107.20030688, atol = 1e-7)
+    @test isapprox(bic(E), 81.01581744, atol = 1e-7)
+    @test dof(E) == 6
 end
 
 #==========================================================================================#
