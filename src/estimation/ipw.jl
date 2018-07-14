@@ -20,7 +20,7 @@ function first_stage(::Type{IPW}, MM::Type{<:Micromodel}, MD::Microdata; kwargs.
 
     FSM                = Dict(:treatment => "")
     FSD                = Microdata(MD, FSM)
-    FSD.map[:response] = FSD.map[:treatment]
+    FSD.map[:response] = MD.map[:treatment]
 
     return fit(MM, FSD; kwargs...)
 end

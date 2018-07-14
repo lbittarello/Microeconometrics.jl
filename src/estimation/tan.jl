@@ -20,7 +20,7 @@ function first_stage(::Type{Tan}, MM::Type{<:Micromodel}, MD::Microdata; kwargs.
 
     FSM                = Dict(:treatment => "", :instrument => "")
     FSD                = Microdata(MD, FSM)
-    FSD.map[:response] = FSD.map[:instrument]
+    FSD.map[:response] = MD.map[:instrument]
 
     return fit(MM, FSD; kwargs...)
 end

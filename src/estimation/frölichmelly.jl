@@ -20,7 +20,7 @@ function first_stage(::Type{FrölichMelly}, MM::Type{<:Micromodel}, MD::Microdat
 
     FSM                = Dict(:treatment => "", :instrument => "")
     FSD                = Microdata(MD, FSM)
-    FSD.map[:response] = FSD.map[:instrument]
+    FSD.map[:response] = MD.map[:instrument]
 
     return fit(MM, FSD; kwargs...)
 end

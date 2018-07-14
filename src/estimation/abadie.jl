@@ -20,7 +20,7 @@ function first_stage(::Type{Abadie}, M₁::Type{<:Micromodel}, MD::Microdata; kw
 
     FSM                = Dict(:treatment => "", :instrument => "")
     FSD                = Microdata(MD, FSM)
-    FSD.map[:response] = FSD.map[:instrument]
+    FSD.map[:response] = MD.map[:instrument]
 
     return fit(M₁, FSD; kwargs...)
 end
