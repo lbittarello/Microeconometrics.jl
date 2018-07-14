@@ -20,18 +20,18 @@ import StatsModels: Terms, evalcontrasts
 const PWeights = ProbabilityWeights{Float64, Float64, Vector{Float64}}
 
 include("./inference/corr.jl")
-include("./inference/utils.jl")
-include("./data/weights.jl")
 include("./data/types.jl")
-include("./data/utils.jl")
+include("./data/weights.jl")
 include("./general/types.jl")
-include("./general/utils.jl")
 include("./data/retrieval.jl")
-include("./general/statsmodels.jl")
+include("./data/utils.jl")
 include("./general/etable.jl")
+include("./general/statsmodels.jl")
+include("./general/utils.jl")
 include("./inference/adjfactor.jl")
-include("./inference/vcov.jl")
 include("./inference/hausman.jl")
+include("./inference/utils.jl")
+include("./inference/vcov.jl")
 include("./estimation/ols.jl")
 include("./estimation/iv.jl")
 include("./estimation/logit.jl")
@@ -50,11 +50,6 @@ export
         Heteroscedastic,
         Clustered,
         CrossCorrelated,
-    Kernel,
-        Bartlett,
-        Truncated,
-        TukeyHanning,
-        Parzen, Gallant,
     Microdata, Microdata!,
     OLS, IV, Logit, Probit, Cloglog, Poisson,
     IPW, Abadie, FrölichMelly, Tan,

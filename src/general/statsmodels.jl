@@ -2,7 +2,7 @@
 
 # INTERFACE
 
-function fit(::Type{M}, MD::Microdata; novar::Bool = false, kwargs...) where {M <: ParModel}
+function fit(M::Type{<: ParModel}, MD::Microdata; novar::Bool = false, kwargs...)
 
     obj = M(MD; kwargs...)
 
@@ -23,15 +23,15 @@ second_stage(obj::TwoStageModel) = obj.second_stage
 
 # ESTIMATES
 
-coef(obj::Union{ParModel, ParObject})     = obj.β
-coef(obj::TwoStageModel)                  = coef(second_stage(obj))
-vcov(obj::Union{ParModel, ParObject})     = obj.V
-vcov(obj::TwoStageModel)                  = vcov(second_stage(obj))
-stderr(obj::Union{Micromodel, ParObject}) = sqrt.(diag(vcov(obj)))
-tstat(obj::Union{Micromodel, ParObject})  = coef(obj) ./ stderr(obj)
-pval(obj::Union{Micromodel, ParObject})   = 2.0 * normccdf.(abs.(tstat(obj)))
+coef(obj::ParObjects)     = obj.β
+coef(obj::TwoStageModel)  = coef(second_stage(obj))
+vcov(obj::ParObjects)     = obj.V
+vcov(obj::TwoStageModel)  = vcov(second_stage(obj))
+stderr(obj::MicroObjects) = sqrt.(diag(vcov(obj)))
+tstat(obj::MicroObjects)  = coef(obj) ./ stderr(obj)
+pval(obj::MicroObjects)   = 2.0 * normccdf.(abs.(tstat(obj)))
 
-function confint(obj::Union{Micromodel, ParObject}, level::Float64 = 0.95)
+function confint(obj::MicroObjects, level::Float64 = 0.95)
     return coef(obj) .+ norminvcdf((1.0 - level) / 2.0) * stderr(obj) .* [1.0 -1.0]
 end
 
@@ -43,7 +43,7 @@ nobs(obj::Microdata)     = sum(obj.weights)
 nobs(obj::Micromodel)    = nobs(obj.sample)
 nobs(obj::TwoStageModel) = nobs(second_stage(obj))
 
-dof(obj::ParModel)             = length(coef(obj))
+dof(obj::ParOrGMM)             = length(coef(obj))
 dof(obj::TwoStageModel)        = dof(second_stage(obj))
 dof_residual(obj::ParOr2Stage) = nobs(obj) - dof(obj)
 
@@ -56,13 +56,13 @@ nulldeviance(obj::MLE)      = _nulldeviance(obj::MLE, getweights(obj))
 
 # PREDICTION
 
-predict(obj::ParModel)   = predict(obj, obj.sample)
-fitted(obj::ParModel)    = fitted(obj, obj.sample)
-residuals(obj::ParModel) = residuals(obj, obj.sample)
+predict(obj::ParOrGMM)   = predict(obj, obj.sample)
+fitted(obj::ParOrGMM)    = fitted(obj, obj.sample)
+residuals(obj::ParOrGMM) = residuals(obj, obj.sample)
 
 model_response(obj::Micromodel) = getvector(obj, :response)
 
-function residuals(obj::ParModel, MD::Microdata)
+function residuals(obj::ParOrGMM, MD::Microdata)
     r  = fitted(obj, MD)
     r .= model_response(obj) .- r
     return r

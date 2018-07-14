@@ -2,12 +2,13 @@
 
 # TYPE
 
-mutable struct IV <: ParModel
+mutable struct IV <: GMM
 
     method::String
     sample::Microdata
     β::Vector{Float64}
     V::Matrix{Float64}
+    W::Matrix{Float64}
 
     IV() = new()
 end
@@ -16,19 +17,10 @@ end
 
 # CONSTRUCTOR
 
-function IV(MD::Microdata; method::String = "TSLS")
-
+function IV(MD::Microdata, method::String = "TSLS")
     obj        = IV()
     obj.sample = MD
-
-    if length(MD.map[:treatment]) == length(MD.map[:instrument])
-        obj.method = "Method of moments"
-    elseif (method == "TSLS") | (method == "2SLS")
-        obj.method = "TSLS"
-    else
-        throw("unknown method")
-    end
-
+    obj.method = method
     return obj
 end
 
@@ -39,29 +31,68 @@ end
 function fit(::Type{IV}, MD::Microdata; novar::Bool = false, method::String = "TSLS")
 
     if method == "OLS"
-        FSD               = Microdata(MD)
-        FSD.map[:control] = vcat(FSD.map[:treatment], FSD.map[:control])
-        pop!(FSD.map, :treatment)
-        pop!(FSD.map, :instrument)
+
+        FSM               = Dict(:treatment => "", :instrument => "")
+        FSD               = Microdata(MD, FSM)
+        FSD.map[:control] = vcat(MD.map[:treatment], MD.map[:control])
+
         obj = OLS(FSD)
+
+        _fit!(obj, getweights(obj))
+
     elseif method == "Reduced form"
+
         FSD               = Microdata(MD)
         FSD.map[:control] = vcat(FSD.map[:instrument], FSD.map[:control])
+
         pop!(FSD.map, :treatment)
         pop!(FSD.map, :instrument)
+
         obj = OLS(FSD)
+
+        _fit!(obj, getweights(obj))
+
     elseif method == "First stage"
+
         FSD                = Microdata(MD)
         FSD.map[:response] = FSD.map[:treatment]
         FSD.map[:control]  = vcat(FSD.map[:instrument], FSD.map[:control])
+
         pop!(FSD.map, :treatment)
         pop!(FSD.map, :instrument)
+
         obj = OLS(FSD)
+
+        _fit!(obj, getweights(obj))
+
+    elseif length(MD.map[:treatment]) == length(MD.map[:instrument])
+
+        obj   = IV(MD, "Method of moments")
+        obj.W = eye(length(MD.map[:instrument]) + length(MD.map[:control]))
+
+        _fit!(obj, getweights(obj))
+
+    elseif (method == "TSLS") | (method == "2SLS")
+
+        obj   = IV(MD, "Two-step GMM")
+        obj.W = crossprod(getmatrix(obj, :instrument, :control), getweights(obj))
+
+        _fit!(obj, getweights(obj))
+
+    elseif (method == "Two-step GMM") | (method == "Optimal GMM")
+
+        obj = IV(MD, method)
+
+        _fit!(obj, getweights(obj))
+
+        obj.W = wmatrix(obj, getcorr(obj), getweights(obj))
+
+        _fit!(obj, obj.W, getweights(obj))
+
     else
-        obj = IV(MD, method = method)
+        throw("unknown method")
     end
 
-    _fit!(obj, getweights(obj))
     novar || _vcov!(obj, getcorr(obj), getweights(obj))
 
     return obj
@@ -79,88 +110,95 @@ function _fit!(obj::IV, w::UnitWeights)
 
     if obj.method == "Method of moments"
         obj.β = (z' * x) \ (z' * y)
-    elseif obj.method == "TSLS"
+    else
         γ     = z \ x
-        zγ    = z * γ
-        obj.β = zγ \ y
+        obj.β = (z * γ) \ y
     end
+end
+
+function _fit!(obj::IV, W::Matrix{Float64}, w::UnitWeights)
+
+    y = getvector(obj, :response)
+    x = getmatrix(obj, :treatment, :control)
+    z = getmatrix(obj, :instrument, :control)
+
+    zz    = z * (W \ (z' * x))
+    obj.β = (zz' * x) \ (zz' * y)
 end
 
 function _fit!(obj::IV, w::AbstractWeights)
 
     y = getvector(obj, :response)
     x = getmatrix(obj, :treatment, :control)
-    z = getmatrix(obj, :instrument, :control)
-    v = scale!(values(w), copy(z))
+    z = copy(getmatrix(obj, :instrument, :control))
+    v = scale!(w, z)
 
     if obj.method == "Method of moments"
         obj.β = (v' * x) \ (v' * y)
-    elseif obj.method == "TSLS"
-        γ     = (v' * x) \ (v' * y)
+    else
+        γ     = (v' * z) \ (v' * x)
         vγ    = v * γ
         obj.β = (vγ' * x) \ (vγ' * y)
     end
+end
+
+function _fit!(obj::IV, W::Matrix{Float64}, w::AbstractWeights)
+
+    y = getvector(obj, :response)
+    x = getmatrix(obj, :treatment, :control)
+    z = copy(getmatrix(obj, :instrument, :control))
+    v = scale!(w, z)
+
+    vv    = v * (W \ (v' * x))
+    obj.β = (vv' * x) \ (vv' * y)
 end
 
 #==========================================================================================#
 
 # SCORE (MOMENT CONDITIONS)
 
-function score(obj::IV)
-
-    z = getmatrix(obj, :instrument, :control)
-    s = scale!(residuals(obj), copy(z))
-
-    if obj.method == "Method of moments"
-        return s
-    elseif obj.method == "TSLS"
-        x = getmatrix(obj, :treatment, :control)
-        γ = z \ x
-        return s * γ
-    end
-end
+score(obj::IV) = scale!(residuals(obj), copy(getmatrix(obj, :instrument, :control)))
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
 function jacobian(obj::IV, w::UnitWeights)
-
     x = getmatrix(obj, :treatment, :control)
     z = getmatrix(obj, :instrument, :control)
-
-    if obj.method == "Method of moments"
-        return scale!(- 1.0, z' * x)
-    elseif obj.method == "TSLS"
-        γ  = z \ x
-        zγ = z * γ
-        return scale!(- 1.0, zγ' * x)
-    end
+    return z' * x
 end
 
 function jacobian(obj::IV, w::AbstractWeights)
-
     x = getmatrix(obj, :treatment, :control)
-    z = copy(getmatrix(obj, :instrument, :control))
-    v = scale!(w, z)
-
-    if obj.method == "Method of moments"
-        return scale!(- 1.0, v' * x)
-    elseif obj.method == "TSLS"
-        γ  = (v' * z) \ (v' * x)
-        vγ = v * γ
-        return scale!(- 1.0, vγ' * x)
-    end
+    z = getmatrix(obj, :instrument, :control)
+    v = scale!(w, copy(z))
+    return v' * x
 end
 
-# HOMOSCEDASTIC VARIANCE MATRIX
+# VARIANCE MATRIX
 
 function _vcov!(obj::IV, corr::Homoscedastic, w::UnitWeights)
-    σ²    = sum(abs2, residuals(obj)) / dof_residual(obj)
-    obj.V = scale!(-σ², inv(jacobian(obj, w)))
+
+    x  = getmatrix(obj, :treatment, :control)
+    z  = getmatrix(obj, :instrument, :control)
+    r  = residuals(obj)
+    σ² = sum(abs2, r) / dof_residual(obj)
+    γ  = z \ x
+    V  = x' * z * γ
+
+    obj.V = scale!(σ², inv(V))
 end
 
-function _vcov!(obj::IV, corr::Homoscedastic, w::AbstractWeights)
-    σ²    = sum(abs2.(residuals(obj)), w) / dof_residual(obj)
-    obj.V = scale!(-σ², inv(jacobian(obj, w)))
+function _vcov!(obj::IV, corr::Homoscedastic, w::Union{FrequencyWeights, AnalyticWeights})
+
+    x  = getmatrix(obj, :treatment, :control)
+    z  = getmatrix(obj, :instrument, :control)
+    v  = scale!(w, copy(z))
+    r  = residuals(obj)
+    σ² = sum(abs2.(r), w) / dof_residual(obj)
+    γ  = (v' * z) \ (v' * x)
+    V  = x' * v * γ
+
+    obj.V = scale!(σ², inv(V))
 end
 
 #==========================================================================================#
@@ -168,11 +206,9 @@ end
 # LINEAR PREDICTOR
 
 function predict(obj::IV, MD::Microdata)
-
     if getnames(obj, :treatment, :control) != getnames(MD, :treatment, :control)
         throw("some variables are missing")
     end
-
     getmatrix(MD, :treatment, :control) * obj.β
 end
 

@@ -4,6 +4,8 @@ abstract type ParModel <: Micromodel end
 
 abstract type MLE <: ParModel end
 
+abstract type GMM <: Micromodel end
+
 abstract type TwoStageModel <: Micromodel end
 
 mutable struct ParObject
@@ -15,4 +17,7 @@ mutable struct ParObject
     ParObject() = new()
 end
 
-const ParOr2Stage = Union{ParModel, TwoStageModel}
+const ParOr2Stage  = Union{ParModel, TwoStageModel, GMM}
+const ParOrGMM     = Union{ParModel, GMM}
+const ParObjects   = Union{ParModel, GMM, ParObject}
+const MicroObjects = Union{Micromodel, ParObject}

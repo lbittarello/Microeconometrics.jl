@@ -40,8 +40,7 @@ end
 
 function _vcov!(obj::ParModel, corr::Heteroscedastic, w::FrequencyWeights)
     ψ     = influence(obj, w)
-    Ψ     = scale!(w, copy(ψ))
-    obj.V = ψ' * Ψ
+    obj.V = crossprod(ψ, w)
     adjfactor!(obj.V, obj, corr)
 end
 
@@ -73,8 +72,7 @@ end
 
 function _vcov!(obj::TwoStageModel, corr::Heteroscedastic, w::FrequencyWeights)
     ψ                  = influence(obj, w)
-    Ψ                  = scale!(w, copy(ψ))
-    obj.second_stage.V = ψ' * Ψ
+    obj.second_stage.V = crossprod(ψ, w)
     adjfactor!(obj.second_stage.V, obj, corr)
 end
 
@@ -94,4 +92,57 @@ function _vcov!(obj::TwoStageModel, corr::ClusterOrCross, w::AbstractWeights)
     ψ                  = influence(obj, w) ; scale!(w, ψ)
     obj.second_stage.V = crossprod(ψ, corr.mat)
     adjfactor!(obj.second_stage.V, obj, corr)
+end
+
+#==========================================================================================#
+
+# GMM WEIGHT MATRIX
+
+function wmatrix(obj::GMM, corr::Heteroscedastic, w::UnitWeights)
+    s = score(obj)
+    return crossprod(s)
+end
+
+function wmatrix(obj::GMM, corr::Heteroscedastic, w::FrequencyWeights)
+    s = score(obj)
+    return crossprod(s, w)
+end
+
+function wmatrix(obj::GMM, corr::Heteroscedastic, w::AbstractWeights)
+    s = score(obj) ; scale!(w, s)
+    return crossprod(s)
+end
+
+function wmatrix(obj::GMM, corr::ClusterOrCross, w::UnitWeights)
+    s = score(obj)
+    return crossprod(s, corr.mat)
+end
+
+function wmatrix(obj::GMM, corr::ClusterOrCross, w::AbstractWeights)
+    s = score(obj) ; scale!(w, s)
+    return crossprod(s, corr.mat)
+end
+
+# COVARIANCE MATRIX FOR GMM
+
+function _vcov!(obj::GMM, corr::CorrStructure, w::AbstractWeights)
+
+    j = jacobian(obj, w)
+    S = wmatrix(obj, corr, w)
+
+    if obj.method == "Method of moments"
+        obj.V = j \ (S / j')
+    elseif obj.method == "One-step GMM"
+        ψ     = j / (j' * j)
+        obj.V = crossprod(ψ, S)
+    elseif obj.method == "Two-step GMM"
+        ω     = obj.W \ j
+        ψ     = ω / (j' * ω)
+        obj.V = crossprod(ψ, S)
+    elseif obj.method == "Optimal GMM"
+        ω     = S \ j
+        obj.V = inv(j' * ω)
+    end
+
+    adjfactor!(obj.V, obj, corr)
 end
