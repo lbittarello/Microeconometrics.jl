@@ -59,7 +59,7 @@ function _vcov!(obj::OLS, corr::Homoscedastic, w::UnitWeights)
     obj.V = scale!(-σ², inv(jacobian(obj, w)))
 end
 
-function _vcov!(obj::OLS, corr::Homoscedastic, w::AbstractWeights)
+function _vcov!(obj::OLS, corr::Homoscedastic, w::Union{FrequencyWeights, AnalyticWeights})
     σ²    = sum(abs2.(residuals(obj)), w) / dof_residual(obj)
     obj.V = scale!(-σ², inv(jacobian(obj, w)))
 end
@@ -69,11 +69,9 @@ end
 # LINEAR PREDICTOR
 
 function predict(obj::OLS, MD::Microdata)
-
     if getnames(obj, :control) != getnames(MD, :control)
         throw("some variables are missing")
     end
-
     getmatrix(MD, :control) * obj.β
 end
 
