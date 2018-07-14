@@ -21,11 +21,13 @@ function adjmsng!(msng::BitVector, corr::Clustered)
 
     (msng == corr.msng) && (return copy(corr))
 
-    msng  .*= corr.msng
-    touse   = msng[corr.msng]
-    new_ic  = corr.ic[touse]
-    new_nc  = length(unique(new_ic))
-    new_mat = Symmetric(corr.mat[touse, touse])
+    msng   .*= corr.msng
+    touse    = msng[corr.msng]
+    new_ic   = corr.ic[touse]
+    iter     = sort(unique(corr.ic))
+    new_iter = sort(unique(new_ic))
+    new_nc   = length(new_iter)
+    new_mat  = corr.mat[findin(iter, new_iter), touse]
 
     return Clustered(corr.adj, msng, new_mat, new_ic, new_nc)
 end

@@ -50,13 +50,25 @@ function _vcov!(obj::ParModel, corr::Heteroscedastic, w::AbstractWeights)
     adjfactor!(obj.V, obj, corr)
 end
 
-function _vcov!(obj::ParModel, corr::ClusterOrCross, w::UnitWeights)
+function _vcov!(obj::ParModel, corr::Clustered, w::UnitWeights)
+    ψ     = corr.mat * influence(obj, w)
+    obj.V = crossprod(ψ)
+    adjfactor!(obj.V, obj, corr)
+end
+
+function _vcov!(obj::ParModel, corr::Clustered, w::AbstractWeights)
+    ψ     = corr.mat * influence(obj, w) ; scale!(w, ψ)
+    obj.V = crossprod(ψ)
+    adjfactor!(obj.V, obj, corr)
+end
+
+function _vcov!(obj::ParModel, corr::CrossCorrelated, w::UnitWeights)
     ψ     = influence(obj, w)
     obj.V = crossprod(ψ, corr.mat)
     adjfactor!(obj.V, obj, corr)
 end
 
-function _vcov!(obj::ParModel, corr::ClusterOrCross, w::AbstractWeights)
+function _vcov!(obj::ParModel, corr::CrossCorrelated, w::AbstractWeights)
     ψ     = influence(obj, w) ; scale!(w, ψ)
     obj.V = crossprod(ψ, corr.mat)
     adjfactor!(obj.V, obj, corr)
@@ -82,13 +94,25 @@ function _vcov!(obj::TwoStageModel, corr::Heteroscedastic, w::AbstractWeights)
     adjfactor!(obj.second_stage.V, obj, corr)
 end
 
-function _vcov!(obj::TwoStageModel, corr::ClusterOrCross, w::UnitWeights)
+function _vcov!(obj::TwoStageModel, corr::Clustered, w::UnitWeights)
+    ψ                  = corr.mat * influence(obj, w)
+    obj.second_stage.V = crossprod(ψ)
+    adjfactor!(obj.second_stage.V, obj, corr)
+end
+
+function _vcov!(obj::TwoStageModel, corr::Clustered, w::AbstractWeights)
+    ψ                  = corr.mat * influence(obj, w) ; scale!(w, ψ)
+    obj.second_stage.V = crossprod(ψ)
+    adjfactor!(obj.second_stage.V, obj, corr)
+end
+
+function _vcov!(obj::TwoStageModel, corr::CrossCorrelated, w::UnitWeights)
     ψ                  = influence(obj, w)
     obj.second_stage.V = crossprod(ψ, corr.mat)
     adjfactor!(obj.second_stage.V, obj, corr)
 end
 
-function _vcov!(obj::TwoStageModel, corr::ClusterOrCross, w::AbstractWeights)
+function _vcov!(obj::TwoStageModel, corr::CrossCorrelated, w::AbstractWeights)
     ψ                  = influence(obj, w) ; scale!(w, ψ)
     obj.second_stage.V = crossprod(ψ, corr.mat)
     adjfactor!(obj.second_stage.V, obj, corr)
@@ -113,12 +137,22 @@ function wmatrix(obj::GMM, corr::Heteroscedastic, w::AbstractWeights)
     return crossprod(s)
 end
 
-function wmatrix(obj::GMM, corr::ClusterOrCross, w::UnitWeights)
+function wmatrix(obj::GMM, corr::Clustered, w::UnitWeights)
+    s = corr.mat * score(obj)
+    return crossprod(s)
+end
+
+function wmatrix(obj::GMM, corr::Clustered, w::AbstractWeights)
+    s = corr.mat * score(obj) ; scale!(w, s)
+    return crossprod(s)
+end
+
+function wmatrix(obj::GMM, corr::CrossCorrelated, w::UnitWeights)
     s = score(obj)
     return crossprod(s, corr.mat)
 end
 
-function wmatrix(obj::GMM, corr::ClusterOrCross, w::AbstractWeights)
+function wmatrix(obj::GMM, corr::CrossCorrelated, w::AbstractWeights)
     s = score(obj) ; scale!(w, s)
     return crossprod(s, corr.mat)
 end

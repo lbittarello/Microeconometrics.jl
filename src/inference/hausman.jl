@@ -106,7 +106,51 @@ function _hausman_1s!(
         obj₂::ParOr2Stage,
         i₂::Vector{Int},
         w::UnitWeights,
-        corr::ClusterOrCross
+        corr::Clustered
+    )
+
+    Ψ₁  = influence(obj₁, w)
+    ψ₁  = corr.mat * view(Ψ₁, :, i₁)
+    Ψ₂  = influence(obj₂, w)
+    ψ₂  = corr.mat * view(Ψ₂, :, i₂)
+    V₁₂ = ψ₁' * ψ₂
+
+    adjfactor!(V₁₂, obj₁, corr)
+
+    output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
+    output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
+end
+
+function _hausman_1s!(
+        output::ParObject,
+        obj₁::ParOr2Stage,
+        i₁::Vector{Int},
+        obj₂::ParOr2Stage,
+        i₂::Vector{Int},
+        w::AbstractWeights,
+        corr::Clustered
+    )
+
+    Ψ₁  = influence(obj₁, w)
+    ψ₁  = corr.mat * view(Ψ₁, :, i₁) ; scale!(w, ψ₁)
+    Ψ₂  = influence(obj₂, w)
+    ψ₂  = corr.mat * view(Ψ₂, :, i₂) ; scale!(w, ψ₂)
+    V₁₂ = ψ₁' * ψ₂
+
+    adjfactor!(V₁₂, obj₁, corr)
+
+    output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
+    output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
+end
+
+function _hausman_1s!(
+        output::ParObject,
+        obj₁::ParOr2Stage,
+        i₁::Vector{Int},
+        obj₂::ParOr2Stage,
+        i₂::Vector{Int},
+        w::UnitWeights,
+        corr::CrossCorrelated
     )
 
     Ψ₁  = influence(obj₁, w)
@@ -128,7 +172,7 @@ function _hausman_1s!(
         obj₂::ParOr2Stage,
         i₂::Vector{Int},
         w::AbstractWeights,
-        corr::ClusterOrCross
+        corr::CrossCorrelated
     )
 
     Ψ₁  = influence(obj₁, w)
@@ -273,7 +317,59 @@ function _hausman_2s!(
         obj₂::ParOr2Stage,
         i₂::Vector{Int},
         w₂::UnitWeights,
-        corr::ClusterOrCross
+        corr::Clustered
+    )
+
+    msng₁ = getmsng(obj₁)
+    msng₂ = getmsng(obj₂)
+
+    Ψ₁  = influence(obj₁, w₁)
+    ψ₁  = view(corr.mat, :, msng₁) * view(Ψ₁, :, i₁)
+    Ψ₂  = influence(obj₂, w₂)
+    ψ₂  = view(corr.mat, :, msng₂) * view(Ψ₂, :, i₂)
+    V₁₂ = ψ₁' * ψ₂
+
+    adjfactor!(V₁₂, obj₁, obj₂, corr)
+
+    output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
+    output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
+end
+
+function _hausman_2s!(
+        output::ParObject,
+        obj₁::ParOr2Stage,
+        i₁::Vector{Int},
+        w₁::AbstractWeights,
+        obj₂::ParOr2Stage,
+        i₂::Vector{Int},
+        w₂::AbstractWeights,
+        corr::Clustered
+    )
+
+    msng₁ = getmsng(obj₁)
+    msng₂ = getmsng(obj₂)
+
+    Ψ₁  = influence(obj₁, w₁)
+    ψ₁  = view(corr.mat, :, msng₁) * view(Ψ₁, :, i₁) ; scale!(w₁, ψ₁)
+    Ψ₂  = influence(obj₂, w₂)
+    ψ₂  = view(corr.mat, :, msng₂) * view(Ψ₂, :, i₂) ; scale!(w₂, ψ₂)
+    V₁₂ = ψ₁' * ψ₂
+
+    adjfactor!(V₁₂, obj₁, obj₂, corr)
+
+    output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
+    output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
+end
+
+function _hausman_2s!(
+        output::ParObject,
+        obj₁::ParOr2Stage,
+        i₁::Vector{Int},
+        w₁::UnitWeights,
+        obj₂::ParOr2Stage,
+        i₂::Vector{Int},
+        w₂::UnitWeights,
+        corr::CorrStructure
     )
 
     msng₁ = getmsng(obj₁)
@@ -299,7 +395,7 @@ function _hausman_2s!(
         obj₂::ParOr2Stage,
         i₂::Vector{Int},
         w₂::AbstractWeights,
-        corr::ClusterOrCross
+        corr::CorrStructure
     )
 
     msng₁ = getmsng(obj₁)

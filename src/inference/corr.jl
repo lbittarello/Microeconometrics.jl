@@ -28,8 +28,6 @@ mutable struct CrossCorrelated <: CorrStructure
     mat::AbstractMatrix
 end
 
-ClusterOrCross = Union{Clustered, CrossCorrelated}
-
 #==========================================================================================#
 
 # HOMOSCEDASTIC
@@ -50,33 +48,20 @@ function Clustered(df::DataFrame, x::Symbol; adj::Bool = true)
     msng .= .!ismissing.(df[x])
     ic    = disallowmissing(df[x][msng])
     n     = sum(msng)
-    iter  = unique(ic)
+    iter  = sort(unique(ic))
     nc    = length(iter)
-    idx₁  = Vector{Int}(1:n)
-    idx₂  = Vector{Int}(1:n)
-    nn    = n
+    idx₁  = Vector{Int}()
+    idx₂  = Vector{Int}()
 
-    @inbounds for i in iter
-
-        idx = findin(ic, [i])
-        nix = length(idx)
-        nel = Int(nix * (nix - 1) / 2)
-
-        append!(idx₁, Vector{Int}(nel))
-        append!(idx₂, Vector{Int}(nel))
-
-        for j = 1:nix
-            for k = 1:(j - 1)
-                nn += 1
-                idx₁[nn] = idx[k]
-                idx₂[nn] = idx[j]
-            end
-        end
+    @inbounds for (i, ci) in enumerate(iter)
+        idx = findin(ic, [ci])
+        append!(idx₁, fill(i, length(idx)))
+        append!(idx₂, idx)
     end
 
     val = fill(1.0, length(idx₁))
 
-    return Clustered(adj, msng, Symmetric(sparse(idx₁, idx₂, val)), ic, nc)
+    return Clustered(adj, msng, sparse(idx₁, idx₂, val), ic, nc)
 end
 
 #==========================================================================================#
