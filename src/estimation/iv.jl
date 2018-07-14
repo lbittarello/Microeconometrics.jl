@@ -42,11 +42,9 @@ function fit(::Type{IV}, MD::Microdata; novar::Bool = false, method::String = "T
 
     elseif method == "Reduced form"
 
-        FSD               = Microdata(MD)
-        FSD.map[:control] = vcat(FSD.map[:instrument], FSD.map[:control])
-
-        pop!(FSD.map, :treatment)
-        pop!(FSD.map, :instrument)
+        FSM               = Dict(:treatment => "", :instrument => "")
+        FSD               = Microdata(MD, FSM)
+        FSD.map[:control] = vcat(MD.map[:instrument], MD.map[:control])
 
         obj = OLS(FSD)
 
@@ -54,12 +52,9 @@ function fit(::Type{IV}, MD::Microdata; novar::Bool = false, method::String = "T
 
     elseif method == "First stage"
 
-        FSD                = Microdata(MD)
-        FSD.map[:response] = FSD.map[:treatment]
-        FSD.map[:control]  = vcat(FSD.map[:instrument], FSD.map[:control])
-
-        pop!(FSD.map, :treatment)
-        pop!(FSD.map, :instrument)
+        FSM               = Dict(:treatment => "", :instrument => "")
+        FSD               = Microdata(MD, FSM)
+        FSD.map[:control] = vcat(MD.map[:instrument], MD.map[:control])
 
         obj = OLS(FSD)
 

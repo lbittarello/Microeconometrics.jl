@@ -18,10 +18,9 @@ end
 
 function first_stage(::Type{Abadie}, M₁::Type{<:Micromodel}, MD::Microdata; kwargs...)
 
-    FSD                = Microdata(MD, Dict{Symbol,String}())
+    FSM                = Dict(:treatment => "", :instrument => "")
+    FSD                = Microdata(MD, FSM)
     FSD.map[:response] = FSD.map[:instrument]
-    pop!(FSD.map, :treatment)
-    pop!(FSD.map, :instrument)
 
     return fit(M₁, FSD; kwargs...)
 end
@@ -62,7 +61,7 @@ function fit(
 
     v[find((trim .> π) .| (1.0 - trim .< π))] .= 0.0
 
-    SSD               = Microdata(MD)
+    SSD               = Microdata(MD, Dict{Symbol,String}())
     SSD.map[:control] = vcat(SSD.map[:treatment], SSD.map[:control])
     obj               = Abadie()
     obj.first_stage   = M₁

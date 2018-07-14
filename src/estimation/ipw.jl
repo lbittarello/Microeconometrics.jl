@@ -18,9 +18,9 @@ end
 
 function first_stage(::Type{IPW}, MM::Type{<:Micromodel}, MD::Microdata; kwargs...)
 
-    FSD                = Microdata(MD, Dict{Symbol,String}())
+    FSM                = Dict(:treatment => "")
+    FSD                = Microdata(MD, FSM)
     FSD.map[:response] = FSD.map[:treatment]
-    pop!(FSD.map, :treatment)
 
     return fit(MM, FSD; kwargs...)
 end
@@ -52,7 +52,7 @@ function fit(
 
     v[find((trim .> π) .| (1.0 - trim .< π))] .= 0.0
 
-    SSD               = Microdata(MD)
+    SSD               = Microdata(MD, Dict{Symbol,String}())
     SSD.map[:control] = vcat(SSD.map[:treatment], 1)
     obj               = IPW()
     obj.first_stage   = MM

@@ -18,10 +18,9 @@ end
 
 function first_stage(::Type{Tan}, MM::Type{<:Micromodel}, MD::Microdata; kwargs...)
 
-    FSD                = Microdata(MD, Dict{Symbol,String}())
+    FSM                = Dict(:treatment => "", :instrument => "")
+    FSD                = Microdata(MD, FSM)
     FSD.map[:response] = FSD.map[:instrument]
-    pop!(FSD.map, :treatment)
-    pop!(FSD.map, :instrument)
 
     return fit(MM, FSD; kwargs...)
 end
@@ -54,7 +53,7 @@ function fit(
 
     v[find((trim .> π) .| (1.0 - trim .< π))] .= 0.0
 
-    SSD              = Microdata(MD, control = "1")
+    SSD              = Microdata(MD, Dict(:control => "1"))
     obj              = Tan()
     obj.first_stage  = MM
     obj.second_stage = IV(SSD)
