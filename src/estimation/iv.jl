@@ -17,7 +17,7 @@ end
 
 # CONSTRUCTOR
 
-function IV(MD::Microdata, method::String = "TSLS")
+function IV(MD::Microdata, method::String)
     obj        = IV()
     obj.sample = MD
     obj.method = method
@@ -35,8 +35,7 @@ function fit(::Type{IV}, MD::Microdata; novar::Bool = false, method::String = "T
         FSM               = Dict(:treatment => "", :instrument => "")
         FSD               = Microdata(MD, FSM)
         FSD.map[:control] = vcat(MD.map[:treatment], MD.map[:control])
-
-        obj = OLS(FSD)
+        obj               = OLS(FSD)
 
         _fit!(obj, getweights(obj))
 
@@ -45,8 +44,7 @@ function fit(::Type{IV}, MD::Microdata; novar::Bool = false, method::String = "T
         FSM               = Dict(:treatment => "", :instrument => "")
         FSD               = Microdata(MD, FSM)
         FSD.map[:control] = vcat(MD.map[:instrument], MD.map[:control])
-
-        obj = OLS(FSD)
+        obj               = OLS(FSD)
 
         _fit!(obj, getweights(obj))
 
@@ -55,8 +53,7 @@ function fit(::Type{IV}, MD::Microdata; novar::Bool = false, method::String = "T
         FSM               = Dict(:treatment => "", :instrument => "")
         FSD               = Microdata(MD, FSM)
         FSD.map[:control] = vcat(MD.map[:instrument], MD.map[:control])
-
-        obj = OLS(FSD)
+        obj               = OLS(FSD)
 
         _fit!(obj, getweights(obj))
 
@@ -76,10 +73,7 @@ function fit(::Type{IV}, MD::Microdata; novar::Bool = false, method::String = "T
 
     elseif (method == "Two-step GMM") | (method == "Optimal GMM")
 
-        obj = IV(MD, method)
-
-        _fit!(obj, getweights(obj))
-
+        obj   = IV(MD, method) ; _fit!(obj, getweights(obj))
         obj.W = wmatrix(obj, getcorr(obj), getweights(obj))
 
         _fit!(obj, obj.W, getweights(obj))
