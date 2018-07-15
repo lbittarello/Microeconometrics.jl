@@ -29,8 +29,8 @@ function _fit!(obj::Cloglog, w::UnitWeights)
 
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
-    μ  = similar(y)
-    r  = similar(y)
+    μ  = Array{Float64}(length(y))
+    xx = Array{Float64}(size(x)...)
 
     β₀ = vcat(fill(0.0, size(x, 2) - 1), log(- log(1.0 - mean(y))))
 
@@ -54,10 +54,10 @@ function _fit!(obj::Cloglog, w::UnitWeights)
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             ηi   = - exp(μi)
             eηi  = exp(ηi)
-            r[i] = ηi * (yi + eηi - 1.0) / (1.0 - eηi)
+            μ[i] = ηi * (yi + eηi - 1.0) / (1.0 - eηi)
         end
 
-        g[:] = x' * r
+        At_mul_B!(g, x, μ)
     end
 
     function LG!(g::Vector, β::Vector)
@@ -68,11 +68,11 @@ function _fit!(obj::Cloglog, w::UnitWeights)
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             ηi   = - exp(μi)
             eηi  = exp(ηi)
-            r[i] = ηi * (yi + eηi - 1.0) / (1.0 - eηi)
+            μ[i] = ηi * (yi + eηi - 1.0) / (1.0 - eηi)
             ll  -= (iszero(yi) ? ηi : log(1.0 - eηi))
         end
 
-        g[:] = x' * r
+        At_mul_B!(g, x, μ)
 
         return ll
     end
@@ -84,10 +84,11 @@ function _fit!(obj::Cloglog, w::UnitWeights)
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             ηi   = - exp(μi)
             eηi  = exp(ηi)
-            r[i] = ηi * (yi * ((ηi - 1.0) * eηi + 1.0) / (1.0 - eηi)^2 - 1.0)
+            μ[i] = ηi * (yi * ((ηi - 1.0) * eηi + 1.0) / (1.0 - eηi)^2 - 1.0)
         end
 
-        h[:, :] = crossprod(x, r)
+        xx .= x .* μ
+        At_mul_B!(h, x, xx)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
@@ -103,8 +104,8 @@ function _fit!(obj::Cloglog, w::AbstractWeights)
 
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
-    μ  = similar(y)
-    r  = similar(y)
+    μ  = Array{Float64}(length(y))
+    xx = Array{Float64}(size(x)...)
 
     β₀ = vcat(fill(0.0, size(x, 2) - 1), log(- log(1.0 - mean(y, w))))
 
@@ -128,10 +129,10 @@ function _fit!(obj::Cloglog, w::AbstractWeights)
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             ηi   = - exp(μi)
             eηi  = exp(ηi)
-            r[i] = wi * ηi * (yi + eηi - 1.0) / (1.0 - eηi)
+            μ[i] = wi * ηi * (yi + eηi - 1.0) / (1.0 - eηi)
         end
 
-        g[:] = x' * r
+        At_mul_B!(g, x, μ)
     end
 
     function LG!(g::Vector, β::Vector)
@@ -142,11 +143,11 @@ function _fit!(obj::Cloglog, w::AbstractWeights)
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             ηi   = - exp(μi)
             eηi  = exp(ηi)
-            r[i] = wi * ηi * (yi + eηi - 1.0) / (1.0 - eηi)
+            μ[i] = wi * ηi * (yi + eηi - 1.0) / (1.0 - eηi)
             ll  -= wi * (iszero(yi) ? ηi : log(1.0 - eηi))
         end
 
-        g[:] = x' * r
+        At_mul_B!(g, x, μ)
 
         return ll
     end
@@ -158,10 +159,11 @@ function _fit!(obj::Cloglog, w::AbstractWeights)
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             ηi   = - exp(μi)
             eηi  = exp(ηi)
-            r[i] = wi * ηi * (yi * ((ηi - 1.0) * eηi + 1.0) / (1.0 - eηi)^2 - 1.0)
+            μ[i] = wi * ηi * (yi * ((ηi - 1.0) * eηi + 1.0) / (1.0 - eηi)^2 - 1.0)
         end
 
-        h[:, :] = crossprod(x, r)
+        xx .= x .* μ
+        At_mul_B!(h, x, xx)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())

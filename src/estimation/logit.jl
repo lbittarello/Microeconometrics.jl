@@ -29,8 +29,8 @@ function _fit!(obj::Logit, w::UnitWeights)
 
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
-    μ  = similar(y)
-    r  = similar(y)
+    μ  = Array{Float64}(length(y))
+    xx = Array{Float64}(size(x)...)
 
     p  = mean(y)
     p  = 1.0 / (p * (1.0 - p))
@@ -53,10 +53,10 @@ function _fit!(obj::Logit, w::UnitWeights)
         A_mul_B!(μ, x, β)
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
-            r[i] = logistic(μi) - yi
+            μ[i] = logistic(μi) - yi
         end
 
-        g[:] = x' * r
+        At_mul_B!(g, x, μ)
     end
 
     function LG!(g::Vector, β::Vector)
@@ -66,11 +66,11 @@ function _fit!(obj::Logit, w::UnitWeights)
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             ηi   = logistic(μi)
-            r[i] = ηi - yi
+            μ[i] = ηi - yi
             ll  -= (iszero(yi) ? log(1.0 - ηi) : log(ηi))
         end
 
-        g[:] = x' * r
+        At_mul_B!(g, x, μ)
 
         return ll
     end
@@ -81,10 +81,11 @@ function _fit!(obj::Logit, w::UnitWeights)
 
         @inbounds for (i, μi) in enumerate(μ)
             ηi   = logistic(μi)
-            r[i] = ηi * (1.0 - ηi)
+            μ[i] = ηi * (1.0 - ηi)
         end
 
-        h[:, :] = crossprod(x, r)
+        xx .= x .* μ
+        At_mul_B!(h, x, xx)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
@@ -100,8 +101,8 @@ function _fit!(obj::Logit, w::AbstractWeights)
 
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
-    μ  = similar(y)
-    r  = similar(y)
+    μ  = Array{Float64}(length(y))
+    xx = Array{Float64}(size(x)...)
 
     p  = mean(y)
     p  = 1.0 / (p * (1.0 - p))
@@ -124,10 +125,10 @@ function _fit!(obj::Logit, w::AbstractWeights)
         A_mul_B!(μ, x, β)
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
-            r[i] = wi * (logistic(μi) - yi)
+            μ[i] = wi * (logistic(μi) - yi)
         end
 
-        g[:] = x' * r
+        At_mul_B!(g, x, μ)
     end
 
     function LG!(g::Vector, β::Vector)
@@ -137,11 +138,11 @@ function _fit!(obj::Logit, w::AbstractWeights)
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             ηi   = logistic(μi)
-            r[i] = wi * (ηi - yi)
+            μ[i] = wi * (ηi - yi)
             ll  -= wi * (iszero(yi) ? log(1.0 - ηi) : log(ηi))
         end
 
-        g[:] = x' * r
+        At_mul_B!(g, x, μ)
 
         return ll
     end
@@ -152,10 +153,11 @@ function _fit!(obj::Logit, w::AbstractWeights)
 
         @inbounds for (i, (μi, wi)) in enumerate(zip(μ, w))
             ηi   = logistic(μi)
-            r[i] = wi * ηi * (1.0 - ηi)
+            μ[i] = wi * ηi * (1.0 - ηi)
         end
 
-        h[:, :] = crossprod(x, r)
+        xx .= x .* μ
+        At_mul_B!(h, x, xx)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())

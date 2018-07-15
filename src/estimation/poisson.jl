@@ -30,16 +30,13 @@ function _fit!(obj::Poisson, w::UnitWeights)
     O  = haskey(obj.sample.map, :offset)
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
-    r  = similar(y)
+    μ  = Array{Float64}(length(y))
+    r  = Array{Float64}(length(y))
+    xx = Array{Float64}(size(x)...)
 
     β₀ = vcat(fill(0.0, size(x, 2) - 1), log(mean(y)))
 
-    if O
-        xo = getmatrix(obj, :offset, :control)
-        μ  = xo * vcat(0.0, β₀)
-    else
-        μ = x * β₀
-    end
+    O && (xo = getmatrix(obj, :offset, :control))
 
     function L(β::Vector)
         O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
@@ -47,14 +44,9 @@ function _fit!(obj::Poisson, w::UnitWeights)
     end
 
     function G!(g::Vector, β::Vector)
-
         O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
-
-        @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
-            r[i] = exp(μi) - yi
-        end
-
-        g[:] = x' * r
+        r .= exp.(μ) .- y
+        At_mul_B!(g, x, r)
     end
 
     function LG!(g::Vector, β::Vector)
@@ -68,15 +60,15 @@ function _fit!(obj::Poisson, w::UnitWeights)
             ll  += ηi - yi * μi
         end
 
-        g[:] = x' * r
+        At_mul_B!(g, x, r)
 
         return ll
     end
 
     function H!(h::Matrix, β::Vector)
         O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
-        r .= exp.(μ)
-        h[:, :] = crossprod(x, r)
+        xx .= x .* exp.(μ)
+        At_mul_B!(h, x, xx)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
@@ -93,16 +85,13 @@ function _fit!(obj::Poisson, w::AbstractWeights)
     O  = haskey(obj.sample.map, :offset)
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
-    r  = similar(y)
+    μ  = Array{Float64}(length(y))
+    r  = Array{Float64}(length(y))
+    xx = Array{Float64}(size(x)...)
 
     β₀ = vcat(fill(0.0, size(x, 2) - 1), log(mean(y, w)))
 
-    if O
-        xo = getmatrix(obj, :offset, :control)
-        μ  = xo * vcat(0.0, β₀)
-    else
-        μ = x * β₀
-    end
+    O && (xo = getmatrix(obj, :offset, :control))
 
     function L(β::Vector)
         O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
@@ -110,14 +99,9 @@ function _fit!(obj::Poisson, w::AbstractWeights)
     end
 
     function G!(g::Vector, β::Vector)
-
         O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
-
-        @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
-            r[i] = wi * (exp(μi) - yi)
-        end
-
-        g[:] = x' * r
+        r .= w .* (exp.(μ) .- y)
+        At_mul_B!(g, x, r)
     end
 
     function LG!(g::Vector, β::Vector)
@@ -131,15 +115,16 @@ function _fit!(obj::Poisson, w::AbstractWeights)
             ll  += wi * (ηi - yi * μi)
         end
 
-        g[:] = x' * r
+        At_mul_B!(g, x, r)
 
         return ll
     end
 
     function H!(h::Matrix, β::Vector)
         O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
-        r .= w .* exp.(μi)
-        h[:, :] = crossprod(x, r)
+        r  .= w .* exp.(μi)
+        xx .= x .* r
+        At_mul_B!(h, x, xx)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
@@ -160,33 +145,35 @@ score(obj::Poisson) = scale!(residuals(obj), copy(getmatrix(obj, :control)))
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
 function jacobian(obj::Poisson, w::UnitWeights)
+
+    x = getmatrix(obj, :control)
+
     if haskey(obj.sample.map, :offset)
-        x  = getmatrix(obj, :control)
         xo = getmatrix(obj, :offset, :control)
         v  = xo * vcat(1.0, obj.β)
-        v .= exp.(v)
-        return crossprod(x, v, neg = true)
     else
-        x  = getmatrix(obj, :control)
         v  = x * obj.β
-        v .= exp.(v)
-        return crossprod(x, v, neg = true)
     end
+
+    v .= exp.(v)
+
+    return crossprod(x, v, neg = true)
 end
 
 function jacobian(obj::Poisson, w::AbstractWeights)
+
+    x = getmatrix(obj, :control)
+
     if haskey(obj.sample.map, :offset)
-        x  = getmatrix(obj, :control)
         xo = getmatrix(obj, :offset, :control)
         v  = xo * vcat(1.0, obj.β)
-        v .= w .* exp.(v)
-        return crossprod(x, v, neg = true)
     else
-        x  = getmatrix(obj, :control)
         v  = x * obj.β
-        v .= w .* exp.(v)
-        return crossprod(x, v, neg = true)
     end
+    
+    v .= w .* exp.(v)
+
+    return crossprod(x, v, neg = true)
 end
 
 #==========================================================================================#
@@ -211,18 +198,19 @@ fitted(obj::Poisson, MD::Microdata) = exp.(predict(obj, MD))
 # DERIVATIVE OF FITTED VALUES
 
 function jacobexp(obj::Poisson)
+
+    x = copy(getmatrix(obj, :control))
+
     if haskey(obj.sample.map, :offset)
-        x  = getmatrix(obj, :control)
         xo = getmatrix(obj, :offset, :control)
         v  = xo * vcat(1.0, obj.β)
-        v .= exp.(v)
-        return scale!(v, copy(x))
     else
-        x  = getmatrix(obj, :control)
         v  = x * obj.β
-        v .= exp.(v)
-        return scale!(v, copy(x))
     end
+
+    v .= exp.(v)
+
+    return scale!(v, x)
 end
 
 #==========================================================================================#

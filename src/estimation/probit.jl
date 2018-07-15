@@ -30,7 +30,7 @@ function _fit!(obj::Probit, w::UnitWeights)
     y  = iszero.(getvector(obj, :response))
     x  = getmatrix(obj, :control)
     μ  = Array{Float64}(length(y))
-    r  = Array{Float64}(length(y))
+    xx = Array{Float64}(size(x)...)
 
     p  = mean(y)
     p  = 1.0 / normpdf(norminvcdf(p))
@@ -54,11 +54,10 @@ function _fit!(obj::Probit, w::UnitWeights)
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             ηi   = (yi ? (normcdf(μi) - 1.0) : normcdf(μi))
-            r[i] = - normpdf(μi) / ηi
+            μ[i] = - normpdf(μi) / ηi
         end
 
-        g[:] = x' * r
-
+        At_mul_B!(g, x, μ)
     end
 
     function LG!(g::Vector, β::Vector)
@@ -68,11 +67,11 @@ function _fit!(obj::Probit, w::UnitWeights)
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             ηi   = (yi ? (normcdf(μi) - 1.0) : normcdf(μi))
-            r[i] = - normpdf(μi) / ηi
+            μ[i] = - normpdf(μi) / ηi
             ll  -= (yi ? log(- ηi) : log(ηi))
         end
 
-        g[:] = x' * r
+        At_mul_B!(g, x, μ)
 
         return ll
     end
@@ -84,10 +83,11 @@ function _fit!(obj::Probit, w::UnitWeights)
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             ηi   = (yi ? (normcdf(μi) - 1.0) : normcdf(μi))
             ηi   = normpdf(μi) / ηi
-            r[i] = abs2(ηi) + μi * ηi
+            μ[i] = abs2(ηi) + μi * ηi
         end
 
-        h[:, :] = crossprod(x, r)
+        xx .= x .* μ
+        At_mul_B!(h, x, xx)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
@@ -104,7 +104,7 @@ function _fit!(obj::Probit, w::AbstractWeights)
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
     μ  = Array{Float64}(length(y))
-    r  = Array{Float64}(length(y))
+    xx = Array{Float64}(size(x)...)
     
     p  = mean(y)
     p  = 1.0 / normpdf(norminvcdf(p))
@@ -128,11 +128,10 @@ function _fit!(obj::Probit, w::AbstractWeights)
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             ηi   = (yi ? (normcdf(μi) - 1.0) : normcdf(μi))
-            r[i] = - wi * normpdf(μi) / ηi
+            μ[i] = - wi * normpdf(μi) / ηi
         end
 
-        g[:] = x' * r
-
+        At_mul_B!(g, x, μ)
     end
 
     function LG!(g::Vector, β::Vector)
@@ -142,11 +141,11 @@ function _fit!(obj::Probit, w::AbstractWeights)
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             ηi   = (yi ? (normcdf(μi) - 1.0) : normcdf(μi))
-            r[i] = - wi * normpdf(μi) / ηi
+            μ[i] = - wi * normpdf(μi) / ηi
             ll  -= wi * (yi ? log(- ηi) : log(ηi))
         end
 
-        g[:] = x' * r
+        At_mul_B!(g, x, μ)
 
         return ll
     end
@@ -158,10 +157,11 @@ function _fit!(obj::Probit, w::AbstractWeights)
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             ηi   = (yi ? (normcdf(μi) - 1.0) : normcdf(μi))
             ηi   = normpdf(μi) / ηi
-            r[i] = wi * (abs2(ηi) + μi * ηi)
+            μ[i] = wi * (abs2(ηi) + μi * ηi)
         end
 
-        h[:, :] = crossprod(x, r)
+        xx .= x .* μ
+        At_mul_B!(h, x, xx)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
