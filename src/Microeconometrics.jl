@@ -38,6 +38,8 @@ include("./estimation/logit.jl")
 include("./estimation/probit.jl")
 include("./estimation/cloglog.jl")
 include("./estimation/poisson.jl")
+include("./estimation/ivpoisson.jl")
+include("./estimation/mullahy.jl")
 include("./estimation/ipw.jl")
 include("./estimation/abadie.jl")
 include("./estimation/frölichmelly.jl")
@@ -50,11 +52,12 @@ export
         Heteroscedastic,
         Clustered,
         CrossCorrelated,
-    Microdata, Microdata!,
-    OLS, IV, Logit, Probit, Cloglog, Poisson,
+    Microdata,
+    OLS, IV,
+    Logit, Probit, Cloglog,
+    Poisson, IVPoisson, Mullahy,
     IPW, Abadie, FrölichMelly, Tan,
-    fit, first_stage, second_stage,
-    coef, confint, pval, stderr, tstat, vcov, hausman_1s, hausman_2s,
+    fit, coef, confint, pval, stderr, tstat, vcov, hausman_1s, hausman_2s,
     loglikelihood, nullloglikelihood, deviance, nulldeviance,
     aic, aicc, bic, dof, dof_residual, nobs, r2, r², adjr2, adjr²,
     model_response, predict, fitted, residuals,

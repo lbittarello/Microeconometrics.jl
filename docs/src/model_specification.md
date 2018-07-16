@@ -1,181 +1,38 @@
 # Model specification
 
-Before fitting the model, one must specify the correlation pattern of the error term
-(a `CorrStructure`) and the components of the model (a `Microdata`).
-
-## `CorrStructure`
-
-This structure specifies the correlation between observations.
-It determines the calculation of standard errors.
-
-All constructors accept the Boolean keyword `adj`, which defaults to `true`.
-If `true`, a finite-sample adjustment is applied to the variance matrix.
-The adjustment factor is n / (n - 1), where n is the number of clusters for clustered data
-and the number of observations otherwise.
-
-Four subtypes are currently available:
-
-### `Homoscedastic`
-
-```julia
-Homoscedastic(method::String = "OIM"; adj::Bool = true)
-```
-
-Observations are independent and identically distributed.
-The optional `method` argument controls the estimation of the variance matrix:
-`"OIM"` uses the observed information matrix,
-whereas `"OPG"` uses the outer product of the gradient.
-(They are equivalent for OLS.)
-Only OLS and maximum-likelihood estimators support homoscedastic errors.
-
-### `Heteroscedastic`
-
-```julia
-Heteroscedastic(; adj::Bool = true)
-```
-
-Observations are independent, but they may differ in distribution.
-This structure leads to sandwich covariance matrices (a.k.a. Huber-Eicker-White).
-
-### `Clustered`
-
-```julia
-Clustered(DF::Microdata, cluster::Symbol; adj::Bool = true)
-```
-
-Observations are independent across clusters,
-but their joint distribution within clusters is arbitrary.
-`cluster` specifies the column of `DF` to cluster on.
-
-### `CrossCorrelated`
-
-This structure accommodates other correlation structures.
-The first argument determines the precise pattern.
-The following methods are available:
-
-```julia
-CrossCorrelated("Two-way clustering", DF::DataFrame, cluster₁::Symbol, cluster₂::Symbol; adj::Bool = true)
-```
-
-Observations may be arbitrarily correlated if they share any cluster.
-
-```julia
-CrossCorrelated("Time",
-    DF::DataFrame,
-    time::Symbol,
-    bandwidth::Real,
-    [kernel::Function = parzen];
-    adj::Bool = true)
-```
-
-The maximum possible correlation between two observations declines
-with the time difference between them. Correlation is arbitrary below that limit.
-The bandwidth and the kernel function control the upper bound.
-`time` specifies the column of `DF` that contains the date of each observation (`Date`).
-
-The following kernels are predefined for convenience:
-Bartlett (`bartlett`), Parzen (`parzen`), Truncated (`truncated`)
-and Tukey-Hanning (`tukeyhanning`).
-See [Andrews (1991)](http://jstor.org/stable/2938229) for formulae.
-
-```julia
-CrossCorrelated("Space",
-    DF::DataFrame,
-    latitude::Symbol,
-    longitude::Symbol,
-    bandwidth::Real,
-    [kernel::Function = parzen];
-    adj::Bool = true)
-```
-
-The maximum possible correlation between two observations declines
-with the spatial distance between them. Correlation is arbitrary below that limit.
-The bandwidth and the kernel function control the upper bound.
-`latitude` and `longitude` specify the columns of `DF`
-that contain the coordinates of each observation in radians (`Float64`).
-
-For a list of predefined kernels, see `CrossCorrelated("time", args...)` above.
-
-```julia
-CrossCorrelated("Time and space",
-    DF::DataFrame,
-    time::Symbol,
-    bandwidth_time::Real,
-    latitude::Symbol,
-    longitude::Symbol,
-    bandwidth_space::Real,
-    [kernel::Function = parzen];
-    adj::Bool = true)
-```
-
-The maximum possible correlation between two observations declines
-with the time difference and the spatial distance between them.
-Correlation is arbitrary below that limit.
-The bandwidths and the kernel function control the upper bound.
-`time` specifies the column of `DF` that contains the date of each observation.
-`latitude` and `longitude` specify the columns of `DF`
-that contain the coordinates of each observation in radians (`Float64`).
-
-For a list of predefined kernels, see `CrossCorrelated("time", args...)` above.
-
-## `Microdata`
-
-This structure combines the functionalities of `Formula`, `ModelFrame` and `ModelMatrix` from
-[*StatsModels*](https://github.com/JuliaStats/StatsModels.jl).
-It contains a `Matrix{Float64}` (the data matrix),
-a map from model components to matrix columns,
-a correlation structure and weights (inter alia).
+`Microdata` combines the functionalities of `ModelFrame` and `ModelMatrix` from [*StatsModels.jl*](https://github.com/JuliaStats/StatsModels.jl). It contains a `Matrix{Float64}` (the data matrix), a map from model components to matrix columns, a correlation structure and weights (inter alia).
 
 ```julia
 Microdata(
-    DF::DataFrame;
-    vcov::CorrStructure = Heteroscedastic(),
-    weights::AbstractWeights = UnitWeights(size(DF, 1)),
-    subset::AbstractVector{Bool} = trues(size(DF, 1)),
-    kwargs...)
+        DF::DataFrame,
+        model::Dict{Symbol, String};
+        contrasts::Dict,
+        subset::AbstractVector{Bool} = trues(size(DF, 1)),
+        vcov::CorrStructure = Heteroscedastic(),
+        weights::AbstractWeights = UnitWeights(size(DF, 1))
+    )
 ```
 
-`subset` determines the estimation sample.
-Set a row to `true` if the corresponding row of `DF` should be included
-and `false` if it should be excluded.
-This keyword is useful in two situations.
-First, you have precomputed `vcov` based on the entire sample.
-`Microdata` will copy the correlation structure and restrict it to relevant observations.
-Second, you are comparing subgroup effects
-and observations in different subgroups may correlate
-(e.g., they may belong to the same cluster).
-`hausman_2s` will account for that correlation
-if the `Microdata`s were constructed with `subset`.
+To construct a `Microdata`, two arguments are compulsory: a [`DataFrame`](http://juliadata.github.io/DataFrames.jl/stable/), which contains the data, and a dictionary, which specifies the components of the model of interest.
 
-`weights` is a [weight vector](http://juliastats.github.io/StatsBase.jl/stable/weights.html).
-Except for frequency weights, the weight vector is normalized
-to sum up to the number of observations in the sample.
+All regression models need a `response`, but other requirements may vary. For example, `OLS` asks for `response` and `control`. See the [tutorial](getting_started.md) for examples. You pass these sets as strings, following [syntax of `Formula`](http://juliastats.github.io/StatsModels.jl/latest/formula.html). Conventional sets include:
 
-Additional keywords determine the model components.
-All regression models need a `response`, but other requirements may vary.
-For example, `OLS` asks for `response` and `control`.
-See the [introduction](#getting-started) for examples. Conventional sets include:
-
-- `response`: the response, outcome or dependent variable;
-- `control`: exogenous explanatory variables (n.b.: you must explicitly include intercepts);
+- `response`: the response (a.k.a. outcome or dependent variable);
+- `control`: exogenous explanatory variables (n.b.: you must explicitly include intercepts, `+ 1`);
 - `treatment`: endogenous explanatory variables;
-- `instrument`: instrumental variables (i.e., excluded exogenous variables).
+- `instrument`: instrumental variables (i.e. excluded exogenous variables).
 
-You pass these sets as strings, following
-[syntax of `Formula`](http://juliastats.github.io/StatsModels.jl/latest/formula.html).
+As for the keywords:
+- `contrasts`: a dictionary from column labels to [contrast schemes](https://juliastats.github.io/StatsModels.jl/latest/contrasts.html).
+- `subset` determines the estimation sample. Set a row to `true` if the corresponding row of `DF` should be included and `false` if it should be excluded. This keyword is useful if you are comparing subgroup effects and observations in different subgroups may correlate
+(e.g., they may belong to the same cluster). [`hausman_2s`](methods.md#hausman-test) will account for that correlation if the `Microdata` were constructed with `subset`.
+- `weights` is a [weight vector](http://juliastats.github.io/StatsBase.jl/stable/weights.html). Except for frequency weights, the weight vector is normalized to sum up to the number of observations in the sample.
+- `vcov` is a [correlation structure](correlation_structures.md).
 
+It is also possible to base new `Microdata` on existing `Microdata`:
 ```julia
 Microdata(MD::Microdata; kwargs...)
 ```
+This constructor allows you to reassign variables to new sets. You can also create new variable sets. If you do not redefine a set, it is preserved. To suppress a set, redefine it to `""`. You cannot add new variables to the data matrix, modify the correlation structure, restrict the sample or reweight observations.
 
-It is also possible to base new `Microdata` on existing `Microdata`.
-This constructor allows you to reassign variables to new sets.
-You can create new variable sets. If you do not redefine a set, it is preserved.
-To suppress a set, redefine it to `""`.
-You cannot add new variables, modify the correlation structure, restrict the sample
-or reweight observations.
-
-This functionality is useful if you wish to compare specifications.
-Rather than building separate data matrices for each one of them,
-you can build a master `Microdata`, holding all variables of interest,
-and adjust its map as you go through specifications.
+This functionality is useful if you wish to compare specifications. Rather than building separate data matrices for each one of them, you can build a master `Microdata`, holding all variables of interest, and adjust its map as you go through specifications.

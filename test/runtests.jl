@@ -190,10 +190,10 @@ end
 S          = CSV.read(joinpath(datadir, "dollhill3.csv"))
 S[:pyears] = log.(S[:pyears])
 
-M  = Dict(
+M = Dict(
         :response => "deaths",
-        :control => "smokes + agecat + 1",
-        :offset => "pyears"
+        :control  => "smokes + agecat + 1",
+        :offset   => "pyears"
     )
 
 @testset "Poisson" begin
@@ -212,6 +212,52 @@ M  = Dict(
     @test isapprox(aic(E), 79.20030688, atol = 1e-7)
     @test isapprox(aicc(E), 107.20030688, atol = 1e-7)
     @test isapprox(bic(E), 81.01581744, atol = 1e-7)
+    @test dof(E) == 6
+end
+
+S = CSV.read(joinpath(datadir, "website.csv"))
+M = Dict(
+        :response   => "visits",
+        :control    => "ad + female + 1",
+        :treatment  => "time",
+        :instrument => "phone + frfam"
+    )
+
+@testset "IVPoisson" begin
+
+    D = Microdata(S, M)
+    E = fit(IVPoisson, D, method = "Two-step GMM")
+
+    β = [0.05892941; 0.13734403; -0.02477071; 1.04150546]
+    σ = [0.01079421; 0.01015705;  0.03762177; 0.03858479]
+    c = nobs(E) / (nobs(E) - 1)
+    σ = σ * sqrt(c)
+
+    @test isapprox(coef(E), β, atol = 1e-7)
+    @test isapprox(stderr(E), σ, atol = 1e-7)
+    @test dof(E) == 4
+end
+
+S = CSV.read(joinpath(datadir, "trip.csv"))
+M = Dict(
+        :response   => "trips",
+        :control    => "cbd + ptn + worker + weekend + 1",
+        :treatment  => "tcost",
+        :instrument => "pt"
+    )
+
+@testset "Mullahy" begin
+
+    D = Microdata(S, M)
+    E = fit(Mullahy, D, method = "Two-step GMM")
+
+    β = [0.03521846; -0.00839804; -0.01131463; 0.66230176; 0.30093231; 0.26544230]
+    σ = [0.00981818;  0.00201721;  0.00218185; 0.05199088; 0.03626820; 0.15501267]
+    c = nobs(E) / (nobs(E) - 1)
+    σ = σ * sqrt(c)
+
+    @test isapprox(coef(E), β, atol = 1e-7)
+    @test isapprox(stderr(E), σ, atol = 1e-7)
     @test dof(E) == 6
 end
 
