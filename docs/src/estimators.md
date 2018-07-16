@@ -90,7 +90,7 @@ The `Microdata` must contain: `response`, `treatment`, `control` and `instrument
 
 ## Reweighting methods
 
-!!! warning
+!!! note
 
     All reweighting models require the specification of a first stage. They come in two flavors. In the first, you specify the first-stage model. In the second, you pass a previously fitted model. The latter is more verbose, but it allows you to customize and reuse the first stage.
 
@@ -122,8 +122,8 @@ This model estimates unconditional local average effects according to [Frölich 
 The `Microdata` must contain: `response`, `treatment`, `control` and `instrument`. The treatment and the instrument must be binary. `FrölichMelly` is a subtype of `TwoStageModel`.
 
 ```julia
-fit(Tan, M₁::Type{Micromodel}, MD::Microdata; novar::Bool = false, trim::AbstractFloat = 0.0)
-fit(Tan, M₁::Micromodel, MD::Microdata; novar::Bool = false, trim::AbstractFloat = 0.0)
+fit(Tan, M₁::Type{Micromodel}, MD::Microdata; trim::AbstractFloat = 0.0)
+fit(Tan, M₁::Micromodel, MD::Microdata; trim::AbstractFloat = 0.0)
 ```
 
 This model estimates the unconditional local average treatment effects according to
