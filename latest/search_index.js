@@ -89,6 +89,86 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "correlation_structures.html#",
+    "page": "Correlation structures",
+    "title": "Correlation structures",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "correlation_structures.html#Correlation-structures-1",
+    "page": "Correlation structures",
+    "title": "Correlation structures",
+    "category": "section",
+    "text": "Before fitting the model, you must specify the correlation between observations (a CorrStructure). It determines the calculation of the. The default is always Heteroscedastic, i.e. independent but not identically distributed observations.All constructors accept the Boolean keyword adj, which defaults to true. If true, a finite-sample adjustment is applied to the covariance matrix. The adjustment factor is n / (n - 1), where n is the number of clusters for clustered data and the number of observations otherwise.Four subtypes are currently available:"
+},
+
+{
+    "location": "correlation_structures.html#Homoscedastic-1",
+    "page": "Correlation structures",
+    "title": "Homoscedastic",
+    "category": "section",
+    "text": "Homoscedastic(method::String = \"OIM\")Observations are independent and identically distributed. The optional argument method is only relevant for maximum-likelihood estimators. It controls the estimation of the covariance matrix: \"OIM\" uses the observed information matrix, whereas \"OPG\" uses the outer product of the gradient. Only linear and maximum-likelihood estimators support homoscedastic errors."
+},
+
+{
+    "location": "correlation_structures.html#Heteroscedastic-1",
+    "page": "Correlation structures",
+    "title": "Heteroscedastic",
+    "category": "section",
+    "text": "Heteroscedastic()Observations are independent, but they may differ in distribution. This structure leads to sandwich covariance matrices (a.k.a. Huber-Eicker-White)."
+},
+
+{
+    "location": "correlation_structures.html#Clustered-1",
+    "page": "Correlation structures",
+    "title": "Clustered",
+    "category": "section",
+    "text": "Clustered(DF::DataFrame, cluster::Symbol)Observations are independent across clusters, but they may differ in their joint distribution within clusters. cluster specifies the column of the DataFrame to cluster on."
+},
+
+{
+    "location": "correlation_structures.html#CrossCorrelated-1",
+    "page": "Correlation structures",
+    "title": "CrossCorrelated",
+    "category": "section",
+    "text": "This structure accommodates other correlation structures. The first argument determines the precise pattern."
+},
+
+{
+    "location": "correlation_structures.html#Two-way-clustering-1",
+    "page": "Correlation structures",
+    "title": "Two-way clustering",
+    "category": "section",
+    "text": "CrossCorrelated(\"Two-way clustering\", DF::DataFrame, c₁::Symbol, c₂::Symbol)if two observations share any cluster, they may be arbitrarily correlated."
+},
+
+{
+    "location": "correlation_structures.html#Correlation-across-time-1",
+    "page": "Correlation structures",
+    "title": "Correlation across time",
+    "category": "section",
+    "text": "CrossCorrelated(\"Time\",\r\n        DF::DataFrame,\r\n        time::Symbol,\r\n        bandwidth::Real,\r\n        kernel::Function = parzen\r\n    )The maximum possible correlation between two observations declines with the time difference between them. The actual correlation is arbitrary below that limit. (See Conley (1999).) The bandwidth and the kernel function control the upper bound. time specifies the column of DF that contains the date of each observation (of type Date).The following kernels are predefined for convenience: Bartlett (bartlett), Parzen (parzen), Truncated (truncated) and Tukey-Hanning (tukeyhanning). See Andrews (1991) for formulae.warning: Warning\nThe resulting covariance matrices differ from the Newey-West estimator, which assumes independence across units (though observations for the same unit may correlate across time)."
+},
+
+{
+    "location": "correlation_structures.html#Correlation-across-space-1",
+    "page": "Correlation structures",
+    "title": "Correlation across space",
+    "category": "section",
+    "text": "CrossCorrelated(\"Space\",\r\n        DF::DataFrame,\r\n        latitude::Symbol,\r\n        longitude::Symbol,\r\n        bandwidth::Real,\r\n        kernel::Function = parzen\r\n    )The maximum possible correlation between two observations declines with the spatial distance between them. The actual correlation is arbitrary below that limit. (See Conley (1999).) The bandwidth and the kernel function control the upper bound. latitude and longitude specify the columns of DF that contain the coordinates of each observation in radians (of type Float64).The following kernels are predefined for convenience: Bartlett (bartlett), Parzen (parzen), Truncated (truncated) and Tukey-Hanning (tukeyhanning). See Andrews (1991) for formulae."
+},
+
+{
+    "location": "correlation_structures.html#Correlation-across-time-and-space-1",
+    "page": "Correlation structures",
+    "title": "Correlation across time and space",
+    "category": "section",
+    "text": "CrossCorrelated(\"Time and space\",\r\n        DF::DataFrame,\r\n        time::Symbol,\r\n        bandwidth_time::Real,\r\n        latitude::Symbol,\r\n        longitude::Symbol,\r\n        bandwidth_space::Real,\r\n        kernel::Function = parzen\r\n    )The maximum possible correlation between two observations declines with the time difference and the spatial distance between them. The actual correlation is arbitrary below that limit. (See Conley (1999).) The bandwidths and the kernel function control the upper bound. time specifies the column of DF that contains the date of each observation. latitude and longitude specify the columns of DF that contain the coordinates of each observation in radians (Float64).The following kernels are predefined for convenience: Bartlett (bartlett), Parzen (parzen), Truncated (truncated) and Tukey-Hanning (tukeyhanning). See Andrews (1991) for formulae."
+},
+
+{
     "location": "estimators.html#",
     "page": "Estimators",
     "title": "Estimators",
@@ -149,7 +229,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Estimators",
     "title": "Reweighting methods",
     "category": "section",
-    "text": "warning: Warning\nAll reweighting models require the specification of a first stage. They come in two flavors. In the first, you specify the first-stage model. In the second, you pass a previously fitted model. The latter is more verbose, but it allows you to customize and reuse the first stage.fit(IPW, M₁::Type{Micromodel}, MD::Microdata; trim::AbstractFloat = 0.0)\nfit(IPW, M₁::Micromodel, MD::Microdata; trim::AbstractFloat = 0.0)IPW estimates average treatment effects by inverse probability weighting. In a first stage, we use model M₁ to forecast the conditional probability of treatment take-up and construct estimation weights. In the second stage, we regress the outcome on the treatment and an intercept by weighted least squares. The intercept gives the mean outcome of the untreated. We ignore observations whose score is below trim or above 1 - trim (see Crump et al. (2009)).The Microdata must contain: response, treatment and control. The treatment must be binary. IPW is a subtype of TwoStageModel.fit(Abadie, M₂::Type{ParModel}, M₁::Type{Micromodel}, MD::Microdata; trim::AbstractFloat = 0.0, kwargs...)\nfit(Abadie, M₂::Type{ParModel}, M₁::Micromodel, MD::Microdata; trim::AbstractFloat = 0.0 kwargs...)Abadie estimates local average response functions according to Abadie (2003). In a first stage, we use model M₁ to forecast the conditional probability of instrument take-up and construct estimation weights. In the second stage, we fit M₂ with the weights from the first stage. Keywords customize the second-stage estimator. We ignore observations whose score is below trim or above 1 - trim (see Crump et al. (2009)).The Microdata must contain: response, treatment, control and instrument. The treatment and the instrument must be binary. Abadie is a subtype of TwoStageModel.fit(FrölichMelly, M₁::Type{Micromodel}, MD::Microdata; trim::AbstractFloat = 0.0)\nfit(FrölichMelly, M₁::Micromodel, MD::Microdata; trim::AbstractFloat = 0.0)This model estimates unconditional local average effects according to Frölich and Melly (2013). In a first stage, we use model M₁ to forecast the conditional probability of instrument take-up and construct estimation weights. In the second stage, we regress the outcome on the treatment and an intercept by weighted least squares. The intercept gives mean outcome of untreated compliers. We ignore observations whose score is below trim or above 1 - trim (see Crump et al. (2009)).The Microdata must contain: response, treatment, control and instrument. The treatment and the instrument must be binary. FrölichMelly is a subtype of TwoStageModel.fit(Tan, M₁::Type{Micromodel}, MD::Microdata; novar::Bool = false, trim::AbstractFloat = 0.0)\nfit(Tan, M₁::Micromodel, MD::Microdata; novar::Bool = false, trim::AbstractFloat = 0.0)This model estimates the unconditional local average treatment effects according to Tan (2006). In a first stage, we use model M₁ to forecast the conditional probability of instrument take-up and construct estimation weights. In the second stage, we regress the outcome on the treatment and an intercept by weighted two-stage least squares. The intercept gives mean outcome of untreated compliers. We ignore observations whose score is below trim or above 1 - trim (see Crump et al. (2009)).The Microdata must contain: response, treatment, control and instrument. The treatment and the instrument must be binary. Tan is a subtype of TwoStageModel."
+    "text": "note: Note\nAll reweighting models require the specification of a first stage. They come in two flavors. In the first, you specify the first-stage model. In the second, you pass a previously fitted model. The latter is more verbose, but it allows you to customize and reuse the first stage.fit(IPW, M₁::Type{Micromodel}, MD::Microdata; trim::AbstractFloat = 0.0)\nfit(IPW, M₁::Micromodel, MD::Microdata; trim::AbstractFloat = 0.0)IPW estimates average treatment effects by inverse probability weighting. In a first stage, we use model M₁ to forecast the conditional probability of treatment take-up and construct estimation weights. In the second stage, we regress the outcome on the treatment and an intercept by weighted least squares. The intercept gives the mean outcome of the untreated. We ignore observations whose score is below trim or above 1 - trim (see Crump et al. (2009)).The Microdata must contain: response, treatment and control. The treatment must be binary. IPW is a subtype of TwoStageModel.fit(Abadie, M₂::Type{ParModel}, M₁::Type{Micromodel}, MD::Microdata; trim::AbstractFloat = 0.0, kwargs...)\nfit(Abadie, M₂::Type{ParModel}, M₁::Micromodel, MD::Microdata; trim::AbstractFloat = 0.0 kwargs...)Abadie estimates local average response functions according to Abadie (2003). In a first stage, we use model M₁ to forecast the conditional probability of instrument take-up and construct estimation weights. In the second stage, we fit M₂ with the weights from the first stage. Keywords customize the second-stage estimator. We ignore observations whose score is below trim or above 1 - trim (see Crump et al. (2009)).The Microdata must contain: response, treatment, control and instrument. The treatment and the instrument must be binary. Abadie is a subtype of TwoStageModel.fit(FrölichMelly, M₁::Type{Micromodel}, MD::Microdata; trim::AbstractFloat = 0.0)\nfit(FrölichMelly, M₁::Micromodel, MD::Microdata; trim::AbstractFloat = 0.0)This model estimates unconditional local average effects according to Frölich and Melly (2013). In a first stage, we use model M₁ to forecast the conditional probability of instrument take-up and construct estimation weights. In the second stage, we regress the outcome on the treatment and an intercept by weighted least squares. The intercept gives mean outcome of untreated compliers. We ignore observations whose score is below trim or above 1 - trim (see Crump et al. (2009)).The Microdata must contain: response, treatment, control and instrument. The treatment and the instrument must be binary. FrölichMelly is a subtype of TwoStageModel.fit(Tan, M₁::Type{Micromodel}, MD::Microdata; trim::AbstractFloat = 0.0)\nfit(Tan, M₁::Micromodel, MD::Microdata; trim::AbstractFloat = 0.0)This model estimates the unconditional local average treatment effects according to Tan (2006). In a first stage, we use model M₁ to forecast the conditional probability of instrument take-up and construct estimation weights. In the second stage, we regress the outcome on the treatment and an intercept by weighted two-stage least squares. The intercept gives mean outcome of untreated compliers. We ignore observations whose score is below trim or above 1 - trim (see Crump et al. (2009)).The Microdata must contain: response, treatment, control and instrument. The treatment and the instrument must be binary. Tan is a subtype of TwoStageModel."
 },
 
 {
@@ -190,6 +270,22 @@ var documenterSearchIndex = {"docs": [
     "title": "Hausman test",
     "category": "section",
     "text": "These functions compute the difference in coefficients between two parametric models. They return a ParObject, which contains the vector of differences, their covariance matrix and labels. Our implementation is based on the GMM representation of the joint estimation problem (see Subsection 8.3.2 of Cameron and Trivedi (2005)). The optional argument names specifies the coefficients of interest as they appear on regression tables (be careful with categorical variables!). hausman_1s(\n        model₁::Union{GMM, ParModel, TwoStageModel},\n        model₂::Union{GMM, ParModel, TwoStageModel},\n        names::Vector{String} = intersect(coefnames(obj₁), coefnames(obj₂))\n    )This function is appropriate when model₁ and model₂ were both based on the same estimation sample.hausman_2s(\n        model₁::Union{GMM, ParModel, TwoStageModel},\n        model₂::Union{GMM, ParModel, TwoStageModel},\n        names::Vector{String} = intersect(coefnames(obj₁), coefnames(obj₂))\n    )This function is appropriate when model₁ and model₂ were based on independent samples. For example, the samples might consist of independent observations with no overlap.hausman_2s(\n        model₁::Union{GMM, ParModel, TwoStageModel},\n        model₂::Union{GMM, ParModel, TwoStageModel},\n        corr::CorrStructure,\n        names::Vector{String} = intersect(coefnames(obj₁), coefnames(obj₂))\n    )This function is appropriate when model₁ and model₂ were based on dependent samples. For example, the samples might consist of independent observations with some overlap or clustered observations with shared clusters. The correlation structure corr must specify the correlation between all observations of both estimation samples. For example, you could construct corr for the entire dataset and construct the samples via the subset keyword to Microdata."
+},
+
+{
+    "location": "bootstrapping.html#",
+    "page": "Bootstrapping",
+    "title": "Bootstrapping",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "bootstrapping.html#Bootstrapping-1",
+    "page": "Bootstrapping",
+    "title": "Bootstrapping",
+    "category": "section",
+    "text": "This package does not provide support for bootstrap standard errors at the moment. Nonetheless, it is possible to bootstrap with the existing tools. This tutorial provides some sample code.We first load some packages:using StatsBase\r\nusing DataFrames\r\nusing CSV\r\nusing MicroeconometricsWe then set up the problem:S        = CSV.read(joinpath(datadir, \"auto.csv\")) ;\r\nS[:gpmw] = ((1.0 ./ S[:mpg]) ./ S[:weight]) * 100000 ;\r\nM        = Dict(:response => \"gpmw\", :control => \"foreign + 1\") ;\r\nD        = Microdata(S, M) ;Next, we obtain the coefficient estimates:E = fit(OLS, D, novar = true) ;We can now set up the bootstrap:srand(0101)\r\n\r\nreps = 1000 ;\r\nn    = nobs(E) ;\r\nwgts = fill(0, n) ;\r\nB    = Array{Float64}(reps, dof(E)) ;The vector wgts will translate the draw of a bootstrap sample into an input for Microdata. The matrix B will contain the sample of coefficient estimates. Don\'t forget to set the seed for the sake of reproducibility!The algorithm is:for b = 1:reps\r\n\r\n    wgts .= 0\r\n    draw  = rand(1:n, n)\r\n\r\n    for d in draw\r\n        wgts[d] += 1\r\n    end\r\n\r\n    Db      = Microdata(S, M, weights = fweights(wgts))\r\n    Eb      = fit(OLS, Db, novar = true)\r\n    B[b, :] = coef(Eb)\'\r\nendNote that we do not compute the covariance matrix at each step, which saves us some time.We can finally see the results:E.V = cov(B) ;\r\ncoeftable(E_boot)The output is:                   Estimate  St. Err.   t-stat.   p-value      C.I. (95%)\r\nforeign: Foreign     0.2462    0.0682    3.6072    0.0003    0.1124  0.3799\r\n(Intercept)           1.609    0.0237   67.9372    <1e-99    1.5626  1.6554You can easily adapt this code to more complex problems (e.g., critical values) or parallelize it for additional speed!"
 },
 
 {
