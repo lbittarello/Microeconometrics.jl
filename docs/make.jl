@@ -11,10 +11,10 @@ makedocs(
         "Introduction"           => "index.md",
         "Getting started"        => "getting_started.md",
         "Model specification"    => "model_specification.md",
-        "Correlation structures" => "model_specification.md",
+        "Correlation structures" => "correlation_structures.md",
         "Estimators"             => "estimators.md",
         "Methods"                => "methods.md",
-        "Bootstrapping"          => "bootstrapping",
+        "Bootstrapping"          => "bootstrapping.md",
         "Contributing"           => "contributing.md",
         "To do"                  => "to_do.md",
     ]

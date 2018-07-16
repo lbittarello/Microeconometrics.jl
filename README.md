@@ -1,4 +1,4 @@
-# Microeconometrics
+# Microeconometrics.jl
 
 [![0.6](https://pkg.julialang.org/badges/Microeconometrics_0.6.svg)](http://pkg.julialang.org/?pkg=Microeconometrics)
 
