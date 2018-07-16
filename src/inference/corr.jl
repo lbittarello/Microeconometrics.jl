@@ -144,7 +144,7 @@ function cc_time(
         df::DataFrame,
         x::Symbol,
         b::Real,
-        k::Function;
+        k::Function = parzen;
         adj::Bool = true
     )
 
