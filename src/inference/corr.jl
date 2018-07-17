@@ -44,7 +44,7 @@ Heteroscedastic(; adj::Bool = true) = Heteroscedastic(adj)
 
 function Clustered(df::DataFrame, x::Symbol; adj::Bool = true)
 
-    msng  = BitVector(size(df, 1))
+    msng  = BitVector(undef, size(df, 1))
     msng .= .!ismissing.(df[x])
     ic    = disallowmissing(df[x][msng])
     n     = sum(msng)
@@ -54,7 +54,7 @@ function Clustered(df::DataFrame, x::Symbol; adj::Bool = true)
     idx₂  = Vector{Int}()
 
     @inbounds for (i, ci) in enumerate(iter)
-        idx = findin(ic, [ci])
+        idx = findall((in)([ci]), ic)
         append!(idx₁, fill(i, length(idx)))
         append!(idx₂, idx)
     end
@@ -86,7 +86,7 @@ end
 
 function cc_twowayclustering(df::DataFrame, x₁::Symbol, x₂::Symbol; adj::Bool = true)
 
-    msng   = BitVector(size(df, 1))
+    msng   = BitVector(undef, size(df, 1))
     msng  .= .!(ismissing.(df[x₁]) .& ismissing.(df[x₂]))
     ic₁    = disallowmissing(df[x₁][msng])
     ic₂    = disallowmissing(df[x₂][msng])
@@ -99,7 +99,7 @@ function cc_twowayclustering(df::DataFrame, x₁::Symbol, x₂::Symbol; adj::Boo
 
     @inbounds for i in iter₁
 
-        idx = findin(ic₁, [i])
+        idx = findall((in)([i]), ic₁)
         nix = length(idx)
         nel = Int(nix * (nix - 1) / 2)
 
@@ -117,7 +117,7 @@ function cc_twowayclustering(df::DataFrame, x₁::Symbol, x₂::Symbol; adj::Boo
 
     @inbounds for i in iter₂
 
-        idx = findin(ic₂, [i])
+        idx = findall((in)([i]), ic₂)
         nix = length(idx)
         nel = Int(nix * (nix - 1) / 2)
 
@@ -148,7 +148,7 @@ function cc_time(
         adj::Bool = true
     )
 
-    msng  = BitVector(size(df, 1))
+    msng  = BitVector(undef, size(df, 1))
     msng .= .!ismissing.(df[x])
     xx    = Vector{Date}(df[x][msng])
     n     = sum(msng)
@@ -184,7 +184,7 @@ function cc_space(
         adj::Bool = true
     )
 
-    msng  = BitVector(size(df, 1))
+    msng  = BitVector(undef, size(df, 1))
     msng .= .!(ismissing.(df[y]) .& ismissing.(df[x]))
     yy    = Vector{Float64}(df[y][msng])
     xx    = Vector{Float64}(df[x][msng])
@@ -223,7 +223,7 @@ function cc_timespace(
         adj::Bool = true
     )
 
-    msng  = BitVector(size(df, 1))
+    msng  = BitVector(undef, size(df, 1))
     msng .= .!(ismissing.(df[x₁]) .& ismissing.(df[y₂]) .& ismissing.(df[x₂]))
     xx₁   = Vector{Date}(df[x₁][msng])
     yy₂   = Vector{Float64}(df[y₂][msng])

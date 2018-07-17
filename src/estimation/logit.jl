@@ -29,16 +29,16 @@ function _fit!(obj::Logit, w::UnitWeights)
 
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
-    μ  = Array{Float64}(length(y))
-    xx = Array{Float64}(size(x)...)
+    μ  = Array{Float64}(undef, length(y))
+    xx = Array{Float64}(undef, size(x)...)
 
     p  = mean(y)
     p  = 1.0 / (p * (1.0 - p))
-    β₀ = scale!(p, x \ y)
+    β₀ = lmul!(p, x \ y)
 
     function L(β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
         ll = 0.0
 
         @inbounds for (yi, μi) in zip(y, μ)
@@ -50,18 +50,18 @@ function _fit!(obj::Logit, w::UnitWeights)
 
     function G!(g::Vector, β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             μ[i] = logistic(μi) - yi
         end
 
-        At_mul_B!(g, x, μ)
+        mul!(g, transpose(x), μ)
     end
 
     function LG!(g::Vector, β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
         ll = 0.0
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
@@ -70,14 +70,14 @@ function _fit!(obj::Logit, w::UnitWeights)
             ll  -= (iszero(yi) ? log(1.0 - ηi) : log(ηi))
         end
 
-        At_mul_B!(g, x, μ)
+        mul!(g, transpose(x), μ)
 
         return ll
     end
 
     function H!(h::Matrix, β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
 
         @inbounds for (i, μi) in enumerate(μ)
             ηi   = logistic(μi)
@@ -85,7 +85,7 @@ function _fit!(obj::Logit, w::UnitWeights)
         end
 
         xx .= x .* μ
-        At_mul_B!(h, x, xx)
+        mul!(h, transpose(x), xx)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
@@ -101,16 +101,16 @@ function _fit!(obj::Logit, w::AbstractWeights)
 
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
-    μ  = Array{Float64}(length(y))
-    xx = Array{Float64}(size(x)...)
+    μ  = Array{Float64}(undef, length(y))
+    xx = Array{Float64}(undef, size(x)...)
 
     p  = mean(y)
     p  = 1.0 / (p * (1.0 - p))
-    β₀ = scale!(p, x \ y)
+    β₀ = lmul!(p, x \ y)
 
     function L(β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
         ll = 0.0
 
         @inbounds for (yi, μi, wi) in zip(y, μ, w)
@@ -122,18 +122,18 @@ function _fit!(obj::Logit, w::AbstractWeights)
 
     function G!(g::Vector, β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             μ[i] = wi * (logistic(μi) - yi)
         end
 
-        At_mul_B!(g, x, μ)
+        mul!(g, transpose(x), μ)
     end
 
     function LG!(g::Vector, β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
         ll = 0.0
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
@@ -142,14 +142,14 @@ function _fit!(obj::Logit, w::AbstractWeights)
             ll  -= wi * (iszero(yi) ? log(1.0 - ηi) : log(ηi))
         end
 
-        At_mul_B!(g, x, μ)
+        mul!(g, transpose(x), μ)
 
         return ll
     end
 
     function H!(h::Matrix, β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
 
         @inbounds for (i, (μi, wi)) in enumerate(zip(μ, w))
             ηi   = logistic(μi)
@@ -157,7 +157,7 @@ function _fit!(obj::Logit, w::AbstractWeights)
         end
 
         xx .= x .* μ
-        At_mul_B!(h, x, xx)
+        mul!(h, transpose(x), xx)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
@@ -173,7 +173,7 @@ end
 
 # SCORE (DERIVATIVE OF THE LIKELIHOOD FUNCTION)
 
-score(obj::Logit) = scale!(residuals(obj), copy(getmatrix(obj, :control)))
+score(obj::Logit) = Diagonal(residuals(obj)) * getmatrix(obj, :control)
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
@@ -187,7 +187,7 @@ function jacobian(obj::Logit, w::UnitWeights)
         v[i] .= ηi * (1.0 - ηi)
     end
 
-    return crossprod(x, v, neg = true)
+    return - crossprod(x, v)
 end
 
 function jacobian(obj::Logit, w::AbstractWeights)
@@ -200,7 +200,7 @@ function jacobian(obj::Logit, w::AbstractWeights)
         v[i] .= wi * ηi * (1.0 - ηi)
     end
 
-    return crossprod(x, v, neg = true)
+    return - crossprod(x, v)
 end
 
 #==========================================================================================#
@@ -230,7 +230,7 @@ function jacobexp(obj::Logit)
         v[i] .= ηi * (1.0 - ηi)
     end
 
-    return scale!(v, x)
+    return lmul!(Diagonal(v), x)
 end
 
 #==========================================================================================#

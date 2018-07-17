@@ -68,7 +68,7 @@ function _hausman_1s!(
     Ψ₁  = influence(obj₁, w)
     ψ₁  = view(Ψ₁, :, i₁)
     Ψ₂  = influence(obj₂, w)
-    ψ₂  = view(Ψ₂, :, i₂) ; scale!(w, ψ₂)
+    ψ₂  = view(Ψ₂, :, i₂) ; lmul!(Diagonal(w), ψ₂)
     V₁₂ = ψ₁' * ψ₂
 
     adjfactor!(V₁₂, obj₁, corr)
@@ -88,9 +88,9 @@ function _hausman_1s!(
     )
 
     Ψ₁  = influence(obj₁, w)
-    ψ₁  = view(Ψ₁, :, i₁) ; scale!(w, ψ₁)
+    ψ₁  = view(Ψ₁, :, i₁) ; lmul!(Diagonal(w), ψ₁)
     Ψ₂  = influence(obj₂, w)
-    ψ₂  = view(Ψ₂, :, i₂) ; scale!(w, ψ₂)
+    ψ₂  = view(Ψ₂, :, i₂) ; lmul!(Diagonal(w), ψ₂)
     V₁₂ = ψ₁' * ψ₂
 
     adjfactor!(V₁₂, obj₁, corr)
@@ -132,9 +132,9 @@ function _hausman_1s!(
     )
 
     Ψ₁  = influence(obj₁, w)
-    ψ₁  = corr.mat * view(Ψ₁, :, i₁) ; scale!(w, ψ₁)
+    ψ₁  = corr.mat * view(Ψ₁, :, i₁) ; lmul!(Diagonal(w), ψ₁)
     Ψ₂  = influence(obj₂, w)
-    ψ₂  = corr.mat * view(Ψ₂, :, i₂) ; scale!(w, ψ₂)
+    ψ₂  = corr.mat * view(Ψ₂, :, i₂) ; lmul!(Diagonal(w), ψ₂)
     V₁₂ = ψ₁' * ψ₂
 
     adjfactor!(V₁₂, obj₁, corr)
@@ -176,9 +176,9 @@ function _hausman_1s!(
     )
 
     Ψ₁  = influence(obj₁, w)
-    ψ₁  = view(Ψ₁, :, i₁) ; scale!(w, ψ₁)
+    ψ₁  = view(Ψ₁, :, i₁) ; lmul!(Diagonal(w), ψ₁)
     Ψ₂  = influence(obj₂, w)
-    ψ₂  = view(Ψ₂, :, i₂) ; scale!(w, ψ₂)
+    ψ₂  = view(Ψ₂, :, i₂) ; lmul!(Diagonal(w), ψ₂)
     V₁₂ = ψ₁' * corr.mat * ψ₂
 
     adjfactor!(V₁₂, obj₁, corr)
@@ -298,9 +298,9 @@ function _hausman_2s!(
     touse₂ = touse[msng₂]
 
     Ψ₁  = influence(obj₁, w₁)
-    ψ₁  = view(Ψ₁, touse₁, i₁) ; scale!(w₁, ψ₁)
+    ψ₁  = view(Ψ₁, touse₁, i₁) ; lmul!(Diagonal(w₁), ψ₁)
     Ψ₂  = influence(obj₂, w₂)
-    ψ₂  = view(Ψ₂, touse₂, i₂) ; scale!(w₂, ψ₂)
+    ψ₂  = view(Ψ₂, touse₂, i₂) ; lmul!(Diagonal(w₂), ψ₂)
     V₁₂ = ψ₁' * ψ₂
 
     adjfactor!(V₁₂, obj₁, obj₂, corr)
@@ -350,9 +350,9 @@ function _hausman_2s!(
     msng₂ = getmsng(obj₂)
 
     Ψ₁  = influence(obj₁, w₁)
-    ψ₁  = view(corr.mat, :, msng₁) * view(Ψ₁, :, i₁) ; scale!(w₁, ψ₁)
+    ψ₁  = view(corr.mat, :, msng₁) * view(Ψ₁, :, i₁) ; lmul!(Diagonal(w₁), ψ₁)
     Ψ₂  = influence(obj₂, w₂)
-    ψ₂  = view(corr.mat, :, msng₂) * view(Ψ₂, :, i₂) ; scale!(w₂, ψ₂)
+    ψ₂  = view(corr.mat, :, msng₂) * view(Ψ₂, :, i₂) ; lmul!(Diagonal(w₂), ψ₂)
     V₁₂ = ψ₁' * ψ₂
 
     adjfactor!(V₁₂, obj₁, obj₂, corr)
@@ -402,9 +402,9 @@ function _hausman_2s!(
     msng₂ = getmsng(obj₂)
 
     Ψ₁  = influence(obj₁, w₁)
-    ψ₁  = view(Ψ₁, :, i₁) ; scale!(w₁, ψ₁)
+    ψ₁  = view(Ψ₁, :, i₁) ; lmul!(Diagonal(w₁), ψ₁)
     Ψ₂  = influence(obj₂, w₂)
-    ψ₂  = view(Ψ₂, :, i₂) ; scale!(w₂, ψ₂)
+    ψ₂  = view(Ψ₂, :, i₂) ; lmul!(Diagonal(w₂), ψ₂)
     V₁₂ = ψ₁' * view(corr.mat, msng₁, msng₂) * ψ₂
 
     adjfactor!(V₁₂, obj₁, obj₂, corr)

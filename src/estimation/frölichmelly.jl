@@ -75,7 +75,9 @@ end
 
 # SCORE (MOMENT CONDITIONS)
 
-score(obj::FrölichMelly) = scale!(obj.weights, score(second_stage(obj)))
+function score(obj::FrölichMelly)
+    return lmul!(Diagonal(obj.weights), score(second_stage(obj)))
+end
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
@@ -100,7 +102,7 @@ function crossjacobian(obj::FrölichMelly, w::UnitWeights)
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)
 
-    return g₂' * scale!(D, g₁)
+    return g₂' * lmul!(Diagonal(D), g₁)
 end
 
 function crossjacobian(obj::FrölichMelly, w::AbstractWeights)
@@ -116,7 +118,7 @@ function crossjacobian(obj::FrölichMelly, w::AbstractWeights)
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)
 
-    return g₂' * scale!(D, g₁)
+    return g₂' * lmul!(Diagonal(D), g₁)
 end
 
 #==========================================================================================#

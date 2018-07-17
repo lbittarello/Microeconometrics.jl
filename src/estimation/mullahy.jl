@@ -92,8 +92,8 @@ function _fit!(obj::Mullahy, w::UnitWeights)
     x  = getmatrix(obj, :treatment, :control)
     z  = getmatrix(obj, :instrument, :control)
     W  = obj.W * nobs(obj)^2
-    μ  = Array{Float64}(length(y))
-    xx = Array{Float64}(size(x)...)
+    μ  = Array{Float64}(undef, length(y))
+    xx = Array{Float64}(undef, size(x)...)
 
     if isdefined(obj, :β)
         β₀ = obj.β
@@ -105,7 +105,7 @@ function _fit!(obj::Mullahy, w::UnitWeights)
 
     function L(β::Vector)
 
-        O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
+        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ .= y .* exp.(- μ) .- 1.0
         m  = z' * μ
@@ -116,7 +116,7 @@ function _fit!(obj::Mullahy, w::UnitWeights)
 
     function G!(g::Vector, β::Vector)
 
-        O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
+        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= y .* exp.(- μ)
         xx .= x .* μ
@@ -124,12 +124,12 @@ function _fit!(obj::Mullahy, w::UnitWeights)
         μ  .= μ .- 1.0
         mw  = W \ (z' * μ)
 
-        A_mul_B!(g, d, mw)
+        mul!(g, d, mw)
     end
 
     function LG!(g::Vector, β::Vector)
 
-        O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
+        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= y .* exp.(- μ)
         xx .= x .* μ
@@ -138,21 +138,21 @@ function _fit!(obj::Mullahy, w::UnitWeights)
         m   = z' * μ
         mw  = W \ m
 
-        A_mul_B!(g, d, mw)
+        mul!(g, d, mw)
 
         return 0.5 * dot(m, mw)
     end
 
     function H!(h::Matrix, β::Vector)
 
-        O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
+        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= y .* exp.(- μ)
         xx .= x .* μ
         d   = z' * xx
         dw  = W \ d
 
-        At_mul_B!(h, d, dw)
+        mul!(h, transpose(d), dw)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
@@ -171,8 +171,8 @@ function _fit!(obj::Mullahy, w::AbstractWeights)
     x  = getmatrix(obj, :treatment, :control)
     z  = getmatrix(obj, :instrument, :control)
     W  = obj.W * nobs(obj)^2
-    μ  = Array{Float64}(length(y))
-    xx = Array{Float64}(size(x)...)
+    μ  = Array{Float64}(undef, length(y))
+    xx = Array{Float64}(undef, size(x)...)
 
     if isdefined(obj, :β)
         β₀ = obj.β
@@ -184,7 +184,7 @@ function _fit!(obj::Mullahy, w::AbstractWeights)
 
     function L(β::Vector)
 
-        O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
+        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ .= w .* (y .* exp.(- μ) .- 1.0)
         m  = z' * μ
@@ -195,7 +195,7 @@ function _fit!(obj::Mullahy, w::AbstractWeights)
 
     function G!(g::Vector, β::Vector)
 
-        O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
+        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= y .* exp.(- μ)
         xx .= x .* μ .* w
@@ -203,12 +203,12 @@ function _fit!(obj::Mullahy, w::AbstractWeights)
         μ  .= w .* (μ .- 1.0)
         mw  = W \ (z' * μ)
 
-        A_mul_B!(g, d, mw)
+        mul!(g, d, mw)
     end
 
     function LG!(g::Vector, β::Vector)
 
-        O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
+        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= y .* exp.(- μ)
         xx .= x .* μ .* w
@@ -217,21 +217,21 @@ function _fit!(obj::Mullahy, w::AbstractWeights)
         m   = z' * μ
         mw  = W \ m
 
-        A_mul_B!(g, d, mw)
+        mul!(g, d, mw)
 
         return 0.5 * dot(m, mw)
     end
 
     function H!(h::Matrix, β::Vector)
 
-        O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
+        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= w .* y .* exp.(- μ)
         xx .= x .* μ
         d   = z' * xx
         dw  = W \ d
 
-        At_mul_B!(h, d, dw)
+        mul!(h, transpose(d), dw)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
@@ -247,11 +247,15 @@ end
 
 # SCORE (MOMENT CONDITIONS)
 
-score(obj::Mullahy) = scale!(residuals(obj), copy(getmatrix(obj, :instrument, :control)))
+score(obj::Mullahy) = Diagonal(residuals(obj)) * getmatrix(obj, :control)
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
 function jacobian(obj::Mullahy, w::UnitWeights)
+
+    y  = getvector(obj, :response)
+    x = getmatrix(obj, :treatment, :control)
+    z  = getmatrix(obj, :instrument, :control)
 
     if haskey(obj.sample.map, :offset)
         x = getmatrix(obj, :offset, :treatment, :control)
@@ -261,8 +265,6 @@ function jacobian(obj::Mullahy, w::UnitWeights)
         v = x * obj.β
     end
 
-    y  = getvector(obj, :response)
-    z  = getmatrix(obj, :instrument, :control)
     v .= y .* exp.(- v)
 
     return - z' * (x .* v)
@@ -270,6 +272,10 @@ end
 
 function jacobian(obj::Mullahy, w::AbstractWeights)
 
+    y  = getvector(obj, :response)
+    x = getmatrix(obj, :treatment, :control)
+    z  = getmatrix(obj, :instrument, :control)
+
     if haskey(obj.sample.map, :offset)
         x = getmatrix(obj, :offset, :treatment, :control)
         v = xo * vcat(1.0, obj.β)
@@ -278,8 +284,6 @@ function jacobian(obj::Mullahy, w::AbstractWeights)
         v = x * obj.β
     end
 
-    y  = getvector(obj, :response)
-    z  = getmatrix(obj, :instrument, :control)
     v .= w .* y .* exp.(- v)
 
     return - z' * (x .* v)
@@ -308,24 +312,22 @@ fitted(obj::Mullahy, MD::Microdata) = exp.(predict(obj, MD))
 
 function jacobexp(obj::Mullahy)
 
-    x = copy(getmatrix(obj, :treatment, :control))
-
     if haskey(obj.sample.map, :offset)
         v = getmatrix(obj, :offset, :treatment, :control) * vcat(1.0, obj.β)
     else
-        v = x * obj.β
+        v = getmatrix(obj, :treatment, :control) * obj.β
     end
 
     v .= exp.(v)
 
-    return scale!(v, x)
+    return Diagonal(v) * getmatrix(obj, :treatment, :control)
 end
 
 # RESIDUALS
 
 function residuals(obj::Mullahy, MD::Microdata)
     r  = fitted(obj, MD)
-    r .= model_response(obj) ./ r .- 1.0
+    r .= response(obj) ./ r .- 1.0
     return r
 end
 

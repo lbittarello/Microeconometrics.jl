@@ -79,7 +79,7 @@ end
 
 # SCORE (MOMENT CONDITIONS)
 
-score(obj::Abadie) = scale!(obj.weights, score(second_stage(obj)))
+score(obj::Abadie) = lmul!(Diagonal(obj.weights), score(second_stage(obj)))
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
@@ -104,7 +104,7 @@ function crossjacobian(obj::Abadie, w::UnitWeights)
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)
 
-    return g₂' * scale!(D, g₁)
+    return g₂' * lmul!(Diagonal(D), g₁)
 end
 
 function crossjacobian(obj::Abadie, w::AbstractWeights)
@@ -120,7 +120,7 @@ function crossjacobian(obj::Abadie, w::AbstractWeights)
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)
 
-    return g₂' * scale!(D, g₁)
+    return g₂' * lmul!(Diagonal(D), g₁)
 end
 
 #==========================================================================================#

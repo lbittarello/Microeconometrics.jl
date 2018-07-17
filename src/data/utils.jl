@@ -27,7 +27,7 @@ function adjmsng!(msng::BitVector, corr::Clustered)
     iter     = sort(unique(corr.ic))
     new_iter = sort(unique(new_ic))
     new_nc   = length(new_iter)
-    new_mat  = corr.mat[findin(iter, new_iter), touse]
+    new_mat  = corr.mat[findall((in)(new_iter), iter), touse]
 
     return Clustered(corr.adj, msng, new_mat, new_ic, new_nc)
 end
@@ -49,15 +49,12 @@ end
 
 function assign_columns(input::String, urterms::Terms, assign::Vector{Int})
 
-    terms  = StatsModels.getterms(parse(input))
-    output = findin(assign, findin(urterms.terms, terms))
+    formula = @eval @formula $nothing ~ $(Meta.parse(input))
+    terms   = Terms(formula)
+    output  = findall((in)(findall((in)(terms.terms), urterms.terms)), assign)
 
-    if any(terms .== 1) | any(terms .== +1)
-        if urterms.intercept
-            iszero(output) ? (output = [1]) : (output = vcat(output, 1))
-        else
-            throw("no intercept in model matrix for assignment")
-        end
+    if occursin("1", input)
+        iszero(output) ? (output = [1]) : (output = vcat(output, 1))
     end
 
     return output
