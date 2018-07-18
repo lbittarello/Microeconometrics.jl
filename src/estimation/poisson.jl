@@ -342,7 +342,6 @@ end
 
 function _nulldeviance(obj::Poisson, w::AbstractWeights)
     y = getvector(obj, :response)
-    η = mean(y, w)
-    λ = 1.0 + log(μ)
-    return 2 * sum(xlogx.(y) .- y .* λ .+ η, w)
+    μ = mean(y, w)
+    return 2 * sum(xlogx.(y) .- y .* (1.0 + log(μ)) .+ μ, w)
 end
