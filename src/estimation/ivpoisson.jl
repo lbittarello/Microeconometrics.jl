@@ -47,10 +47,11 @@ function fit(
 
     elseif method == "Reduced form"
 
-        FSM               = Dict(:treatment => "", :instrument => "")
-        FSD               = Microdata(MD, FSM)
-        FSD.map[:control] = vcat(MD.map[:instrument], MD.map[:control])
-        obj               = Poisson(FSD)
+        FSM                = Dict(:treatment => "", :instrument => "")
+        FSD                = Microdata(MD, FSM)
+        FSD.map[:response] = MD.map[:treatment]
+        FSD.map[:control]  = vcat(MD.map[:instrument], MD.map[:control])
+        obj                = Poisson(FSD)
 
         _fit!(obj, getweights(obj))
 
