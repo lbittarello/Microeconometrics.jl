@@ -27,8 +27,8 @@ end
 
 function _fit!(obj::Cloglog, w::UnitWeights)
 
-    y  = getvector(obj, :response)
-    x  = getmatrix(obj, :control)
+    y  = getvector(undef, obj, :response)
+    x  = getmatrix(undef, obj, :control)
     μ  = Array{Float64}(length(y))
     xx = Array{Float64}(size(x)...)
 
@@ -36,7 +36,7 @@ function _fit!(obj::Cloglog, w::UnitWeights)
 
     function L(β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
         ll = 0.0
 
         @inbounds for (yi, μi) in zip(y, μ)
@@ -49,7 +49,7 @@ function _fit!(obj::Cloglog, w::UnitWeights)
 
     function G!(g::Vector, β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             ηi   = - exp(μi)
@@ -57,12 +57,12 @@ function _fit!(obj::Cloglog, w::UnitWeights)
             μ[i] = ηi * (yi + eηi - 1.0) / (1.0 - eηi)
         end
 
-        At_mul_B!(g, x, μ)
+        mul!(g, transpose(x), μ)
     end
 
     function LG!(g::Vector, β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
         ll = 0.0
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
@@ -72,14 +72,14 @@ function _fit!(obj::Cloglog, w::UnitWeights)
             ll  -= (iszero(yi) ? ηi : log(1.0 - eηi))
         end
 
-        At_mul_B!(g, x, μ)
+        mul!(g, transpose(x), μ)
 
         return ll
     end
 
     function H!(h::Matrix, β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             ηi   = - exp(μi)
@@ -88,7 +88,7 @@ function _fit!(obj::Cloglog, w::UnitWeights)
         end
 
         xx .= x .* μ
-        At_mul_B!(h, x, xx)
+        mul!(h, transpose(x), xx)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
@@ -104,14 +104,14 @@ function _fit!(obj::Cloglog, w::AbstractWeights)
 
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
-    μ  = Array{Float64}(length(y))
-    xx = Array{Float64}(size(x)...)
+    μ  = Array{Float64}(undef, length(y))
+    xx = Array{Float64}(undef, size(x)...)
 
     β₀ = vcat(fill(0.0, size(x, 2) - 1), log(- log(1.0 - mean(y, w))))
 
     function L(β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
         ll = 0.0
 
         @inbounds for (yi, μi, wi) in zip(y, μ, w)
@@ -124,7 +124,7 @@ function _fit!(obj::Cloglog, w::AbstractWeights)
 
     function G!(g::Vector, β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             ηi   = - exp(μi)
@@ -132,12 +132,12 @@ function _fit!(obj::Cloglog, w::AbstractWeights)
             μ[i] = wi * ηi * (yi + eηi - 1.0) / (1.0 - eηi)
         end
 
-        At_mul_B!(g, x, μ)
+        mul!(g, transpose(x), μ)
     end
 
     function LG!(g::Vector, β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
         ll = 0.0
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
@@ -147,14 +147,14 @@ function _fit!(obj::Cloglog, w::AbstractWeights)
             ll  -= wi * (iszero(yi) ? ηi : log(1.0 - eηi))
         end
 
-        At_mul_B!(g, x, μ)
+        mul!(g, transpose(x), μ)
 
         return ll
     end
 
     function H!(h::Matrix, β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             ηi   = - exp(μi)
@@ -163,7 +163,7 @@ function _fit!(obj::Cloglog, w::AbstractWeights)
         end
 
         xx .= x .* μ
-        At_mul_B!(h, x, xx)
+        mul!(h, transpose(x), xx)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
@@ -191,7 +191,7 @@ function score(obj::Cloglog)
         v[i] = ηi * (1.0 - yi - eηi) / (1.0 - eηi)
     end
 
-    return scale!(v, x)
+    return lmul!(Diagonal(v), x)
 end
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
@@ -247,7 +247,7 @@ function jacobexp(obj::Cloglog)
     x  = copy(getmatrix(obj, :control))
     v  = x * obj.β
     v .= exp.(v .- exp.(v))
-    return scale!(v, x)
+    return lmul!(Diagonal(v), x)
 end
 
 #==========================================================================================#

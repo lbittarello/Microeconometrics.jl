@@ -19,11 +19,11 @@ function Microdata(
         contrasts::Dict = Dict(),
         subset::AbstractVector{Bool} = trues(size(df, 1)),
         vcov::CorrStructure = Heteroscedastic(),
-        weights::AbstractWeights = UnitWeights(fill(1.0, size(df, 1)))
+        weights::AbstractWeights = uweights(fill(1.0, size(df, 1)))
     )
 
-    input    = reduce((x, y) -> x * " + " * model[y], "", keys(model))
-    formula  = @eval @formula $nothing ~ $(parse(input))
+    input    = reduce((x, y) -> x * " + " * model[y], keys(model), init = "")
+    formula  = @eval @formula $nothing ~ $(Meta.parse(input))
     terms    = Terms(formula)
     eterms   = terms.eterms
     msng     = BitVector(completecases(df[:, terms.eterms]))
@@ -31,7 +31,7 @@ function Microdata(
     new_corr = adjmsng!(msng, vcov)
     new_wts  = parse_weights(weights, msng)
     new_df   = DataFrame(map(x -> disallowmissing(df[x][msng]), eterms), Symbol.(eterms))
-    frame    = ModelFrame(new_df, terms, msng, evalcontrasts(new_df, contrasts))
+    frame    = ModelFrame(new_df, terms, msng, StatsModels.evalcontrasts(new_df, contrasts))
     names    = StatsModels.coefnames(frame)
     mat      = ModelMatrix(frame)
     new_map  = Dict{Symbol, Vector{Int}}()

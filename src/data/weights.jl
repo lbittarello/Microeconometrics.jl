@@ -7,12 +7,7 @@ struct UnitWeights{S <: Real, T <: Real, V <: AbstractVector{T}} <: AbstractWeig
     sum::S
 end
 
-uweights(vs::AbstractVector) = UnitWeights(vs)
-uweights(vs::AbstractArray)  = UnitWeights(vec(vs))
-
-function UnitWeights(vs::AbstractVector{T}, s::S = sum(vs)) where {S <: Real, T <: Real}
-    UnitWeights{S, T, typeof(vs)}(vs, s)
-end
+uweights(vs::AbstractVector) = UnitWeights(vs, sum(vs))
 
 #==========================================================================================#
 
@@ -63,9 +58,9 @@ reweight(w::AbstractWeights, v::ProbabilityWeights) = pweights(w .* v)
 
 # OPERATIONS
 
-Base.sum(v::AbstractArray, w::UnitWeights)  = sum(v)
-Base.mean(v::AbstractArray, w::UnitWeights) = mean(v)
-Base.:(==)(x::UnitWeights, y::UnitWeights)  = (x.sum == y.sum) && (x.values == y.values)
+Statistics.sum(v::AbstractArray, w::UnitWeights)  = sum(v)
+Statistics.mean(v::AbstractArray, w::UnitWeights) = mean(v)
+Statistics.:(==)(x::UnitWeights, y::UnitWeights)  = (x.sum == y.sum) && (x.values == y.values)
 
 function Base.isequal(x::UnitWeights, y::UnitWeights)
     return isequal(x.sum, y.sum) && isequal(x.values, y.values)

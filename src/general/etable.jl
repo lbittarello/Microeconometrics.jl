@@ -4,16 +4,16 @@
 
 function etable(args...;
         digits::Int = 4,
-        aux::Union{Function, Void} = nothing,
+        aux::Union{Function, Nothing} = nothing,
         stars::Matrix{Any} = [0.1 "*"; 0.05 "**"; 0.01 "***"],
-        titles::Union{Vector{String}, Void} = nothing
+        titles::Vector{String} = [""]
     )
 
     N                  = length(args)
     fspec              = FormatSpec("0.$(digits)f")
     cutpoints, symbols = _parsestars(stars)
 
-    (typeof(titles) == Void) && (titles = String["(" * string(i) * ")" for i = 1:N])
+    (titles == [""]) && (titles = String["(" * string(i) * ")" for i = 1:N])
 
     μ = Vector{Vector{String}}(N)
     β = Vector{Vector{String}}(N)
@@ -49,7 +49,7 @@ function etable(args...;
     _alignatchar!(output)
 
     for (i, (ni, ti, βi)) in enumerate(zip(μ, titles, β))
-        idx = findin(inter, ni)
+        idx = findall((in)(ni), inter)
         (typeof(aux) == Void) || (idx .= 2 * idx - 1)
         w2      .= ""
         w2[idx] .= βi

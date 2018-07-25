@@ -29,16 +29,16 @@ function _fit!(obj::Probit, w::UnitWeights)
 
     y  = iszero.(getvector(obj, :response))
     x  = getmatrix(obj, :control)
-    μ  = Array{Float64}(length(y))
-    xx = Array{Float64}(size(x)...)
+    μ  = Array{Float64}(undef, length(y))
+    xx = Array{Float64}(undef, size(x)...)
 
     p  = mean(y)
     p  = 1.0 / normpdf(norminvcdf(p))
-    β₀ = scale!(p, x \ y)
+    β₀ = lmul!(p, x \ y)
 
     function L(β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
         ll = 0.0
 
         @inbounds for (yi, μi) in zip(y, μ)
@@ -50,19 +50,19 @@ function _fit!(obj::Probit, w::UnitWeights)
 
     function G!(g::Vector, β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             ηi   = (yi ? (normcdf(μi) - 1.0) : normcdf(μi))
             μ[i] = - normpdf(μi) / ηi
         end
 
-        At_mul_B!(g, x, μ)
+        mul!(g, transpose(x), μ)
     end
 
     function LG!(g::Vector, β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
         ll = 0.0
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
@@ -71,14 +71,14 @@ function _fit!(obj::Probit, w::UnitWeights)
             ll  -= (yi ? log(- ηi) : log(ηi))
         end
 
-        At_mul_B!(g, x, μ)
+        mul!(g, transpose(x), μ)
 
         return ll
     end
 
     function H!(h::Matrix, β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
 
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             ηi   = (yi ? (normcdf(μi) - 1.0) : normcdf(μi))
@@ -87,7 +87,7 @@ function _fit!(obj::Probit, w::UnitWeights)
         end
 
         xx .= x .* μ
-        At_mul_B!(h, x, xx)
+        mul!(h, transpose(x), xx)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
@@ -103,16 +103,16 @@ function _fit!(obj::Probit, w::AbstractWeights)
 
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
-    μ  = Array{Float64}(length(y))
-    xx = Array{Float64}(size(x)...)
+    μ  = Array{Float64}(undef, length(y))
+    xx = Array{Float64}(undef, size(x)...)
     
     p  = mean(y)
     p  = 1.0 / normpdf(norminvcdf(p))
-    β₀ = scale!(p, x \ y)
+    β₀ = lmul!(p, x \ y)
 
     function L(β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
         ll = 0.0
 
         @inbounds for (yi, μi, wi) in zip(y, μ, w)
@@ -124,19 +124,19 @@ function _fit!(obj::Probit, w::AbstractWeights)
 
     function G!(g::Vector, β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             ηi   = (yi ? (normcdf(μi) - 1.0) : normcdf(μi))
             μ[i] = - wi * normpdf(μi) / ηi
         end
 
-        At_mul_B!(g, x, μ)
+        mul!(g, transpose(x), μ)
     end
 
     function LG!(g::Vector, β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
         ll = 0.0
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
@@ -145,14 +145,14 @@ function _fit!(obj::Probit, w::AbstractWeights)
             ll  -= wi * (yi ? log(- ηi) : log(ηi))
         end
 
-        At_mul_B!(g, x, μ)
+        mul!(g, transpose(x), μ)
 
         return ll
     end
 
     function H!(h::Matrix, β::Vector)
 
-        A_mul_B!(μ, x, β)
+        mul!(μ, x, β)
 
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             ηi   = (yi ? (normcdf(μi) - 1.0) : normcdf(μi))
@@ -161,7 +161,7 @@ function _fit!(obj::Probit, w::AbstractWeights)
         end
 
         xx .= x .* μ
-        At_mul_B!(h, x, xx)
+        mul!(h, transpose(x), xx)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
@@ -180,7 +180,7 @@ end
 function score(obj::Probit)
 
     y = getvector(obj, :response)
-    x = copy(getmatrix(obj, :control))
+    x = getmatrix(obj, :control)
     v = x * obj.β
 
     @inbounds for (i, (yi, vi)) in enumerate(zip(y, v))
@@ -188,7 +188,7 @@ function score(obj::Probit)
         v[i] = normpdf(vi) / ηi
     end
 
-    return scale!(v, x)
+    return Diagonal(v) * x
 end
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
@@ -205,7 +205,7 @@ function jacobian(obj::Probit, w::UnitWeights)
         v[i] = abs2(ηi) + vi * ηi
     end
 
-    return crossprod(x, v, neg = true)
+    return - crossprod(x, v)
 end
 
 function jacobian(obj::Probit, w::AbstractWeights)
@@ -220,7 +220,7 @@ function jacobian(obj::Probit, w::AbstractWeights)
         v[i] = wi * (abs2(ηi) + vi * ηi)
     end
 
-    return crossprod(x, v, neg = true)
+    return - crossprod(x, v)
 end
 
 #==========================================================================================#
@@ -241,10 +241,10 @@ fitted(obj::Probit, MD::Microdata) = normcdf.(predict(obj, MD))
 # DERIVATIVE OF FITTED VALUES
 
 function jacobexp(obj::Probit)
-    x  = copy(getmatrix(obj, :control))
+    x  = getmatrix(obj, :control)
     v  = x * obj.β
     v .= normpdf.(v)
-    return scale!(v, x)
+    return Diagonal(v) * x
 end
 
 #==========================================================================================#

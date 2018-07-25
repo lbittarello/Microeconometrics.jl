@@ -2,6 +2,9 @@ __precompile__(true)
 
 module Microeconometrics
 
+using LinearAlgebra
+using SparseArrays
+using Statistics
 using StatsBase
 using StatsFuns
 using DataFrames
@@ -10,12 +13,12 @@ using Optim
 using Formatting
 
 import Base:        copy, deepcopy, size
-import StatsBase:   RegressionModel, CoefTable, coefnames, coeftable
-import StatsBase:   fit, coef, confint, stderr, vcov
-import StatsBase:   loglikelihood, nullloglikelihood, deviance, nulldeviance
-import StatsBase:   aic, aicc, bic, dof, dof_residual, nobs, r2, r², adjr2, adjr²
-import StatsBase:   model_response, predict, fitted, residuals
-import StatsModels: Terms, evalcontrasts
+import StatsBase:   RegressionModel, CoefTable, coefnames, coeftable, islinear
+import StatsBase:   fit, coef, confint, informationmatrix, score, stderror, vcov
+import StatsBase:   deviance, loglikelihood, nulldeviance, nullloglikelihood
+import StatsBase:   adjr2, adjr², aic, aicc, bic, dof, dof_residual, mss, nobs, r2, r², rss
+import StatsBase:   fitted, meanresponse, predict, residuals, response
+import StatsModels: Terms
 
 const PWeights = ProbabilityWeights{Float64, Float64, Vector{Float64}}
 
@@ -53,14 +56,13 @@ export
         Clustered,
         CrossCorrelated,
     Microdata,
-    OLS, IV,
-    Logit, Probit, Cloglog,
-    Poisson, IVPoisson, Mullahy,
+    OLS, IV, IVPoisson, Mullahy,
+    Logit, Probit, Cloglog, Poisson,
     IPW, Abadie, FrölichMelly, Tan,
-    fit, coef, confint, pval, stderr, tstat, vcov, hausman_1s, hausman_2s,
-    loglikelihood, nullloglikelihood, deviance, nulldeviance,
-    aic, aicc, bic, dof, dof_residual, nobs, r2, r², adjr2, adjr²,
-    model_response, predict, fitted, residuals,
-    coefnames, coeftable, etable
+    fit, coef, confint, hausman_1s, hausman_2s, informationmatrix, score, stderror, vcov,
+    deviance, loglikelihood, nulldeviance, nullloglikelihood,
+    adjr2, adjr², aic, aicc, bic, dof, dof_residual, mss, nobs, r2, r², rss,
+    fitted, meanresponse, predict, residuals, response,
+    coefnames, coeftable, etable, islinear
 
 end # module

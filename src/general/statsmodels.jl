@@ -23,16 +23,26 @@ second_stage(obj::TwoStageModel) = obj.second_stage
 
 # ESTIMATES
 
-coef(obj::ParObjects)     = obj.β
-coef(obj::TwoStageModel)  = coef(second_stage(obj))
-vcov(obj::ParObjects)     = obj.V
-vcov(obj::TwoStageModel)  = vcov(second_stage(obj))
-stderr(obj::MicroObjects) = sqrt.(diag(vcov(obj)))
-tstat(obj::MicroObjects)  = coef(obj) ./ stderr(obj)
-pval(obj::MicroObjects)   = 2.0 * normccdf.(abs.(tstat(obj)))
+coef(obj::ParObjects)       = obj.β
+coef(obj::TwoStageModel)    = coef(second_stage(obj))
+vcov(obj::ParObjects)       = obj.V
+vcov(obj::TwoStageModel)    = vcov(second_stage(obj))
+stderror(obj::MicroObjects) = sqrt.(diag(vcov(obj)))
+tstat(obj::MicroObjects)    = coef(obj) ./ stderr(obj)
+pval(obj::MicroObjects)     = 2.0 * normccdf.(abs.(tstat(obj)))
 
 function confint(obj::MicroObjects, level::Float64 = 0.95)
     return coef(obj) .+ norminvcdf((1.0 - level) / 2.0) * stderr(obj) .* [1.0 -1.0]
+end
+
+function informationmatrix(obj::MLE; method::Symbol == :OIM)
+    if method == :OIM
+        return - inv(jacobian(obj, getweights(obj)))
+    elseif method == :OPG
+        return inv(crossprod(score(obj), getweights(obj)))
+    else
+        throw("method $(String(method)) not supported")
+    end
 end
 
 #==========================================================================================#
@@ -60,25 +70,30 @@ predict(obj::ParOrGMM)   = predict(obj, obj.sample)
 fitted(obj::ParOrGMM)    = fitted(obj, obj.sample)
 residuals(obj::ParOrGMM) = residuals(obj, obj.sample)
 
-model_response(obj::Micromodel) = getvector(obj, :response)
+response(obj::Micromodel)     = getvector(obj, :response)
+meanresponse(obj::Micromodel) = mean(getvector(obj, :response), getweights(obj))
 
 function residuals(obj::ParOrGMM, MD::Microdata)
     r  = fitted(obj, MD)
-    r .= model_response(obj) .- r
+    r .= response(obj) .- r
     return r
 end
 
 function residuals(obj::Micromodel)
     r  = fitted(obj)
-    r .= model_response(obj) .- r
+    r .= response(obj) .- r
     return r
 end
 
 #==========================================================================================#
 
-# COEFFICIENT NAMES
+# COEFFICIENT LABELS
 
 coefnames(obj::ParObject) = obj.names
+
+# CHARACTERIZATION
+
+islinear(obj::Micromodel) = false
 
 # OUTPUT
 
@@ -88,7 +103,7 @@ function coeftable(
         digits::Int = 4
     )
 
-    table = round.(hcat(coef(obj), stderr(obj), tstat(obj), pval(obj)), digits)
+    table = round.(hcat(coef(obj), stderror(obj), tstat(obj), pval(obj)), digits = digits)
     label = [" Estimate", " St. Err.", "  t-stat.", "  p-value"]
 
     if level > 0.0

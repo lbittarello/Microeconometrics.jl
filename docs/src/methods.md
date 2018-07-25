@@ -4,11 +4,13 @@
 
 This package supports the methods for regression models of [*StatsBase.jl*](http://juliastats.github.io/StatsBase.jl/stable/statmodels.html).
 
-The following functions are available for all models: `nobs` and `model_response`.
+The following functions are available for all models: `nobs` and `response`.
 
-The following functions are available for parametric models: `dof`, `dof_residual`, `coef`, `stderr`, `vcov`, `confint`, `coefnames` and `coeftable`. Two keywords customize the behavior of `coeftable`: `digits` (integer: controls rounding) and `level` (float: controls the level of the confidence interval – 0.0 for none). Note that all methods refer to the second stage of two-stage models.
+The following functions are available for parametric models: `coef`, `coefnames`, `coeftable`, `confint`, `dof`, `dof_residual`, `islinear`, `meanresponse`, `response`, `score`, `stderror` and `vcov`. Two keywords customize the behavior of `coeftable`: `digits` (integer: controls rounding) and `level` (float: controls the level of the confidence interval – 0.0 for none). Note that all methods refer to the second stage of two-stage models.
 
-The following functions are available for maximum-likelihood estimators: `aic`, `aicc`, `bic`, `deviance`, `nulldeviance`, `loglikelihood`, `nullloglikelihood`, `r2` and `adjr2`. There are also R² methods for OLS and IV.
+The following functions are available for maximum-likelihood estimators: `adjr2`, `aic`, `aicc`, `bic`, `deviance`, `informationmatrix`, `loglikelihood`, `nulldeviance`, `nullloglikelihood` and `r2`.
+
+The following functions are available for OLS and IV: `adjr2`, `mss`, `r2` and `rss`.
 
 Most models support `predict` and `fitted`. `predict` estimates the index of single-index models. `fitted` computes the conditional outcome expectation. For example, `predict` estimates the Xβ of a logit model and `fitted` computes logistic(Xβ). Support for `residuals` depends on the availability of `fitted`. Out-of-sample forecast is supported.
 

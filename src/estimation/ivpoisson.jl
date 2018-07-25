@@ -93,8 +93,8 @@ function _fit!(obj::IVPoisson, w::UnitWeights)
     x  = getmatrix(obj, :treatment, :control)
     z  = getmatrix(obj, :instrument, :control)
     W  = obj.W * nobs(obj)^2
-    μ  = Array{Float64}(length(y))
-    xx = Array{Float64}(size(x)...)
+    μ  = Array{Float64}(undef, length(y))
+    xx = Array{Float64}(undef, size(x)...)
 
     if isdefined(obj, :β)
         β₀ = obj.β
@@ -106,7 +106,7 @@ function _fit!(obj::IVPoisson, w::UnitWeights)
 
     function L(β::Vector)
 
-        O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
+        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ .= y .- exp.(μ)
         m  = z' * μ
@@ -117,7 +117,7 @@ function _fit!(obj::IVPoisson, w::UnitWeights)
 
     function G!(g::Vector, β::Vector)
 
-        O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
+        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= exp.(μ)
         xx .= x .* μ
@@ -125,12 +125,12 @@ function _fit!(obj::IVPoisson, w::UnitWeights)
         μ  .= y .- μ
         mw  = W \ (z' * μ)
 
-        A_mul_B!(g, d, mw)
+        mul!(g, d, mw)
     end
 
     function LG!(g::Vector, β::Vector)
 
-        O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
+        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= exp.(μ)
         xx .= x .* μ
@@ -139,21 +139,21 @@ function _fit!(obj::IVPoisson, w::UnitWeights)
         m   = z' * μ
         mw  = W \ m
 
-        A_mul_B!(g, d, mw)
+        mul!(g, d, mw)
 
         return 0.5 * dot(m, mw)
     end
 
     function H!(h::Matrix, β::Vector)
 
-        O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
+        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= exp.(μ)
         xx .= x .* μ
         d   = z' * xx
         dw  = W \ d
 
-        At_mul_B!(h, d, dw)
+        mul!(h, transpose(d), dw)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
@@ -172,8 +172,8 @@ function _fit!(obj::IVPoisson, w::AbstractWeights)
     x  = getmatrix(obj, :treatment, :control)
     z  = getmatrix(obj, :instrument, :control)
     W  = obj.W * nobs(obj)^2
-    μ  = Array{Float64}(length(y))
-    xx = Array{Float64}(size(x)...)
+    μ  = Array{Float64}(undef, length(y))
+    xx = Array{Float64}(undef, size(x)...)
 
     if isdefined(obj, :β)
         β₀ = obj.β
@@ -185,7 +185,7 @@ function _fit!(obj::IVPoisson, w::AbstractWeights)
 
     function L(β::Vector)
 
-        O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
+        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ .= w .* (y .- exp.(μ))
         m  = z' * μ
@@ -196,7 +196,7 @@ function _fit!(obj::IVPoisson, w::AbstractWeights)
 
     function G!(g::Vector, β::Vector)
 
-        O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
+        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= exp.(μ)
         xx .= x .* μ .* w
@@ -204,12 +204,12 @@ function _fit!(obj::IVPoisson, w::AbstractWeights)
         μ  .= w .* (y .- μ)
         mw  = W \ (z' * μ)
 
-        A_mul_B!(g, d, mw)
+        mul!(g, d, mw)
     end
 
     function LG!(g::Vector, β::Vector)
 
-        O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
+        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= exp.(μ)
         xx .= x .* μ .* w
@@ -218,21 +218,21 @@ function _fit!(obj::IVPoisson, w::AbstractWeights)
         m   = z' * μ
         mw  = W \ m
 
-        A_mul_B!(g, d, mw)
+        mul!(g, d, mw)
 
         return 0.5 * dot(m, mw)
     end
 
     function H!(h::Matrix, β::Vector)
 
-        O ? A_mul_B!(μ, xo, vcat(1.0, β)) : A_mul_B!(μ, x, β)
+        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= w .* exp.(μ)
         xx .= x .* μ
         d   = z' * xx
         dw  = W \ d
 
-        At_mul_B!(h, d, dw)
+        mul!(h, transpose(d), dw)
     end
 
     res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
@@ -248,7 +248,7 @@ end
 
 # SCORE (MOMENT CONDITIONS)
 
-score(obj::IVPoisson) = scale!(residuals(obj), copy(getmatrix(obj, :instrument, :control)))
+score(obj::IVPoisson) = Diagonal(residuals(obj)) * getmatrix(obj, :instrument, :control)
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
@@ -307,17 +307,15 @@ fitted(obj::IVPoisson, MD::Microdata) = exp.(predict(obj, MD))
 
 function jacobexp(obj::IVPoisson)
 
-    x = copy(getmatrix(obj, :treatment, :control))
-
     if haskey(obj.sample.map, :offset)
         v = getmatrix(obj, :offset, :treatment, :control) * vcat(1.0, obj.β)
     else
-        v = x * obj.β
+        v = getmatrix(obj, :treatment, :control) * obj.β
     end
 
     v .= exp.(v)
 
-    return scale!(v, x)
+    return Diag(v) * getmatrix(obj, :treatment, :control)
 end
 
 #==========================================================================================#

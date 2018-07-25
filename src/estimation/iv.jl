@@ -101,8 +101,8 @@ function _fit!(obj::IV, w::UnitWeights)
     if obj.method == "Method of moments"
         obj.β = (z' * x) \ (z' * y)
     else
-        γ     = z \ x
-        obj.β = (z * γ) \ y
+        zγ    = z * (z \ x)
+        obj.β = (zγ' * x) \ (zγ' * y)
     end
 end
 
@@ -112,16 +112,16 @@ function _fit!(obj::IV, W::Matrix{Float64}, w::UnitWeights)
     x = getmatrix(obj, :treatment, :control)
     z = getmatrix(obj, :instrument, :control)
 
-    zz    = z * (W \ (z' * x))
-    obj.β = (zz' * x) \ (zz' * y)
+    zγ    = z * (W \ (z' * x))
+    obj.β = (zγ' * x) \ (zγ' * y)
 end
 
 function _fit!(obj::IV, w::AbstractWeights)
 
     y = getvector(obj, :response)
     x = getmatrix(obj, :treatment, :control)
-    z = copy(getmatrix(obj, :instrument, :control))
-    v = scale!(w, z)
+    z = getmatrix(obj, :instrument, :control)
+    v = Diagonal(w) * z
 
     if obj.method == "Method of moments"
         obj.β = (v' * x) \ (v' * y)
@@ -136,18 +136,18 @@ function _fit!(obj::IV, W::Matrix{Float64}, w::AbstractWeights)
 
     y = getvector(obj, :response)
     x = getmatrix(obj, :treatment, :control)
-    z = copy(getmatrix(obj, :instrument, :control))
-    v = scale!(w, z)
+    z = getmatrix(obj, :instrument, :control)
+    v = Diagonal(w) * z
 
-    vv    = v * (W \ (v' * x))
-    obj.β = (vv' * x) \ (vv' * y)
+    vγ    = v * (W \ (v' * x))
+    obj.β = (vγ' * x) \ (vγ' * y)
 end
 
 #==========================================================================================#
 
 # SCORE (MOMENT CONDITIONS)
 
-score(obj::IV) = scale!(residuals(obj), copy(getmatrix(obj, :instrument, :control)))
+score(obj::IV) = Diagonal(residuals(obj)) * getmatrix(obj, :instrument, :control)
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
@@ -160,7 +160,7 @@ end
 function jacobian(obj::IV, w::AbstractWeights)
     x = getmatrix(obj, :treatment, :control)
     z = getmatrix(obj, :instrument, :control)
-    v = scale!(w, copy(z))
+    v = Diagonal(w) * z
     return v' * x
 end
 
@@ -175,20 +175,20 @@ function _vcov!(obj::IV, corr::Homoscedastic, w::UnitWeights)
     γ  = z \ x
     V  = x' * z * γ
 
-    obj.V = scale!(σ², inv(V))
+    obj.V = lmul!(σ², inv(V))
 end
 
 function _vcov!(obj::IV, corr::Homoscedastic, w::Union{FrequencyWeights, AnalyticWeights})
 
     x  = getmatrix(obj, :treatment, :control)
     z  = getmatrix(obj, :instrument, :control)
-    v  = scale!(w, copy(z))
+    v  = Diagonal(w) * z
     r  = residuals(obj)
     σ² = sum(abs2.(r), w) / dof_residual(obj)
     γ  = (v' * z) \ (v' * x)
     V  = x' * v * γ
 
-    obj.V = scale!(σ², inv(V))
+    obj.V = lmul!(σ², inv(V))
 end
 
 #==========================================================================================#
@@ -218,8 +218,13 @@ coefnames(obj::IV) = getnames(obj, :treatment, :control)
 adjr2(obj::IV)     = 1.0 - (1.0 - r2(obj)) * (nobs(obj) - 1) / dof_residual(obj)
 r2(obj::IV)        = _r2(obj, getweights(obj))
 
+mss(obj::IV)                     = mss(obj, getweights(obj))
+rss(obj::IV)                     = rss(obj, getweights(obj))
+mss(obj::IV, w::AbstractWeights) = sum(abs2.(fitted(obj) .- meanresponse(y)), w)
+rss(obj::IV, w::AbstractWeights) = sum(abs2.(response(obj) .- meanresponse(y)), w)
+
 function _r2(obj::IV, w::UnitWeights)
-    y   = model_response(obj)
+    y   = response(obj)
     ŷ   = fitted(obj)
     rss = sum(abs2, y .- ŷ)
     tss = sum(abs2, y .- mean(y))
@@ -227,10 +232,14 @@ function _r2(obj::IV, w::UnitWeights)
 end
 
 function _r2(obj::IV, w::AbstractWeights)
-    y   = model_response(obj)
+    y   = response(obj)
     μ   = mean(y, w)
     ŷ   = fitted(obj)
     rss = sum(abs2.(y .- ŷ), w)
     tss = sum(abs2.(y .- μ), w)
     return 1.0 - rss / tss
 end
+
+# CHARACTERIZATION
+
+islinear(obj::OLS) = true

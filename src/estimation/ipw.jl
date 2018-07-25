@@ -70,7 +70,7 @@ end
 
 # SCORE (MOMENT CONDITIONS)
 
-score(obj::IPW) = scale!(obj.weights, score(second_stage(obj)))
+score(obj::IPW) = lmul!(Diagonal(obj.weights), score(second_stage(obj)))
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
@@ -93,7 +93,7 @@ function crossjacobian(obj::IPW, w::UnitWeights)
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)
 
-    return g₂' * scale!(D, g₁)
+    return g₂' * lmul!(Diagonal(D), g₁)
 end
 
 function crossjacobian(obj::IPW, w::AbstractWeights)
@@ -108,7 +108,7 @@ function crossjacobian(obj::IPW, w::AbstractWeights)
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)
 
-    return g₂' * scale!(D, g₁)
+    return g₂' * lmul!(Diagonal(D), g₁)
 end
 
 #==========================================================================================#

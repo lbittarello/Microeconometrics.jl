@@ -34,7 +34,7 @@ end
 function _fit!(obj::OLS, w::AbstractWeights)
     y     = getvector(obj, :response)
     x     = getmatrix(obj, :control)
-    v     = scale!(values(w), copy(x))
+    v     = Diagonal(w) * x
     obj.β =  (v' * x) \ (v' * y)
 end
 
@@ -42,26 +42,23 @@ end
 
 # SCORE (MOMENT CONDITIONS)
 
-score(obj::OLS) = scale!(residuals(obj), copy(getmatrix(obj, :control)))
+score(obj::OLS) = Diagonal(residuals(obj)) * getmatrix(obj, :control)
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-jacobian(obj::OLS, w::UnitWeights) = crossprod(getmatrix(obj, :control), neg = true)
-
-function jacobian(obj::OLS, w::AbstractWeights)
-    return crossprod(getmatrix(obj, :control), values(w), neg = true)
-end
+jacobian(obj::OLS, w::UnitWeights)     = - crossprod(getmatrix(obj, :control))
+jacobian(obj::OLS, w::AbstractWeights) = - crossprod(getmatrix(obj, :control), w)
 
 # HOMOSCEDASTIC VARIANCE MATRIX
 
 function _vcov!(obj::OLS, corr::Homoscedastic, w::UnitWeights)
     σ²    = sum(abs2, residuals(obj)) / dof_residual(obj)
-    obj.V = scale!(-σ², inv(jacobian(obj, w)))
+    obj.V = lmul!(-σ², inv(jacobian(obj, w)))
 end
 
 function _vcov!(obj::OLS, corr::Homoscedastic, w::Union{FrequencyWeights, AnalyticWeights})
     σ²    = sum(abs2.(residuals(obj)), w) / dof_residual(obj)
-    obj.V = scale!(-σ², inv(jacobian(obj, w)))
+    obj.V = lmul!(-σ², inv(jacobian(obj, w)))
 end
 
 #==========================================================================================#
@@ -91,8 +88,13 @@ coefnames(obj::OLS) = getnames(obj, :control)
 adjr2(obj::OLS)     = 1.0 - (1.0 - r2(obj)) * (nobs(obj) - 1) / dof_residual(obj)
 r2(obj::OLS)        = _r2(obj, getweights(obj))
 
+mss(obj::OLS)                     = mss(obj, getweights(obj))
+rss(obj::OLS)                     = rss(obj, getweights(obj))
+mss(obj::OLS, w::AbstractWeights) = sum(abs2.(fitted(obj) .- meanresponse(y)), w)
+rss(obj::OLS, w::AbstractWeights) = sum(abs2.(response(obj) .- meanresponse(y)), w)
+
 function _r2(obj::OLS, w::UnitWeights)
-    y   = model_response(obj)
+    y   = response(obj)
     ŷ   = fitted(obj)
     rss = sum(abs2, y .- ŷ)
     tss = sum(abs2, y .- mean(y))
@@ -100,10 +102,14 @@ function _r2(obj::OLS, w::UnitWeights)
 end
 
 function _r2(obj::OLS, w::AbstractWeights)
-    y   = model_response(obj)
+    y   = response(obj)
     μ   = mean(y, w)
     ŷ   = fitted(obj)
     rss = sum(abs2.(y .- ŷ), w)
     tss = sum(abs2.(y .- μ), w)
     return 1.0 - rss / tss
 end
+
+# CHARACTERIZATION
+
+islinear(obj::OLS) = true
