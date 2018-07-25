@@ -27,11 +27,11 @@ function Microdata(
     terms    = Terms(formula)
     eterms   = terms.eterms
     msng     = BitVector(completecases(df[:, terms.eterms]))
-    msng    .= msng .* filter(!iszero, weights) .* BitVector(subset)
+    msng    .= msng .* (.!iszero.(weights)) .* BitVector(subset)
     new_corr = adjmsng!(msng, vcov)
     new_wts  = parse_weights(weights, msng)
     new_df   = DataFrame(map(x -> disallowmissing(df[x][msng]), eterms), Symbol.(eterms))
-    frame    = ModelFrame(new_df, terms, msng, StatsModels.evalcontrasts(new_df, contrasts))
+    frame    = ModelFrame(new_df, terms, msng, .StatsModels.evalcontrasts(df, contrasts))
     names    = StatsModels.coefnames(frame)
     mat      = ModelMatrix(frame)
     new_map  = Dict{Symbol, Vector{Int}}()
