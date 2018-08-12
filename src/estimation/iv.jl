@@ -154,14 +154,14 @@ score(obj::IV) = Diagonal(residuals(obj)) * getmatrix(obj, :instrument, :control
 function jacobian(obj::IV, w::UnitWeights)
     x = getmatrix(obj, :treatment, :control)
     z = getmatrix(obj, :instrument, :control)
-    return z' * x
+    return - z' * x
 end
 
 function jacobian(obj::IV, w::AbstractWeights)
     x = getmatrix(obj, :treatment, :control)
     z = getmatrix(obj, :instrument, :control)
     v = Diagonal(w) * z
-    return v' * x
+    return - v' * x
 end
 
 # VARIANCE MATRIX
