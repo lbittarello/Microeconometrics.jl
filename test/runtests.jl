@@ -29,10 +29,10 @@ M        = Dict(:response => "gpmw", :control => "foreign + 1")
     β = [0.24615258; 1.60900394]
     σ = [0.05494872; 0.02996078]
 
-    @test isapprox(coef(E), β, rtol = 1e-7)
-    @test isapprox(stderror(E), σ, rtol = 1e-7)
-    @test isapprox(r2(E), 0.21796522, rtol = 1e-7)
-    @test isapprox(adjr2(E), 0.20710363, rtol = 1e-7)
+    @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(r2(E), 0.21796522, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(adjr2(E), 0.20710363, atol = 1e-7, rtol = 1e-7)
     @test dof(E) == 2
 end
 
@@ -46,10 +46,10 @@ end
     c = (nobs(E) - dof(E)) / (nobs(E) - 1)
     σ = σ * sqrt(c)
 
-    @test isapprox(coef(E), β, rtol = 1e-7)
-    @test isapprox(stderror(E), σ, rtol = 1e-7)
-    @test isapprox(r2(E), 0.21796522, rtol = 1e-7)
-    @test isapprox(adjr2(E), 0.20710363, rtol = 1e-7)
+    @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(r2(E), 0.21796522, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(adjr2(E), 0.20710363, atol = 1e-7, rtol = 1e-7)
     @test dof(E) == 2
 end
 
@@ -69,10 +69,10 @@ M        = Dict(:response => "ln_wage", :control => "age + age2 + tenure + 1")
     c = (nobs(E) - dof(E)) / (nobs(E) - 1)
     σ = σ * sqrt(c)
 
-    @test isapprox(coef(E), β, rtol = 1e-7)
-    @test isapprox(stderror(E), σ, rtol = 1e-7)
-    @test isapprox(r2(E), 0.16438516, rtol = 1e-7)
-    @test isapprox(adjr2(E), 0.16429594, rtol = 1e-7)
+    @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(r2(E), 0.16438516, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(adjr2(E), 0.16429594, atol = 1e-7, rtol = 1e-7)
     @test dof(E) == 4
 end
 
@@ -94,10 +94,10 @@ M = Dict(
     β = [0.00223983; 0.08151597; 120.70651454]
     σ = [0.00033876; 0.30815277;  15.70688390]
 
-    @test isapprox(coef(E), β, rtol = 1e-7)
-    @test isapprox(stderror(E), σ, rtol = 1e-7)
-    @test isapprox(r2(E), 0.59888202, rtol = 1e-7)
-    @test isapprox(adjr2(E), 0.58181317, rtol = 1e-7)
+    @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(r2(E), 0.59888202, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(adjr2(E), 0.58181317, atol = 1e-7, rtol = 1e-7)
     @test dof(E) == 3
 end
 
@@ -111,10 +111,10 @@ end
     c = nobs(E) / (nobs(E) - 1) ;
     σ = σ * sqrt(c) ;
 
-    @test isapprox(coef(E), β, rtol = 1e-7)
-    @test isapprox(stderror(E), σ, rtol = 1e-7)
-    @test isapprox(r2(E), 0.66162834, rtol = 1e-7)
-    @test isapprox(adjr2(E), 0.64722954, rtol = 1e-7)
+    @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(r2(E), 0.66162834, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(adjr2(E), 0.64722954, atol = 1e-7, rtol = 1e-7)
     @test dof(E) == 3
 end
 
@@ -134,14 +134,14 @@ D = Microdata(S, M, vcov = Homoscedastic(), contrasts = C)
     σ = [ 0.03645043;  0.00692588; 0.52641014; 0.43915315; 0.40082664;
           0.34624900; 0.69162923; 0.45937677; 1.20458975]
 
-    @test isapprox(coef(E), β, rtol = 1e-7)
-    @test isapprox(stderror(E), σ, rtol = 1e-7)
-    @test isapprox(deviance(E), 201.44799113, rtol = 1e-7)
-    @test isapprox(loglikelihood(E), -100.72399557, rtol = 1e-7)
-    @test isapprox(nullloglikelihood(E), -117.33599810, rtol = 1e-7)
-    @test isapprox(aic(E), 219.44799113, rtol = 1e-7)
-    @test isapprox(aicc(E), 220.45357772, rtol = 1e-7)
-    @test isapprox(bic(E), 248.62371427, rtol = 1e-7)
+    @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(deviance(E), 201.44799113, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(loglikelihood(E), -100.72399557, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(nullloglikelihood(E), -117.33599810, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(aic(E), 219.44799113, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(aicc(E), 220.45357772, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(bic(E), 248.62371427, atol = 1e-7, rtol = 1e-7)
     @test dof(E) == 9
 end
 
@@ -154,14 +154,14 @@ end
     σ = [ 0.02162924;  0.00397343; 0.31664054; 0.25558235; 0.23577825;
           0.20012526;  0.41927933; 0.27560931; 0.70152540]
 
-    @test isapprox(coef(E), β, rtol = 1e-7)
-    @test isapprox(stderror(E), σ, rtol = 1e-7)
-    @test isapprox(deviance(E), 201.12189887, rtol = 1e-7)
-    @test isapprox(loglikelihood(E), -100.56094943, rtol = 1e-7)
-    @test isapprox(nullloglikelihood(E), -117.33599810, rtol = 1e-7)
-    @test isapprox(aic(E), 219.12189887, rtol = 1e-7)
-    @test isapprox(aicc(E), 220.12748546, rtol = 1e-7)
-    @test isapprox(bic(E), 248.29762201, rtol = 1e-7)
+    @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(deviance(E), 201.12189887, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(loglikelihood(E), -100.56094943, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(nullloglikelihood(E), -117.33599810, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(aic(E), 219.12189887, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(aicc(E), 220.12748546, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(bic(E), 248.29762201, atol = 1e-7, rtol = 1e-7)
     @test dof(E) == 9
 end
 
@@ -174,14 +174,14 @@ end
     σ = [0.02906676; 0.00521572; 0.40185917; 0.32942310; 0.30247340;
          0.20833347; 0.45334563; 0.34357409; 0.90994949]
 
-    @test isapprox(coef(E), β, rtol = 1e-7)
-    @test isapprox(stderror(E), σ, rtol = 1e-7)
-    @test isapprox(deviance(E), 202.16661013, rtol = 1e-7)
-    @test isapprox(loglikelihood(E), -101.08330506, rtol = 1e-7)
-    @test isapprox(nullloglikelihood(E), -117.33599810, rtol = 1e-7)
-    @test isapprox(aic(E), 220.16661013, rtol = 1e-7)
-    @test isapprox(aicc(E), 221.17219672, rtol = 1e-7)
-    @test isapprox(bic(E), 249.34233326, rtol = 1e-7)
+    @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(deviance(E), 202.16661013, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(loglikelihood(E), -101.08330506, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(nullloglikelihood(E), -117.33599810, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(aic(E), 220.16661013, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(aicc(E), 221.17219672, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(bic(E), 249.34233326, atol = 1e-7, rtol = 1e-7)
     @test dof(E) == 9
 end
 
@@ -204,14 +204,14 @@ M = Dict(
     β = [0.35453564; 1.48400701; 2.62750512; 3.35049279; 3.70009645; -7.91932571]
     σ = [0.10737412; 0.19510337; 0.18372727; 0.18479918; 0.19221951;  0.19176182]
 
-    @test isapprox(coef(E), β, rtol = 1e-7)
-    @test isapprox(stderror(E), σ, rtol = 1e-7)
-    @test isapprox(deviance(E), 12.13236640, rtol = 1e-7)
-    @test isapprox(loglikelihood(E), -33.60015344, rtol = 1e-7)
-    @test isapprox(nullloglikelihood(E), -495.06763568, rtol = 1e-7)
-    @test isapprox(aic(E), 79.20030688, rtol = 1e-7)
-    @test isapprox(aicc(E), 107.20030688, rtol = 1e-7)
-    @test isapprox(bic(E), 81.01581744, rtol = 1e-7)
+    @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(deviance(E), 12.13236640, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(loglikelihood(E), -33.60015344, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(nullloglikelihood(E), -495.06763568, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(aic(E), 79.20030688, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(aicc(E), 107.20030688, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(bic(E), 81.01581744, atol = 1e-7, rtol = 1e-7)
     @test dof(E) == 6
 end
 
@@ -233,8 +233,8 @@ M = Dict(
     c = nobs(E) / (nobs(E) - 1)
     σ = σ * sqrt(c)
 
-    @test isapprox(coef(E), β, rtol = 1e-7)
-    @test isapprox(stderror(E), σ, rtol = 1e-7)
+    @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
     @test dof(E) == 4
 end
 
@@ -256,8 +256,8 @@ M = Dict(
     c = nobs(E) / (nobs(E) - 1)
     σ = σ * sqrt(c)
 
-    @test isapprox(coef(E), β, rtol = 1e-7)
-    @test isapprox(stderror(E), σ, rtol = 1e-7)
+    @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
     @test dof(E) == 6
 end
 
@@ -282,7 +282,7 @@ M = Dict(
     c = nobs(E) / (nobs(E) - 1)
     σ = σ * sqrt(c)
 
-    @test isapprox(coef(E), β, rtol = 1e-7)
-    @test isapprox(stderror(E), σ, rtol = 1e-7)
+    @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
     @test dof(E) == 2
 end

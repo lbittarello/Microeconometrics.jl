@@ -51,7 +51,7 @@ function fit(
     π = fitted(MM)
     v = [(1.0 - zi) * (1.0 - p) / (1.0 - πi) + zi * p / πi for (zi, πi) in zip(z, π)]
 
-    v[find((trim .> π) .| (1.0 - trim .< π))] .= 0.0
+    v[((trim .> π) .| (1.0 - trim .< π))] .= 0.0
 
     SSD              = Microdata(MD, Dict(:control => "1"))
     obj              = Tan()
@@ -90,7 +90,7 @@ function crossjacobian(obj::Tan, w::UnitWeights)
     D = [(1.0 - zi) * (1.0 - p) / abs2(1.0 - πi) - zi * p / abs2(πi)
          for (zi, πi) in zip(z, π)]
 
-    D[find(obj.weights .== 0)] .= 0.0
+    D[iszero.(obj.weights)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)
@@ -106,7 +106,7 @@ function crossjacobian(obj::Tan, w::AbstractWeights)
     D = [wi * ((1.0 - zi) * (1.0 - p) / abs2(1.0 - πi) - zi * p / abs2(πi))
          for (zi, πi, wi) in zip(z, π, w)]
 
-    D[find(obj.weights .== 0)] .= 0.0
+    D[iszero.(obj.weights)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)

@@ -27,10 +27,10 @@ end
 
 function _fit!(obj::Cloglog, w::UnitWeights)
 
-    y  = getvector(undef, obj, :response)
-    x  = getmatrix(undef, obj, :control)
-    μ  = Array{Float64}(length(y))
-    xx = Array{Float64}(size(x)...)
+    y  = getvector(obj, :response)
+    x  = getmatrix(obj, :control)
+    μ  = Array{Float64}(undef, length(y))
+    xx = Array{Float64}(undef, size(x)...)
 
     β₀ = vcat(fill(0.0, size(x, 2) - 1), log(- log(1.0 - mean(y))))
 

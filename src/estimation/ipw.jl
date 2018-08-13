@@ -50,7 +50,7 @@ function fit(
     π = fitted(MM)
     v = [(1.0 - di) / (1.0 - πi) + di / πi for (di, πi) in zip(d, π)]
 
-    v[find((trim .> π) .| (1.0 - trim .< π))] .= 0.0
+    v[((trim .> π) .| (1.0 - trim .< π))] .= 0.0
 
     SSD               = Microdata(MD, Dict{Symbol,String}())
     SSD.map[:control] = vcat(SSD.map[:treatment], 1)
@@ -88,7 +88,7 @@ function crossjacobian(obj::IPW, w::UnitWeights)
     π = obj.pscore
     D = [(1.0 - di) / abs2(1.0 - πi) - di / abs2(πi) for (di, πi) in zip(d, π)]
 
-    D[find(obj.weights .== 0)] .= 0.0
+    D[iszero.(obj.weights)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)
@@ -103,7 +103,7 @@ function crossjacobian(obj::IPW, w::AbstractWeights)
     D = [wi * ((1.0 - di) / abs2(1.0 - πi) - di / abs2(πi)) for (di, πi, wi)
          in zip(d, π, w)]
 
-    D[find(obj.weights .== 0)] .= 0.0
+    D[iszero.(obj.weights)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)

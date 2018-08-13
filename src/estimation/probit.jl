@@ -83,7 +83,7 @@ function _fit!(obj::Probit, w::UnitWeights)
         @inbounds for (i, (yi, μi)) in enumerate(zip(y, μ))
             ηi   = (yi ? (normcdf(μi) - 1.0) : normcdf(μi))
             ηi   = normpdf(μi) / ηi
-            μ[i] = abs2(ηi) + μi * ηi
+            μ[i] = muladd(μi, ηi, abs2(ηi))
         end
 
         xx .= x .* μ
@@ -157,7 +157,7 @@ function _fit!(obj::Probit, w::AbstractWeights)
         @inbounds for (i, (yi, μi, wi)) in enumerate(zip(y, μ, w))
             ηi   = (yi ? (normcdf(μi) - 1.0) : normcdf(μi))
             ηi   = normpdf(μi) / ηi
-            μ[i] = wi * (abs2(ηi) + μi * ηi)
+            μ[i] = wi * muladd(μi, ηi, abs2(ηi))
         end
 
         xx .= x .* μ
@@ -202,7 +202,7 @@ function jacobian(obj::Probit, w::UnitWeights)
     @inbounds for (i, (yi, vi)) in enumerate(zip(y, v))
         ηi   = (iszero(yi) ? (normcdf(vi) - 1.0) : normcdf(vi))
         ηi   = normpdf(vi) / ηi
-        v[i] = abs2(ηi) + vi * ηi
+        v[i] = muladd(vi, ηi, abs2(ηi))
     end
 
     return - crossprod(x, v)
@@ -217,7 +217,7 @@ function jacobian(obj::Probit, w::AbstractWeights)
     @inbounds for (i, (yi, vi, wi)) in enumerate(zip(y, v, w))
         ηi   = (iszero(yi) ? (normcdf(vi) - 1.0) : normcdf(vi))
         ηi   = normpdf(vi) / ηi
-        v[i] = wi * (abs2(ηi) + vi * ηi)
+        v[i] = wi * muladd(vi, ηi, abs2(ηi))
     end
 
     return - crossprod(x, v)

@@ -8,7 +8,8 @@ More models are planned. If your preferred model is not currently available, [fi
 
 - [Linear regression](estimators.md#linear-regression)
     - Ordinary least squares
-    - Linear IV (two-stage least squares and GMM)
+    - Two-stage least squares
+    - Linear GMM
 - [Binary choice](estimators.md#binary-choice)
     - Logit
     - Probit
@@ -32,6 +33,8 @@ Pages = [
         "correlation_structures.md",
         "estimators.md",
         "methods.md",
+        "hypothesis_tests.md",
+        "estimation_tables.md",
         "bootstrapping.md",
         "contributing.md",
         "to_do.md",

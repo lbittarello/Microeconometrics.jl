@@ -35,16 +35,6 @@ function confint(obj::MicroObjects, level::Float64 = 0.95)
     return coef(obj) .+ norminvcdf((1.0 - level) / 2.0) * stderr(obj) .* [1.0 -1.0]
 end
 
-function informationmatrix(obj::MLE; method::Symbol == :OIM)
-    if method == :OIM
-        return - inv(jacobian(obj, getweights(obj)))
-    elseif method == :OPG
-        return inv(crossprod(score(obj), getweights(obj)))
-    else
-        throw("method $(String(method)) not supported")
-    end
-end
-
 #==========================================================================================#
 
 # SUMMARY STATISTICS
@@ -66,21 +56,13 @@ nulldeviance(obj::MLE)      = _nulldeviance(obj::MLE, getweights(obj))
 
 # PREDICTION
 
-predict(obj::ParOrGMM)   = predict(obj, obj.sample)
-fitted(obj::ParOrGMM)    = fitted(obj, obj.sample)
-residuals(obj::ParOrGMM) = residuals(obj, obj.sample)
+predict(obj::ParOrGMM)     = predict(obj, obj.sample)
+fitted(obj::ParOrGMM)      = fitted(obj, obj.sample)
+residuals(obj::Micromodel) = residuals(obj, obj.sample)
+response(obj::Micromodel)  = getvector(obj, :response)
 
-response(obj::Micromodel)     = getvector(obj, :response)
-meanresponse(obj::Micromodel) = mean(getvector(obj, :response), getweights(obj))
-
-function residuals(obj::ParOrGMM, MD::Microdata)
+function residuals(obj::Micromodel, MD::Microdata)
     r  = fitted(obj, MD)
-    r .= response(obj) .- r
-    return r
-end
-
-function residuals(obj::Micromodel)
-    r  = fitted(obj)
     r .= response(obj) .- r
     return r
 end
@@ -90,10 +72,6 @@ end
 # COEFFICIENT LABELS
 
 coefnames(obj::ParObject) = obj.names
-
-# CHARACTERIZATION
-
-islinear(obj::Micromodel) = false
 
 # OUTPUT
 
@@ -112,7 +90,7 @@ function coeftable(
         label  = vcat(label, ["     C.I.", "($(lprint)%)  "])
     end
 
-    CT = CoefTable(table, label, coefnames(obj), 4)
+    CT = StatsBase.CoefTable(table, label, coefnames(obj), 4)
 
     return CT
 end

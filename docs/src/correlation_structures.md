@@ -1,10 +1,10 @@
 # Correlation structures
 
-Before fitting the model, you must specify the correlation between observations (a `CorrStructure`). It determines the calculation of the. The default is always `Heteroscedastic`, i.e. independent but not identically distributed observations.
+Before fitting the model, you must specify the correlation between observations (a `CorrStructure`). It determines the calculation of covariance matrices. The default is always `Heteroscedastic`, i.e. independent but not identically distributed observations.
 
-All constructors accept the Boolean keyword `adj`, which defaults to `true`. If `true`, a finite-sample adjustment is applied to the covariance matrix. The adjustment factor is n / (n - 1), where n is the number of clusters for clustered data and the number of observations otherwise.
+All constructors accept the Boolean keyword `adj` (omitted in the following), which defaults to `true`. If `true`, a finite-sample adjustment is applied to the covariance matrix. The adjustment factor is n / (n - 1), where n is the number of clusters for clustered data and the number of observations otherwise.
 
-Four subtypes are currently available:
+Four subtypes are currently available: `Homoscedastic`, `Heteroscedastic`, `Clustered` and `CrossCorrelated`.
 
 ## `Homoscedastic`
 

@@ -2,20 +2,19 @@
 
 The function `fit` estimates models. It returns a model structure, which contains the estimation sample, the coefficients and their covariance matrix. For example, the output of `fit(OLS, MD)` has type `OLS`. Some have additional fields: e.g., two-stage models carry estimates from the first stage and GMM models carry the inverse of the weight matrix.
 
+!!! note
+
+    If you only need coefficients, pass `novar = true` to `fit`.
+
 Model structures are subtypes of broader abstract types, such as `MLE` or `GMM`, which are ultimately instances of [`RegressionModel`](http://juliastats.github.io/StatsBase.jl/stable/statmodels.html). The type hierarchy is:
 
 ```
 RegressionModel
-    MicroModel
-        GMM
-        ParModel
-            MLE
-        TwoStageModel
+    GMM
+    ParModel
+        MLE
+    TwoStageModel
 ```
-
-!!! note
-
-    If you only need coefficients, pass `novar = true` to `fit`.
 
 ## Linear regression
 
@@ -25,7 +24,7 @@ RegressionModel
 fit(OLS, MD::Microdata)
 ```
 
-The `Microdata` must contain: `response` and `control`. `OLS` is a subtype of `ParModel`.
+The `Microdata` must contain: `response` and `control`. See the documentation for linear IV if `Microdata` includes a treatment. `OLS` is a subtype of `ParModel`.
 
 ### Linear IV
 
@@ -55,7 +54,7 @@ fit(Probit, MD::Microdata)
 fit(Cloglog, MD::Microdata)
 ```
 
-The `Microdata` must contain: `response` and `control`. The model structures are subtypes of `MLE`.
+The `Microdata` must contain: `response` and `control`. The outcome should be binary. The model structures are subtypes of `MLE`.
 
 ## Count data
 
@@ -63,7 +62,7 @@ The `Microdata` must contain: `response` and `control`. The model structures are
 fit(Poisson, MD::Microdata; novar::Bool = false)
 ```
 
-The `Microdata` must contain: `response` and `control`. The outcome must be weakly positive. `Poisson` is a subtype of `MLE`.
+The `Microdata` must contain: `response` and `control`. The `Microdata` may contain an `offset`. See the documentation for linear IV if `Microdata` includes a treatment. The outcome must be weakly positive. `Poisson` is a subtype of `MLE`.
 
 ```julia
 fit(IVPoisson, MD::Microdata; novar::Bool = false, method::String = "One-step GMM")
@@ -86,7 +85,7 @@ Additional methods are available for convenience:
 - `method = "Poisson"`: Poisson regression of the outcome on the treatment and controls;
 - `method = "Reduced form"`: Poisson regression of the outcome on the instruments and controls.
 
-The `Microdata` must contain: `response`, `treatment`, `control` and `instrument`. The outcome must be weakly positive. `IVPoisson` and `Mullahy` are subtypes of `GMM`.
+The `Microdata` must contain: `response`, `treatment`, `control` and `instrument`. The `Microdata` may contain an `offset`. The outcome must be weakly positive. `IVPoisson` and `Mullahy` are subtypes of `GMM`.
 
 ## Reweighting methods
 

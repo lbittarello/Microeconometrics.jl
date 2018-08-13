@@ -5,11 +5,6 @@
 copy(m::Microdata)     = Microdata([copy(getfield(m, k))     for k in fieldnames(m)]...)
 deepcopy(m::Microdata) = Microdata([deepcopy(getfield(m, k)) for k in fieldnames(m)]...)
 
-# SIZE
-
-size(MD::Microdata)         = size(MD.mat.m)
-size(MD::Microdata, dim...) = size(MD.mat.m, dim...)
-
 #==========================================================================================#
 
 # INTERSECTION BETWEEN A FRAME AND CORRELATION STRUCTURE
@@ -47,10 +42,10 @@ end
 
 # ASSIGN COLUMNS TO VARIABLE SET
 
-function assign_columns(input::String, urterms::Terms, assign::Vector{Int})
+function assign_columns(input::String, urterms::StatsModels.Terms, assign::Vector{Int})
 
     formula = @eval @formula $nothing ~ $(Meta.parse(input))
-    terms   = Terms(formula)
+    terms   = StatsModels.Terms(formula)
     output  = findall((in)(findall((in)(terms.terms), urterms.terms)), assign)
 
     if occursin("1", input)

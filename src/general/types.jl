@@ -1,4 +1,4 @@
-abstract type Micromodel <: RegressionModel end
+abstract type Micromodel <: StatsBase.RegressionModel end
 
 abstract type ParModel <: Micromodel end
 

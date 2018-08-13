@@ -58,10 +58,9 @@ reweight(w::AbstractWeights, v::ProbabilityWeights) = pweights(w .* v)
 
 # OPERATIONS
 
-Statistics.sum(v::AbstractArray, w::UnitWeights)  = sum(v)
-Statistics.mean(v::AbstractArray, w::UnitWeights) = mean(v)
-Statistics.:(==)(x::UnitWeights, y::UnitWeights)  = (x.sum == y.sum) && (x.values == y.values)
+sum(v::AbstractArray, w::UnitWeights)  = sum(v)
+mean(v::AbstractArray, w::UnitWeights) = mean(v)
 
-function Base.isequal(x::UnitWeights, y::UnitWeights)
+function isequal(x::UnitWeights, y::UnitWeights)
     return isequal(x.sum, y.sum) && isequal(x.values, y.values)
 end

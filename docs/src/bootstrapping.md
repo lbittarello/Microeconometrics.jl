@@ -55,7 +55,7 @@ Note that we do not compute the covariance matrix at each step, which saves us s
 We can finally see the results:
 ```julia
 E.V = cov(B) ;
-coeftable(E_boot)
+coeftable(E)
 ```
 The output is:
 ```julia

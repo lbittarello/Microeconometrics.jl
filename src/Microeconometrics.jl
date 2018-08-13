@@ -2,23 +2,22 @@ __precompile__(true)
 
 module Microeconometrics
 
+using DataFrames
+using Formatting
 using LinearAlgebra
+using Optim
 using SparseArrays
-using Statistics
+using SpecialFunctions: lgamma
 using StatsBase
 using StatsFuns
-using DataFrames
 using StatsModels
-using Optim
-using Formatting
 
-import Base:        copy, deepcopy, size
-import StatsBase:   RegressionModel, CoefTable, coefnames, coeftable, islinear
-import StatsBase:   fit, coef, confint, informationmatrix, score, stderror, vcov
-import StatsBase:   deviance, loglikelihood, nulldeviance, nullloglikelihood
-import StatsBase:   adjr2, adjr², aic, aicc, bic, dof, dof_residual, mss, nobs, r2, r², rss
-import StatsBase:   fitted, meanresponse, predict, residuals, response
-import StatsModels: Terms
+import Base:       copy, deepcopy, isequal, sum
+import Statistics: mean
+import StatsBase:  fit, coef, coefnames, coeftable, confint, stderror, vcov
+import StatsBase:  deviance, loglikelihood, nulldeviance, nullloglikelihood
+import StatsBase:  adjr2, aic, aicc, bic, dof, dof_residual, nobs, r2
+import StatsBase:  fitted, predict, residuals, response
 
 const PWeights = ProbabilityWeights{Float64, Float64, Vector{Float64}}
 
@@ -49,20 +48,17 @@ include("./estimation/frölichmelly.jl")
 include("./estimation/tan.jl")
 
 export
+    Microdata, Homoscedastic, Heteroscedastic, Clustered, CrossCorrelated,
+    OLS, Logit, Probit, Cloglog, Poisson,
+    IV, IVPoisson, Mullahy,
+    IPW, Abadie, FrölichMelly, Tan
 
-    CorrStructure,
-        Homoscedastic,
-        Heteroscedastic,
-        Clustered,
-        CrossCorrelated,
-    Microdata,
-    OLS, IV, IVPoisson, Mullahy,
-    Logit, Probit, Cloglog, Poisson,
-    IPW, Abadie, FrölichMelly, Tan,
-    fit, coef, confint, hausman_1s, hausman_2s, informationmatrix, score, stderror, vcov,
+export
+    fit, coef, confint, stderror, vcov,
     deviance, loglikelihood, nulldeviance, nullloglikelihood,
-    adjr2, adjr², aic, aicc, bic, dof, dof_residual, mss, nobs, r2, r², rss,
-    fitted, meanresponse, predict, residuals, response,
-    coefnames, coeftable, etable, islinear
+    adjr2, aic, aicc, bic, dof, dof_residual, nobs, r2,
+    fitted, predict, residuals, response,
+    coefnames, coeftable, etable,
+    hausman_1s, hausman_2s, pval, tstat
 
 end # module

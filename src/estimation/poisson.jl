@@ -332,7 +332,7 @@ end
 function _deviance(obj::Poisson, w::AbstractWeights)
     y = getvector(obj, :response)
     μ = predict(obj)
-    return 2 * sum(xlogx.(y) .- y .* (1.0 + μ) .+ exp.(μ), w)
+    return 2 * sum(xlogx.(y) .- y .* (1.0 .+ μ) .+ exp.(μ), w)
 end
 
 # DEVIANCE UNDER NULL MODEL
@@ -340,5 +340,5 @@ end
 function _nulldeviance(obj::Poisson, w::AbstractWeights)
     y = getvector(obj, :response)
     μ = mean(y, w)
-    return 2 * sum(xlogx.(y) .- y .* (1.0 + log(μ)) .+ μ, w)
+    return 2 * sum(xlogx.(y) .- y .* (1.0 .+ log(μ)) .+ μ, w)
 end

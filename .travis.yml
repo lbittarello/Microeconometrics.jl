@@ -3,7 +3,8 @@ os:
   - linux
   - osx
 julia:
-  - 0.6
+  - 0.7
+  - 1.0
   - nightly
 matrix:
  allow_failures:
@@ -13,8 +14,6 @@ branches:
   - development
 notifications:
   email: false
-# script:
-#   - julia -e 'Pkg.clone(pwd()); Pkg.build("Microeconometrics"); Pkg.test("Microeconometrics"; coverage=true)'
 after_success:
   - julia -e 'cd(Pkg.dir("Microeconometrics")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
   - julia -e 'cd(Pkg.dir("Microeconometrics")); Pkg.add("Documenter"); include(joinpath("docs", "make.jl"))'

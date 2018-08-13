@@ -58,18 +58,26 @@ function fit(
     else
 
         if length(MD.map[:treatment]) == length(MD.map[:instrument])
-            W   = eye(length(MD.map[:instrument]) + length(MD.map[:control]))
-            obj = IVPoisson(MD, W, "Method of moments")
+
+            k   = length(MD.map[:instrument]) + length(MD.map[:control])
+            obj = IVPoisson(MD, Matrix{Float64}(I, k, k), "Method of moments")
+
         elseif method == "One-step GMM"
-            W   = eye(length(MD.map[:instrument]) + length(MD.map[:control]))
-            obj = IVPoisson(MD, W, "One-step GMM")
+
+            k   = length(MD.map[:instrument]) + length(MD.map[:control])
+            obj = IVPoisson(MD, Matrix{Float64}(I, k, k), "One-step GMM")
+
         elseif (method == "TSLS") | (method == "2SLS")
+
             W   = crossprod(getmatrix(MD, :instrument, :control), getweights(MD))
             obj = IVPoisson(MD, W, "Two-step GMM")
+
         elseif (method == "Two-step GMM") | (method == "Optimal GMM")
+
             W     = crossprod(getmatrix(MD, :instrument, :control), getweights(MD))
             obj   = IVPoisson(MD, W, method) ; _fit!(obj, getweights(obj))
             obj.W = wmatrix(obj, getcorr(obj), getweights(obj))
+
         else
             throw("unknown method")
         end

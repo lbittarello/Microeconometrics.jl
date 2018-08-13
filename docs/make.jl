@@ -14,6 +14,8 @@ makedocs(
         "Correlation structures" => "correlation_structures.md",
         "Estimators"             => "estimators.md",
         "Methods"                => "methods.md",
+        "Hypothesis tests"       => "hypothesis_tests.md",
+        "Estimation tables"      => "estimation_tables.md",
         "Bootstrapping"          => "bootstrapping.md",
         "Contributing"           => "contributing.md",
         "To do"                  => "to_do.md",
@@ -23,7 +25,7 @@ makedocs(
 deploydocs(
     repo   = "github.com/lbittarello/Microeconometrics.jl.git",
     target = "build",
-    julia  = "0.6",
+    julia  = "0.7",
     deps   = nothing,
     make   = nothing,
 )

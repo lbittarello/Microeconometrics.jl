@@ -88,11 +88,6 @@ coefnames(obj::OLS) = getnames(obj, :control)
 adjr2(obj::OLS)     = 1.0 - (1.0 - r2(obj)) * (nobs(obj) - 1) / dof_residual(obj)
 r2(obj::OLS)        = _r2(obj, getweights(obj))
 
-mss(obj::OLS)                     = mss(obj, getweights(obj))
-rss(obj::OLS)                     = rss(obj, getweights(obj))
-mss(obj::OLS, w::AbstractWeights) = sum(abs2.(fitted(obj) .- meanresponse(y)), w)
-rss(obj::OLS, w::AbstractWeights) = sum(abs2.(response(obj) .- meanresponse(y)), w)
-
 function _r2(obj::OLS, w::UnitWeights)
     y   = response(obj)
     ŷ   = fitted(obj)
@@ -109,7 +104,3 @@ function _r2(obj::OLS, w::AbstractWeights)
     tss = sum(abs2.(y .- μ), w)
     return 1.0 - rss / tss
 end
-
-# CHARACTERIZATION
-
-islinear(obj::OLS) = true

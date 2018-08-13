@@ -52,7 +52,7 @@ end
 function _fit!(obj::OLS, w::AbstractWeights)
     y     = getvector(obj, :response)
     x     = getmatrix(obj, :control)
-    v     = copy(x) .* values(w)
+    v     = copy(x) .* w
     obj.β =  (v' * x) \ (v' * y)
 end
 ```
@@ -79,7 +79,7 @@ end
 
 function jacobian(obj::OLS, w::AbstractWeights)
     x = getmatrix(obj, :control)
-    v = copy(x) .* values(w)
+    v = copy(x) .* w
     return x' * v
 end
 ```

@@ -61,7 +61,8 @@ function fit(::Type{IV}, MD::Microdata; novar::Bool = false, method::String = "T
     elseif length(MD.map[:treatment]) == length(MD.map[:instrument])
 
         obj   = IV(MD, "Method of moments")
-        obj.W = eye(length(MD.map[:instrument]) + length(MD.map[:control]))
+        k     = length(MD.map[:instrument]) + length(MD.map[:control])
+        obj.W = Matrix{Float64}(I, k, k)
 
         _fit!(obj, getweights(obj))
 
@@ -218,11 +219,6 @@ coefnames(obj::IV) = getnames(obj, :treatment, :control)
 adjr2(obj::IV)     = 1.0 - (1.0 - r2(obj)) * (nobs(obj) - 1) / dof_residual(obj)
 r2(obj::IV)        = _r2(obj, getweights(obj))
 
-mss(obj::IV)                     = mss(obj, getweights(obj))
-rss(obj::IV)                     = rss(obj, getweights(obj))
-mss(obj::IV, w::AbstractWeights) = sum(abs2.(fitted(obj) .- meanresponse(y)), w)
-rss(obj::IV, w::AbstractWeights) = sum(abs2.(response(obj) .- meanresponse(y)), w)
-
 function _r2(obj::IV, w::UnitWeights)
     y   = response(obj)
     ŷ   = fitted(obj)
@@ -239,7 +235,3 @@ function _r2(obj::IV, w::AbstractWeights)
     tss = sum(abs2.(y .- μ), w)
     return 1.0 - rss / tss
 end
-
-# CHARACTERIZATION
-
-islinear(obj::OLS) = true

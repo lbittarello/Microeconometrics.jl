@@ -58,18 +58,26 @@ function fit(
     else
 
         if length(MD.map[:treatment]) == length(MD.map[:instrument])
-            W   = eye(length(MD.map[:instrument]) + length(MD.map[:control]))
-            obj = Mullahy(MD, W, "Method of moments")
+
+            k   = length(MD.map[:instrument]) + length(MD.map[:control])
+            obj = Mullahy(MD, Matrix{Float64}(I, k, k), "Method of moments")
+
         elseif method == "One-step GMM"
-            W   = eye(length(MD.map[:instrument]) + length(MD.map[:control]))
-            obj = Mullahy(MD, W, "One-step GMM")
+
+            k   = length(MD.map[:instrument]) + length(MD.map[:control])
+            obj = Mullahy(MD, Matrix{Float64}(I, k, k), "One-step GMM")
+
         elseif (method == "TSLS") | (method == "2SLS")
+
             W   = crossprod(getmatrix(MD, :instrument, :control), getweights(MD))
             obj = Mullahy(MD, W, "Two-step GMM")
+
         elseif (method == "Two-step GMM") | (method == "Optimal GMM")
+
             W     = crossprod(getmatrix(MD, :instrument, :control), getweights(MD))
             obj   = Mullahy(MD, W, method) ; _fit!(obj, getweights(obj))
             obj.W = wmatrix(obj, getcorr(obj), getweights(obj))
+
         else
             throw("unknown method")
         end
@@ -108,7 +116,7 @@ function _fit!(obj::Mullahy, w::UnitWeights)
 
         O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
-        μ .= y .* exp.(- μ) .- 1.0
+        μ .= muladd.(y, exp.(- μ), - 1.0)
         m  = z' * μ
         mw = W \ m
 
@@ -187,7 +195,7 @@ function _fit!(obj::Mullahy, w::AbstractWeights)
 
         O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
-        μ .= w .* (y .* exp.(- μ) .- 1.0)
+        μ .= w .* muladd.(y, exp.(- μ), - 1.0)
         m  = z' * μ
         mw = W \ m
 
@@ -248,15 +256,15 @@ end
 
 # SCORE (MOMENT CONDITIONS)
 
-score(obj::Mullahy) = Diagonal(residuals(obj)) * getmatrix(obj, :control)
+score(obj::Mullahy) = Diagonal(residuals(obj)) * getmatrix(obj, :instrument, :control)
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
 function jacobian(obj::Mullahy, w::UnitWeights)
 
-    y  = getvector(obj, :response)
+    y = getvector(obj, :response)
     x = getmatrix(obj, :treatment, :control)
-    z  = getmatrix(obj, :instrument, :control)
+    z = getmatrix(obj, :instrument, :control)
 
     if haskey(obj.sample.map, :offset)
         x = getmatrix(obj, :offset, :treatment, :control)
@@ -273,9 +281,9 @@ end
 
 function jacobian(obj::Mullahy, w::AbstractWeights)
 
-    y  = getvector(obj, :response)
+    y = getvector(obj, :response)
     x = getmatrix(obj, :treatment, :control)
-    z  = getmatrix(obj, :instrument, :control)
+    z = getmatrix(obj, :instrument, :control)
 
     if haskey(obj.sample.map, :offset)
         x = getmatrix(obj, :offset, :treatment, :control)

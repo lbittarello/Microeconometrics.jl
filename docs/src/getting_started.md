@@ -2,7 +2,7 @@
 
 ## Installation
 
-To install the package, run:
+To install the latest release, run:
 ```julia
 julia> Pkg.add("Microeconometrics")
 ```
@@ -10,9 +10,13 @@ To update to the latest release, run:
 ```julia
 julia> Pkg.update("Microeconometrics")
 ```
-To obtain the last version, run:
+To install the last version, run:
 ```julia
-julia> Pkg.checkout("Microeconometrics")
+julia> Pkg.add(PackageSpec(name = "Microeconometrics", rev = "master"))
+```
+To update to the last version, run:
+```julia
+julia> Pkg.update(PackageSpec(name = "Microeconometrics", rev = "master"))
 ```
 
 ## Example I: OLS

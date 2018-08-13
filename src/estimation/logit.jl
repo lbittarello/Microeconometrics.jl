@@ -183,8 +183,8 @@ function jacobian(obj::Logit, w::UnitWeights)
     v = x * obj.β
 
     @inbounds for (i, vi) in enumerate(v)
-        ηi    = logistic(vi)
-        v[i] .= ηi * (1.0 - ηi)
+        ηi   = logistic(vi)
+        v[i] = ηi * (1.0 - ηi)
     end
 
     return - crossprod(x, v)
@@ -196,8 +196,8 @@ function jacobian(obj::Logit, w::AbstractWeights)
     v = x * obj.β
 
     @inbounds for (i, (vi, wi)) in enumerate(zip(v, w))
-        ηi    = logistic(vi)
-        v[i] .= wi * ηi * (1.0 - ηi)
+        ηi   = logistic(vi)
+        v[i] = wi * ηi * (1.0 - ηi)
     end
 
     return - crossprod(x, v)
@@ -226,8 +226,8 @@ function jacobexp(obj::Logit)
     v = x * obj.β
 
     @inbounds for (i, vi) in enumerate(v)
-        ηi    = logistic(vi)
-        v[i] .= ηi * (1.0 - ηi)
+        ηi   = logistic(vi)
+        v[i] = ηi * (1.0 - ηi)
     end
 
     return lmul!(Diagonal(v), x)

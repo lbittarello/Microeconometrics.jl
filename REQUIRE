@@ -1,11 +1,11 @@
-julia 0.7.0-beta2
+julia 0.7.0
+DataFrames 0.13
+Formatting 0.3.2
 LinearAlgebra
+Optim 0.16
 SparseArrays
+SpecialFunctions
 Statistics
-StatsBase
+StatsBase 0.25
 StatsFuns
-Missings
-DataFrames
-StatsModels
-Optim
-Formatting
+StatsModels 0.3
