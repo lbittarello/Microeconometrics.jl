@@ -1,11 +1,8 @@
 julia 0.7.0
 DataFrames 0.13
 Formatting 0.3.2
-LinearAlgebra
 Optim 0.16
-SparseArrays
-SpecialFunctions
-Statistics
+SpecialFunctions 0.7
 StatsBase 0.25
-StatsFuns
+StatsFuns 0.7
 StatsModels 0.3
