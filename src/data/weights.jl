@@ -13,35 +13,35 @@ uweights(vs::AbstractVector) = UnitWeights(vs, sum(vs))
 
 # CONVERT WEIGHTS
 
-function parse_weights(w::AnalyticWeights, msng::BitVector)
-    n  = sum(msng)
-    v  = float(w[msng])
+function parse_weights(w::AnalyticWeights, nonmissing::BitVector)
+    n  = sum(nonmissing)
+    v  = float(w[nonmissing])
     s  = n / sum(v)
     v .= v .* s
     AnalyticWeights(v, n)
 end
 
-function parse_weights(w::FrequencyWeights, msng::BitVector)
-    v = w[msng]
+function parse_weights(w::FrequencyWeights, nonmissing::BitVector)
+    v = w[nonmissing]
     s = Int(sum(v))
     FrequencyWeights(float(v), s)
 end
 
-function parse_weights(w::ProbabilityWeights, msng::BitVector)
-    n  = sum(msng)
-    v  = float(w[msng])
+function parse_weights(w::ProbabilityWeights, nonmissing::BitVector)
+    n  = sum(nonmissing)
+    v  = float(w[nonmissing])
     s  = n / sum(v)
     v .= v .* s
     ProbabilityWeights(v, n)
 end
 
-function parse_weights(w::UnitWeights, msng::BitVector)
-    UnitWeights(float(w[msng]), sum(msng))
+function parse_weights(w::UnitWeights, nonmissing::BitVector)
+    UnitWeights(float(w[nonmissing]), sum(nonmissing))
 end
 
-function parse_weights(w::Weights, msng::BitVector)
-    n  = sum(msng)
-    v  = float(w[msng])
+function parse_weights(w::Weights, nonmissing::BitVector)
+    n  = sum(nonmissing)
+    v  = float(w[nonmissing])
     s  = n / sum(v)
     v .= v .* s
     Weights(v, n)

@@ -3,7 +3,7 @@
 # MICRODATA
 
 mutable struct Microdata
-    msng::BitVector
+    nonmissing::BitVector
     corr::CorrStructure
     weights::AbstractWeights{Int, Float64, Vector{Float64}}
     mat::ModelMatrix{Matrix{Float64}}
@@ -26,9 +26,9 @@ function Microdata(
     formula  = @eval @formula $nothing ~ $(Meta.parse(input))
     terms    = StatsModels.Terms(formula)
     eterms   = terms.eterms
-    msng     = BitVector(completecases(df[:, terms.eterms]))
+    msng     = BitVector(completecases(df[terms.eterms]))
     msng    .= msng .* .!iszero.(weights) .* BitVector(subset)
-    new_corr = adjmsng!(msng, vcov)
+    new_corr = adjmissing!(msng, vcov)
     new_wts  = parse_weights(weights, msng)
     new_df   = DataFrame(map(x -> disallowmissing(df[x][msng]), eterms), Symbol.(eterms))
     frame    = ModelFrame(new_df, terms, msng, StatsModels.evalcontrasts(new_df, contrasts))
@@ -57,5 +57,5 @@ function Microdata(MD::Microdata, model::Dict{Symbol, String})
         end
     end
 
-    Microdata(MD.msng, MD.corr, MD.weights, MD.mat, MD.names, new_map, MD.terms)
+    Microdata(MD.nonmissing, MD.corr, MD.weights, MD.mat, MD.names, new_map, MD.terms)
 end

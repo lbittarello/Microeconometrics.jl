@@ -9,33 +9,33 @@ deepcopy(m::Microdata) = Microdata([deepcopy(getfield(m, k)) for k in fieldnames
 
 # INTERSECTION BETWEEN A FRAME AND CORRELATION STRUCTURE
 
-adjmsng!(msng::BitVector, corr::Homoscedastic)   = copy(corr)
-adjmsng!(msng::BitVector, corr::Heteroscedastic) = copy(corr)
+adjmissing!(nonmissing::BitVector, corr::Homoscedastic)   = copy(corr)
+adjmissing!(nonmissing::BitVector, corr::Heteroscedastic) = copy(corr)
 
-function adjmsng!(msng::BitVector, corr::Clustered)
+function adjmissing!(nonmissing::BitVector, corr::Clustered)
 
-    (msng == corr.msng) && (return copy(corr))
+    (nonmissing == corr.nonmissing) && (return copy(corr))
 
-    msng   .*= corr.msng
-    touse    = msng[corr.msng]
-    new_ic   = corr.ic[touse]
-    iter     = sort(unique(corr.ic))
-    new_iter = sort(unique(new_ic))
-    new_nc   = length(new_iter)
-    new_mat  = corr.mat[findall((in)(new_iter), iter), touse]
+    nonmissing .*= corr.nonmissing
+    touse        = nonmissing[corr.nonmissing]
+    new_ic       = corr.ic[touse]
+    iter         = sort(unique(corr.ic))
+    new_iter     = sort(unique(new_ic))
+    new_nc       = length(new_iter)
+    new_mat      = corr.mat[findall((in)(new_iter), iter), touse]
 
-    return Clustered(corr.adj, msng, new_mat, new_ic, new_nc)
+    return Clustered(corr.adj, nonmissing, new_mat, new_ic, new_nc)
 end
 
-function adjmsng!(msng::BitVector, corr::CrossCorrelated)
+function adjmissing!(nonmissing::BitVector, corr::CrossCorrelated)
 
-    (msng == corr.msng) && (return copy(corr))
+    (nonmissing == corr.nonmissing) && (return copy(corr))
 
-    msng  .*= corr.msng
-    touse   = msng[corr.msng]
-    new_mat = Symmetric(corr.mat[touse, touse])
+    nonmissing .*= corr.nonmissing
+    touse        = nonmissing[corr.nonmissing]
+    new_mat      = Symmetric(corr.mat[touse, touse])
 
-    return CrossCorrelated(corr.adj, msng, new_mat)
+    return CrossCorrelated(corr.adj, nonmissing, new_mat)
 end
 
 #==========================================================================================#

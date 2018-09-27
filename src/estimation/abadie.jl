@@ -7,7 +7,7 @@ mutable struct Abadie <: TwoStageModel
     first_stage::Micromodel
     second_stage::ParModel
     pscore::Vector{Float64}
-    weights::PWeights
+    eweights::PWeights
 
     Abadie() = new()
 end
@@ -67,9 +67,9 @@ function fit(
     obj.first_stage   = M₁
     obj.second_stage  = M₂(SSD; kwargs...)
     obj.pscore        = π
-    obj.weights       = pweights(v)
+    obj.eweights       = pweights(v)
 
-    _fit!(second_stage(obj), reweight(w, obj.weights))
+    _fit!(second_stage(obj), reweight(w, obj.eweights))
     novar || _vcov!(obj, getcorr(obj), w)
 
     return obj
@@ -79,14 +79,14 @@ end
 
 # SCORE (MOMENT CONDITIONS)
 
-score(obj::Abadie) = lmul!(Diagonal(obj.weights), score(second_stage(obj)))
+score(obj::Abadie) = lmul!(Diagonal(obj.eweights), score(second_stage(obj)))
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-jacobian(obj::Abadie, w::UnitWeights) = jacobian(second_stage(obj), obj.weights)
+jacobian(obj::Abadie, w::UnitWeights) = jacobian(second_stage(obj), obj.eweights)
 
 function jacobian(obj::Abadie, w::AbstractWeights)
-    return jacobian(second_stage(obj), reweight(w, obj.weights))
+    return jacobian(second_stage(obj), reweight(w, obj.eweights))
 end
 
 # EXPECTED JACOBIAN OF SCORE W.R.T. FIRST-STAGE PARAMETERS × NUMBER OF OBSERVATIONS
@@ -99,7 +99,7 @@ function crossjacobian(obj::Abadie, w::UnitWeights)
     D = [(1.0 - di) * zi / abs2(πi) - di * (1.0 - zi) / abs2(1.0 - πi)
          for (di, zi, πi) in zip(d, z, π)]
 
-    D[iszero.(obj.weights)] .= 0.0
+    D[iszero.(obj.eweights)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)
@@ -115,7 +115,7 @@ function crossjacobian(obj::Abadie, w::AbstractWeights)
     D = [wi * ((1.0 - di) * zi / abs2(πi) - di * (1.0 - zi) / abs2(1.0 - πi))
          for (di, zi, πi, wi) in zip(d, z, π, w)]
 
-    D[iszero.(obj.weights)] .= 0.0
+    D[iszero.(obj.eweights)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)

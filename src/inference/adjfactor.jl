@@ -30,9 +30,9 @@ end
 function adjfactor!(V::Matrix, obj₁::Micromodel, obj₂::Micromodel, corr::Heteroscedastic)
     if corr.adj == true
 
-        msng₁ = getmsng(obj₁)
-        msng₂ = getmsng(obj₂)
-        n     = sum(msng₁ .* msng₂)
+        nonmissing₁ = getnonmissing(obj₁)
+        nonmissing₂ = getnonmissing(obj₂)
+        n           = sum(nonmissing₁ .* nonmissing₂)
         
         lmul!(n / (n - 1), V)
     end
@@ -43,7 +43,7 @@ function adjfactor!(V::Matrix, obj₁::Micromodel, obj₂::Micromodel, corr::Clu
 
         corr₁ = getcorr(obj₁)
         corr₂ = getcorr(obj₂)
-        touse = corr.msng .* corr₁.msng .* corr₂.msng
+        touse = corr.nonmissing .* corr₁.nonmissing .* corr₂.nonmissing
         ic    = corr.ic[touse]
         n     = length(unique(ic))
 
@@ -56,7 +56,7 @@ function adjfactor!(V::Matrix, obj₁::Micromodel, obj₂::Micromodel, corr::Cro
 
         corr₁ = getcorr(obj₁)
         corr₂ = getcorr(obj₂)
-        touse = corr.msng .* corr₁.msng .* corr₂.msng
+        touse = corr.nonmissing .* corr₁.nonmissing .* corr₂.nonmissing
         n     = sum(touse)
 
         lmul!(n / (n - 1), V)

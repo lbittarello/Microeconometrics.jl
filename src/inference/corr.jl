@@ -16,7 +16,7 @@ end
 
 mutable struct Clustered <: CorrStructure
     adj::Bool
-    msng::BitVector
+    nonmissing::BitVector
     mat::AbstractMatrix
     ic::AbstractVector
     nc::Int
@@ -24,7 +24,7 @@ end
 
 mutable struct CrossCorrelated <: CorrStructure
     adj::Bool
-    msng::BitVector
+    nonmissing::BitVector
     mat::AbstractMatrix
 end
 
@@ -44,14 +44,14 @@ Heteroscedastic(; adj::Bool = true) = Heteroscedastic(adj)
 
 function Clustered(df::DataFrame, x::Symbol; adj::Bool = true)
 
-    msng  = BitVector(undef, size(df, 1))
-    msng .= .!ismissing.(df[x])
-    ic    = disallowmissing(df[x][msng])
-    n     = sum(msng)
-    iter  = sort(unique(ic))
-    nc    = length(iter)
-    idx₁  = Vector{Int}()
-    idx₂  = Vector{Int}()
+    nonmissing  = BitVector(undef, size(df, 1))
+    nonmissing .= .!ismissing.(df[x])
+    ic          = disallowmissing(df[x][nonmissing])
+    n           = sum(nonmissing)
+    iter        = sort(unique(ic))
+    nc          = length(iter)
+    idx₁        = Vector{Int}()
+    idx₂        = Vector{Int}()
 
     @inbounds for (i, ci) in enumerate(iter)
         idx = findall((in)([ci]), ic)
@@ -61,7 +61,7 @@ function Clustered(df::DataFrame, x::Symbol; adj::Bool = true)
 
     val = fill(1.0, length(idx₁))
 
-    return Clustered(adj, msng, sparse(idx₁, idx₂, val), ic, nc)
+    return Clustered(adj, nonmissing, sparse(idx₁, idx₂, val), ic, nc)
 end
 
 #==========================================================================================#
@@ -86,16 +86,16 @@ end
 
 function cc_twowayclustering(df::DataFrame, x₁::Symbol, x₂::Symbol; adj::Bool = true)
 
-    msng   = BitVector(undef, size(df, 1))
-    msng  .= .!(ismissing.(df[x₁]) .& ismissing.(df[x₂]))
-    ic₁    = disallowmissing(df[x₁][msng])
-    ic₂    = disallowmissing(df[x₂][msng])
-    n      = sum(msng)
-    iter₁  = unique(ic₁)
-    iter₂  = unique(ic₂)
-    idx₁   = Vector{Int}(1:n)
-    idx₂   = Vector{Int}(1:n)
-    nn     = n
+    nonmissing  = BitVector(undef, size(df, 1))
+    nonmissing .= .!(ismissing.(df[x₁]) .& ismissing.(df[x₂]))
+    ic₁         = disallowmissing(df[x₁][nonmissing])
+    ic₂         = disallowmissing(df[x₂][nonmissing])
+    n           = sum(nonmissing)
+    iter₁       = unique(ic₁)
+    iter₂       = unique(ic₂)
+    idx₁        = Vector{Int}(1:n)
+    idx₂        = Vector{Int}(1:n)
+    nn          = n
 
     @inbounds for i in iter₁
 
@@ -135,7 +135,7 @@ function cc_twowayclustering(df::DataFrame, x₁::Symbol, x₂::Symbol; adj::Boo
 
     val = fill(1.0, length(idx₁))
 
-    return CrossCorrelated(adj, msng, Symmetric(sparse(idx₁, idx₂, val, n, n, max)))
+    return CrossCorrelated(adj, nonmissing, Symmetric(sparse(idx₁, idx₂, val, n, n, max)))
 end
 
 # CORRELATION ACROSS TIME
@@ -148,13 +148,13 @@ function cc_time(
         adj::Bool = true
     )
 
-    msng  = BitVector(undef, size(df, 1))
-    msng .= .!ismissing.(df[x])
-    xx    = Vector{Date}(df[x][msng])
-    n     = sum(msng)
-    idx₁  = Vector{Int}(1:n)
-    idx₂  = Vector{Int}(1:n)
-    val   = fill(1.0, n)
+    nonmissing  = BitVector(undef, size(df, 1))
+    nonmissing .= .!ismissing.(df[x])
+    xx          = Vector{Date}(df[x][nonmissing])
+    n           = sum(nonmissing)
+    idx₁        = Vector{Int}(1:n)
+    idx₂        = Vector{Int}(1:n)
+    val         = fill(1.0, n)
 
     kernel(z) = k(z / float(b))
 
@@ -170,7 +170,7 @@ function cc_time(
         end
     end
 
-    return CrossCorrelated(adj, msng, Symmetric(sparse(idx₁, idx₂, val)))
+    return CrossCorrelated(adj, nonmissing, Symmetric(sparse(idx₁, idx₂, val)))
 end
 
 # CORRELATION ACROSS SPACE
@@ -184,14 +184,14 @@ function cc_space(
         adj::Bool = true
     )
 
-    msng  = BitVector(undef, size(df, 1))
-    msng .= .!(ismissing.(df[y]) .& ismissing.(df[x]))
-    yy    = Vector{Float64}(df[y][msng])
-    xx    = Vector{Float64}(df[x][msng])
-    n     = sum(msng)
-    idx₁  = Vector{Int}(1:n)
-    idx₂  = Vector{Int}(1:n)
-    val   = fill(1.0, n)
+    nonmissing  = BitVector(undef, size(df, 1))
+    nonmissing .= .!(ismissing.(df[y]) .& ismissing.(df[x]))
+    yy          = Vector{Float64}(df[y][nonmissing])
+    xx          = Vector{Float64}(df[x][nonmissing])
+    n           = sum(nonmissing)
+    idx₁        = Vector{Int}(1:n)
+    idx₂        = Vector{Int}(1:n)
+    val         = fill(1.0, n)
 
     kernel(z) = k(z / float(b))
 
@@ -207,7 +207,7 @@ function cc_space(
         end
     end
 
-    return CrossCorrelated(adj, msng, Symmetric(sparse(idx₁, idx₂, val)))
+    return CrossCorrelated(adj, nonmissing, Symmetric(sparse(idx₁, idx₂, val)))
 end
 
 # CORRELATION ACROSS TIME AND SPACE
@@ -223,15 +223,15 @@ function cc_timespace(
         adj::Bool = true
     )
 
-    msng  = BitVector(undef, size(df, 1))
-    msng .= .!(ismissing.(df[x₁]) .& ismissing.(df[y₂]) .& ismissing.(df[x₂]))
-    xx₁   = Vector{Date}(df[x₁][msng])
-    yy₂   = Vector{Float64}(df[y₂][msng])
-    xx₂   = Vector{Float64}(df[x₂][msng])
-    n     = sum(msng)
-    idx₁  = Vector{Int}(1:n)
-    idx₂  = Vector{Int}(1:n)
-    val   = fill(1.0, n)
+    nonmissing  = BitVector(undef, size(df, 1))
+    nonmissing .= .!(ismissing.(df[x₁]) .& ismissing.(df[y₂]) .& ismissing.(df[x₂]))
+    xx₁         = Vector{Date}(df[x₁][nonmissing])
+    yy₂         = Vector{Float64}(df[y₂][nonmissing])
+    xx₂         = Vector{Float64}(df[x₂][nonmissing])
+    n           = sum(nonmissing)
+    idx₁        = Vector{Int}(1:n)
+    idx₂        = Vector{Int}(1:n)
+    val         = fill(1.0, n)
 
     b₁ = float(b₁)
     b₂ = float(b₂)
@@ -252,5 +252,5 @@ function cc_timespace(
         end
     end
 
-    return CrossCorrelated(adj, msng, Symmetric(sparse(idx₁, idx₂, val)))
+    return CrossCorrelated(adj, nonmissing, Symmetric(sparse(idx₁, idx₂, val)))
 end

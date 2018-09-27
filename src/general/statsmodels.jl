@@ -23,15 +23,15 @@ second_stage(obj::TwoStageModel) = obj.second_stage
 
 # ESTIMATES
 
-coef(obj::ParObjects)       = obj.β
-coef(obj::TwoStageModel)    = coef(second_stage(obj))
-vcov(obj::ParObjects)       = obj.V
-vcov(obj::TwoStageModel)    = vcov(second_stage(obj))
-stderror(obj::MicroObjects) = sqrt.(diag(vcov(obj)))
-tstat(obj::MicroObjects)    = coef(obj) ./ stderr(obj)
-pval(obj::MicroObjects)     = 2.0 * normccdf.(abs.(tstat(obj)))
+coef(obj::Par1S)         = obj.β
+coef(obj::TwoStageModel) = coef(second_stage(obj))
+vcov(obj::Par1S)         = obj.V
+vcov(obj::TwoStageModel) = vcov(second_stage(obj))
+stderror(obj::Par2S)     = sqrt.(diag(vcov(obj)))
+tstat(obj::Par2S)        = coef(obj) ./ stderr(obj)
+pval(obj::Par2S)         = 2.0 * normccdf.(abs.(tstat(obj)))
 
-function confint(obj::MicroObjects, level::Float64 = 0.95)
+function confint(obj::Par2S, level::Float64 = 0.95)
     return coef(obj) .+ norminvcdf((1.0 - level) / 2.0) * stderr(obj) .* [1.0 -1.0]
 end
 
@@ -43,9 +43,9 @@ nobs(obj::Microdata)     = sum(obj.weights)
 nobs(obj::Micromodel)    = nobs(obj.sample)
 nobs(obj::TwoStageModel) = nobs(second_stage(obj))
 
-dof(obj::ParOrGMM)             = length(coef(obj))
-dof(obj::TwoStageModel)        = dof(second_stage(obj))
-dof_residual(obj::ParOr2Stage) = nobs(obj) - dof(obj)
+dof(obj::ParM1S  )        = length(coef(obj))
+dof(obj::TwoStageModel)   = dof(second_stage(obj))
+dof_residual(obj::ParM2S) = nobs(obj) - dof(obj)
 
 loglikelihood(obj::MLE)     = _loglikelihood(obj, getweights(obj))
 nullloglikelihood(obj::MLE) = _nullloglikelihood(obj::MLE, getweights(obj))
@@ -56,12 +56,12 @@ nulldeviance(obj::MLE)      = _nulldeviance(obj::MLE, getweights(obj))
 
 # PREDICTION
 
-predict(obj::ParOrGMM)     = predict(obj, obj.sample)
-fitted(obj::ParOrGMM)      = fitted(obj, obj.sample)
-residuals(obj::Micromodel) = residuals(obj, obj.sample)
-response(obj::Micromodel)  = getvector(obj, :response)
+predict(obj::ParM2S)      = predict(obj, obj.sample)
+fitted(obj::ParM2S)       = fitted(obj, obj.sample)
+residuals(obj::ParM2S)    = residuals(obj, obj.sample)
+response(obj::Micromodel) = getvector(obj, :response)
 
-function residuals(obj::Micromodel, MD::Microdata)
+function residuals(obj::ParM2S, MD::Microdata)
     r  = fitted(obj, MD)
     r .= response(obj) .- r
     return r
@@ -71,15 +71,11 @@ end
 
 # COEFFICIENT LABELS
 
-coefnames(obj::ParObject) = obj.names
+coefnames(obj::ParEstimate) = obj.names
 
 # OUTPUT
 
-function coeftable(
-        obj::Union{ParOr2Stage, ParObject};
-        level::Float64 = 0.95,
-        digits::Int = 4
-    )
+function coeftable(obj::Par2S; level::Float64 = 0.95, digits::Int = 4)
 
     table = round.(hcat(coef(obj), stderror(obj), tstat(obj), pval(obj)), digits = digits)
     label = [" Estimate", " St. Err.", "  t-stat.", "  p-value"]

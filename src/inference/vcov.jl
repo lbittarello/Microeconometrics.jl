@@ -74,6 +74,8 @@ function _vcov!(obj::ParModel, corr::CrossCorrelated, w::AbstractWeights)
     adjfactor!(obj.V, obj, corr)
 end
 
+#==========================================================================================#
+
 # COVARIANCE MATRIX FOR TWO-STAGE PARAMETRIC MODELS
 
 function _vcov!(obj::TwoStageModel, corr::Heteroscedastic, w::UnitWeights)

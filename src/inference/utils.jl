@@ -6,11 +6,11 @@ copy(corr::Homoscedastic)   = Homoscedastic(corr.adj, corr.method)
 copy(corr::Heteroscedastic) = Heteroscedastic(corr.adj)
 
 function copy(corr::CrossCorrelated)
-    CrossCorrelated(corr.adj, copy(corr.msng), copy(corr.mat))
+    CrossCorrelated(corr.adj, copy(corr.nonmissing), copy(corr.mat))
 end
 
 function copy(corr::Clustered)
-    Clustered(corr.adj, copy(corr.msng), copy(corr.mat), copy(corr.ic), copy(corr.nc))
+    Clustered(corr.adj, copy(corr.nonmissing), copy(corr.mat), copy(corr.ic), copy(corr.nc))
 end
 
 # EQUALITY

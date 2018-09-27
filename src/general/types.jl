@@ -8,7 +8,7 @@ abstract type GMM <: Micromodel end
 
 abstract type TwoStageModel <: Micromodel end
 
-mutable struct ParObject
+mutable struct ParEstimate
 
     names::Vector{String}
     β::AbstractArray
@@ -17,7 +17,7 @@ mutable struct ParObject
     ParObject() = new()
 end
 
-const ParOr2Stage  = Union{ParModel, TwoStageModel, GMM}
-const ParOrGMM     = Union{ParModel, GMM}
-const ParObjects   = Union{ParModel, GMM, ParObject}
-const MicroObjects = Union{Micromodel, ParObject}
+const Par1S  = Union{ParModel, GMM, ParEstimate}
+const Par2S  = Union{ParModel, GMM, TwoStageModel, ParEstimate}
+const ParM1S = Union{ParModel, GMM}
+const ParM2S = Union{ParModel, GMM, TwoStageModel}

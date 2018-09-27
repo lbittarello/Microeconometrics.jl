@@ -9,8 +9,9 @@ function getvector(MD::Microdata, x::Symbol)
     return view(MD.mat.m, :, MD.map[x]...)
 end
 
-getvector(MM::ParOrGMM, x::Symbol)      = getvector(MM.sample, x)
-getvector(MM::TwoStageModel, x::Symbol) = getvector(second_stage(MM).sample, x)
+getvector(MM::ParModel, x::Symbol)      = getvector(MM.sample, x)
+getvector(MM::GMM, x::Symbol)           = getvector(MM.sample, x)
+getvector(MM::TwoStageModel, x::Symbol) = getvector(MM.second_stage.sample, x)
 
 function getmatrix(MD::Microdata, args...)
 
@@ -30,8 +31,9 @@ function getmatrix(MD::Microdata, args...)
     return view(MD.mat.m, :, x)
 end
 
-getmatrix(MM::ParOrGMM, args...)        = getmatrix(MM.sample, args...)
-getmatrix(MM::TwoStageModel, x::Symbol) = getmatrix(second_stage(MM).sample, x)
+getmatrix(MM::ParModel, args...)        = getmatrix(MM.sample, args...)
+getmatrix(MM::GMM, args...)             = getmatrix(MM.sample, args...)
+getmatrix(MM::TwoStageModel, x::Symbol) = getmatrix(MM.second_stage.sample, x)
 
 #==========================================================================================#
 
@@ -55,24 +57,27 @@ function getnames(MD::Microdata, args...)
     return MD.names[x]
 end
 
-getnames(MM::ParOrGMM, args...)      = getnames(MM.sample, args...)
-getnames(MM::TwoStageModel, args...) = getnames(second_stage(MM).sample, args...)
+getnames(MM::ParModel, args...)      = getnames(MM.sample, args...)
+getnames(MM::GMM, args...)           = getnames(MM.sample, args...)
+getnames(MM::TwoStageModel, args...) = getnames(MM.second_stage.sample, args...)
 
 #==========================================================================================#
 
 # GET CORRELATION STRUCTURE
 
 getcorr(obj::Microdata)     = obj.corr
-getcorr(obj::ParOrGMM)      = getcorr(obj.sample)
+getcorr(obj::ParModel)      = getcorr(obj.sample)
+getcorr(obj::GMM)           = getcorr(obj.sample)
 getcorr(obj::TwoStageModel) = getcorr(second_stage(obj).sample)
 
 #==========================================================================================#
 
 # GET INDICATOR OF MISSING DATA
 
-getmsng(obj::Microdata)     = obj.msng
-getmsng(obj::ParOrGMM)      = getmsng(obj.sample)
-getmsng(obj::TwoStageModel) = getmsng(second_stage(obj).sample)
+getnonmissing(obj::Microdata)     = obj.nonmissing
+getnonmissing(obj::ParModel)      = getnonmissing(obj.sample)
+getnonmissing(obj::GMM)           = getnonmissing(obj.sample)
+getnonmissing(obj::TwoStageModel) = getnonmissing(second_stage(obj).sample)
 
 #==========================================================================================#
 
@@ -80,4 +85,4 @@ getmsng(obj::TwoStageModel) = getmsng(second_stage(obj).sample)
 
 getweights(MD::Microdata)     = MD.weights
 getweights(MM::Micromodel)    = getweights(MM.sample)
-getweights(MM::TwoStageModel) = getweights(second_stage(MM).sample)
+getweights(MM::TwoStageModel) = getweights(MM.second_stage.sample)

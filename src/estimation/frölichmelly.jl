@@ -7,7 +7,7 @@ mutable struct FrölichMelly <: TwoStageModel
     first_stage::Micromodel
     second_stage::OLS
     pscore::Vector{Float64}
-    weights::PWeights
+    eweights::PWeights
 
     FrölichMelly() = new()
 end
@@ -63,9 +63,9 @@ function fit(
     obj.first_stage   = MM
     obj.second_stage  = OLS(SSD)
     obj.pscore        = π
-    obj.weights       = pweights(v)
+    obj.eweights       = pweights(v)
 
-    _fit!(second_stage(obj), reweight(w, obj.weights))
+    _fit!(second_stage(obj), reweight(w, obj.eweights))
     novar || _vcov!(obj, getcorr(obj), w)
 
     return obj
@@ -76,15 +76,15 @@ end
 # SCORE (MOMENT CONDITIONS)
 
 function score(obj::FrölichMelly)
-    return lmul!(Diagonal(obj.weights), score(second_stage(obj)))
+    return lmul!(Diagonal(obj.eweights), score(second_stage(obj)))
 end
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-jacobian(obj::FrölichMelly, w::UnitWeights) = jacobian(second_stage(obj), obj.weights)
+jacobian(obj::FrölichMelly, w::UnitWeights) = jacobian(second_stage(obj), obj.eweights)
 
 function jacobian(obj::FrölichMelly, w::AbstractWeights)
-    return jacobian(second_stage(obj), reweight(w, obj.weights))
+    return jacobian(second_stage(obj), reweight(w, obj.eweights))
 end
 
 # EXPECTED JACOBIAN OF SCORE W.R.T. FIRST-STAGE PARAMETERS × NUMBER OF OBSERVATIONS
@@ -97,7 +97,7 @@ function crossjacobian(obj::FrölichMelly, w::UnitWeights)
     D = [- (2.0 * di - 1.0) * (zi / abs2(πi) + (1.0 - zi) / abs2(1.0 - πi))
          for (di, zi, πi) in zip(d, z, π)]
 
-    D[iszero.(obj.weights)] .= 0.0
+    D[iszero.(obj.eweights)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)
@@ -113,7 +113,7 @@ function crossjacobian(obj::FrölichMelly, w::AbstractWeights)
     D = [- wi * (2.0 * di - 1.0) * (zi / abs2(πi) + (1.0 - zi) / abs2(1.0 - πi))
          for (di, zi, πi, wi) in zip(d, z, π, w)]
 
-    D[iszero.(obj.weights)] .= 0.0
+    D[iszero.(obj.eweights)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
     g₂ = score(obj.second_stage)

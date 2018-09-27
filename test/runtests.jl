@@ -6,13 +6,13 @@
 #==========================================================================================#
 
 # MISE EN PLACE
-
+using Revise
 using Test
 using CSV
 using DataFrames
 using Microeconometrics
 using StatsModels
-
+const datadir = "C:/Users/lucab/Desktop/data"
 const datadir = joinpath(dirname(@__FILE__), "..", "data")
 
 #==========================================================================================#
