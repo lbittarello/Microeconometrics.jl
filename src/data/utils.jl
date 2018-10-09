@@ -48,7 +48,7 @@ function assign_columns(input::String, urterms::StatsModels.Terms, assign::Vecto
     terms   = StatsModels.Terms(formula)
     output  = findall((in)(findall((in)(terms.terms), urterms.terms)), assign)
 
-    if occursin("1", input)
+    if occursin("+ 1", "+ " * input)
         iszero(output) ? (output = [1]) : (output = vcat(output, 1))
     end
 
