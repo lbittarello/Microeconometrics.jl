@@ -11,6 +11,7 @@ using Test
 using CSV
 using DataFrames
 using Microeconometrics
+using StatsBase
 using StatsModels
 
 const datadir = joinpath(dirname(@__FILE__), "..", "data")

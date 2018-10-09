@@ -1,2 +1,4 @@
 CSV 0.3.0
 DataFrames 0.13.0
+StatsBase 0.25
+StatsModels 0.3
