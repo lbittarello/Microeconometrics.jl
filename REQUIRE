@@ -1,6 +1,6 @@
 julia 1.0
 DataFrames 0.14
-Formatting 0.3.3
+Format 0.7
 Optim 0.17
 SpecialFunctions 0.7
 StatsBase 0.25

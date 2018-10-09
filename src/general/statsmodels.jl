@@ -28,11 +28,11 @@ coef(obj::TwoStageModel) = coef(second_stage(obj))
 vcov(obj::Par1S)         = obj.V
 vcov(obj::TwoStageModel) = vcov(second_stage(obj))
 stderror(obj::Par2S)     = sqrt.(diag(vcov(obj)))
-tstat(obj::Par2S)        = coef(obj) ./ stderr(obj)
+tstat(obj::Par2S)        = coef(obj) ./ stderror(obj)
 pval(obj::Par2S)         = 2.0 * normccdf.(abs.(tstat(obj)))
 
-function confint(obj::Par2S, level::Float64 = 0.95)
-    return coef(obj) .+ norminvcdf((1.0 - level) / 2.0) * stderr(obj) .* [1.0 -1.0]
+function confint(obj::Par2S, level::Real = 0.95)
+    return coef(obj) .+ norminvcdf((1.0 - level) / 2.0) * stderror(obj) .* [1.0 -1.0]
 end
 
 #==========================================================================================#
@@ -43,7 +43,7 @@ nobs(obj::Microdata)     = sum(obj.weights)
 nobs(obj::Micromodel)    = nobs(obj.sample)
 nobs(obj::TwoStageModel) = nobs(second_stage(obj))
 
-dof(obj::ParM1S  )        = length(coef(obj))
+dof(obj::ParM1S)          = length(coef(obj))
 dof(obj::TwoStageModel)   = dof(second_stage(obj))
 dof_residual(obj::ParM2S) = nobs(obj) - dof(obj)
 
@@ -77,16 +77,16 @@ coefnames(obj::ParEstimate) = obj.names
 
 function coeftable(obj::Par2S; level::Float64 = 0.95, digits::Int = 4)
 
-    table = round.(hcat(coef(obj), stderror(obj), tstat(obj), pval(obj)), digits = digits)
+    table = frmtr(hcat(coef(obj), stderror(obj), tstat(obj), pval(obj)), digits)
     label = [" Estimate", " St. Err.", "  t-stat.", "  p-value"]
 
     if level > 0.0
-        lprint = fmt(FormatSpec("0.0d"), 100 * level)
-        table  = hcat(table, round.(confint(obj, level), digits))
+        lprint = format("{:.0d}", 100 * 0.95)
+        table  = hcat(table, frmtr(confint(obj, level), digits))
         label  = vcat(label, ["     C.I.", "($(lprint)%)  "])
     end
 
-    CT = StatsBase.CoefTable(table, label, coefnames(obj), 4)
+    CT = StatsBase.CoefTable(table, label, coefnames(obj))
 
     return CT
 end

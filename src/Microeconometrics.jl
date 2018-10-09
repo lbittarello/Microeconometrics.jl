@@ -3,7 +3,8 @@ __precompile__(true)
 module Microeconometrics
 
 using DataFrames
-using Formatting
+using Dates
+using Format
 using LinearAlgebra
 using Optim
 using SparseArrays
@@ -16,7 +17,7 @@ import Base:       copy, deepcopy, isequal, sum
 import Statistics: mean
 import StatsBase:  fit, coef, coefnames, coeftable, confint, stderror, vcov
 import StatsBase:  deviance, loglikelihood, nulldeviance, nullloglikelihood
-import StatsBase:  adjr2, aic, aicc, bic, dof, dof_residual, nobs, r2
+import StatsBase:  adjr2, dof, dof_residual, nobs, r2
 import StatsBase:  fitted, predict, residuals, response
 
 const PWeights = ProbabilityWeights{Float64, Float64, Vector{Float64}}
@@ -56,7 +57,7 @@ export
 export
     fit, coef, confint, stderror, vcov,
     deviance, loglikelihood, nulldeviance, nullloglikelihood,
-    adjr2, aic, aicc, bic, dof, dof_residual, nobs, r2,
+    adjr2, dof, dof_residual, nobs, r2,
     fitted, predict, residuals, response,
     coefnames, coeftable, etable,
     hausman_1s, hausman_2s, pval, tstat
