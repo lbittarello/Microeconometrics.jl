@@ -20,4 +20,5 @@ end
 const Par1S  = Union{ParModel, GMM, ParEstimate}
 const Par2S  = Union{ParModel, GMM, TwoStageModel, ParEstimate}
 const ParM1S = Union{ParModel, GMM}
+const ParTSM = Union{ParModel, TwoStageModel}
 const ParM2S = Union{ParModel, GMM, TwoStageModel}
