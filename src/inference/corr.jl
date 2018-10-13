@@ -134,8 +134,9 @@ function cc_twowayclustering(df::DataFrame, x₁::Symbol, x₂::Symbol; adj::Boo
     end
 
     val = fill(1.0, length(idx₁))
+    V   = Symmetric(sparse(idx₁, idx₂, val, n, n, max))
 
-    return CrossCorrelated(adj, nonmissing, Symmetric(sparse(idx₁, idx₂, val, n, n, max)))
+    return CrossCorrelated(adj, nonmissing, SuiteSparse.CHOLMOD.Sparse(V))
 end
 
 # CORRELATION ACROSS TIME
@@ -170,7 +171,9 @@ function cc_time(
         end
     end
 
-    return CrossCorrelated(adj, nonmissing, Symmetric(sparse(idx₁, idx₂, val)))
+    V = Symmetric(sparse(idx₁, idx₂, val))
+
+    return CrossCorrelated(adj, nonmissing, SuiteSparse.CHOLMOD.Sparse(V))
 end
 
 # CORRELATION ACROSS SPACE
@@ -207,7 +210,9 @@ function cc_space(
         end
     end
 
-    return CrossCorrelated(adj, nonmissing, Symmetric(sparse(idx₁, idx₂, val)))
+    V = Symmetric(sparse(idx₁, idx₂, val))
+
+    return CrossCorrelated(adj, nonmissing, SuiteSparse.CHOLMOD.Sparse(V))
 end
 
 # CORRELATION ACROSS TIME AND SPACE
@@ -252,5 +257,7 @@ function cc_timespace(
         end
     end
 
-    return CrossCorrelated(adj, nonmissing, Symmetric(sparse(idx₁, idx₂, val)))
+    V = Symmetric(sparse(idx₁, idx₂, val))
+
+    return CrossCorrelated(adj, nonmissing, SuiteSparse.CHOLMOD.Sparse(V))
 end

@@ -12,6 +12,7 @@ using SpecialFunctions: lgamma
 using StatsBase
 using StatsFuns
 using StatsModels
+using SuiteSparse
 
 import Base:       copy, deepcopy, isequal, sum
 import Statistics: mean
