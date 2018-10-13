@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Getting started · Microeconometrics.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link href="assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><h1>Microeconometrics.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="search.html"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="index.html">Introduction</a></li><li class="current"><a class="toctext" href="getting_started.html">Getting started</a><ul class="internal"><li><a class="toctext" href="#Installation-1">Installation</a></li><li><a class="toctext" href="#Example-I:-OLS-1">Example I: OLS</a></li><li><a class="toctext" href="#Example-II:-Comparing-models-1">Example II: Comparing models</a></li></ul></li><li><a class="toctext" href="model_specification.html">Model specification</a></li><li><a class="toctext" href="estimators.html">Estimators</a></li><li><a class="toctext" href="methods.html">Methods</a></li><li><a class="toctext" href="contributing.html">Contributing</a></li><li><a class="toctext" href="to_do.html">To do</a></li></ul></nav><article id="docs"><header><nav><ul><li><a href="getting_started.html">Getting started</a></li></ul><a class="edit-page" href="https://github.com/lbittarello/Microeconometrics.jl/blob/master/docs/src/getting_started.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>Getting started</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id="Getting-Started-1" href="#Getting-Started-1">Getting Started</a></h1><h2><a class="nav-anchor" id="Installation-1" href="#Installation-1">Installation</a></h2><p>To install the package, run:</p><pre><code class="language-julia">Pkg.add(&quot;Microeconometrics&quot;)</code></pre><p>To update to the latest release, run:</p><pre><code class="language-julia">Pkg.update(&quot;Microeconometrics&quot;)</code></pre><p>To obtain the last version, run:</p><pre><code class="language-julia">Pkg.checkout(&quot;Microeconometrics&quot;)</code></pre><p>You will also need <a href="http://juliadata.github.io/DataFrames.jl/stable/"><em>DataFrames</em></a>, as well as a package to import your data (e.g., <a href="http://juliadata.github.io/CSV.jl/stable/"><em>CSV</em></a>).</p><h2><a class="nav-anchor" id="Example-I:-OLS-1" href="#Example-I:-OLS-1">Example I: OLS</a></h2><p>For an introduction to the package, let&#39;s consider an example: ordinary least squares.</p><p>We first load the modules:</p><pre><code class="language-julia">julia&gt; using CSV
+julia&gt; using DataFrames
+julia&gt; using Microeconometrics</code></pre><p>We then load the data:</p><pre><code class="language-julia">julia&gt; dst = CSV.read(&quot;admit.csv&quot;)
+julia&gt; categorical!(dst, :rank)</code></pre><p>This sample is available <a href="http://github.com/lbittarello/Microeconometrics.jl/tree/master/data">here</a>, if you wish to replicate this exercise. The last line converts <code>dst[:rank]</code> into a <a href="http://juliadata.github.io/DataFrames.jl/stable/man/categorical.html">categorical array</a>.</p><p>We now define the <a href="#corrstructure">correlation structure</a> of the error term. Let&#39;s assume that observations are independent and identically distributed, so that errors are homoscedastic:</p><pre><code class="language-julia">julia&gt; corr = Homoscedastic();</code></pre><p>We next specify the model by constructing a <a href="#microdata"><code>Microdata</code></a>:</p><pre><code class="language-julia">julia&gt; dta = Microdata(dst,
+                vcov = corr,
+                response = &quot;admit&quot;,
+                control = &quot;gre + gpa + rank + 1&quot;);</code></pre><p>We can finally fit the model and visualize the results:</p><pre><code class="language-julia">julia&gt; e_ols = fit(OLS, dta);
+julia&gt; coeftable(e_ols);
+
+              Estimate  St. Err.   t-stat.   p-value      C.I. (95%)  
+gre             0.0004    0.0002    2.0384    0.0415       0.0  0.0008
+gpa             0.1555     0.064    2.4317    0.0150    0.0302  0.2809
+rank: 2        -0.1624    0.0677   -2.3978    0.0165   -0.2951 -0.0296
+rank: 3        -0.2906    0.0702   -4.1365    &lt;1e-99   -0.4282 -0.1529
+rank: 4         -0.323    0.0793   -4.0726    &lt;1e-99   -0.4785 -0.1676
+(Intercept)    -0.2589     0.216   -1.1987    0.2306   -0.6822  0.1644</code></pre><p>The corresponding code in Stata is:</p><pre><code class="language-stata">. import delimited &quot;admit.csv&quot;
+. regress admit gre gpa i.rank</code></pre><p>We can apply the methods for regression models of <a href="http://juliastats.github.io/StatsBase.jl/stable/statmodels.html"><em>StatsBase</em></a> to obtain statistics:</p><pre><code class="language-julia">julia&gt; nobs(e_ols)
+400
+julia&gt; r2(e_ols)
+0.10040062851886422</code></pre><h2><a class="nav-anchor" id="Example-II:-Comparing-models-1" href="#Example-II:-Comparing-models-1">Example II: Comparing models</a></h2><p>To illustrate more advanced features, suppose that we want to compare specifications. As a first exercise, we wonder if we could drop the rank fixed effects.</p><p>We start with the full model. We now assume that the data are heteroscedastic:</p><pre><code class="language-julia">julia&gt; corr = Heteroscedastic();
+julia&gt; dta₁ = Microdata(dst, vcov = corr, response = &quot;admit&quot;, control = &quot;gre + gpa + rank + 1&quot;);
+julia&gt; e₁ = fit(OLS, dta₁);
+julia&gt; coeftable(e₁);
+
+              Estimate  St. Err.   t-stat.   p-value      C.I. (95%)  
+gre             0.0004    0.0002    2.0501    0.0404       0.0  0.0008
+gpa             0.1555    0.0653    2.3833    0.0172    0.0276  0.2834
+rank: 2        -0.1624    0.0729   -2.2266    0.0260   -0.3053 -0.0194
+rank: 3        -0.2906     0.073   -3.9827    0.0001   -0.4336 -0.1476
+rank: 4         -0.323     0.078   -4.1408    &lt;1e-99   -0.4759 -0.1701
+(Intercept)    -0.2589     0.211   -1.2268    0.2199   -0.6725  0.1547</code></pre><p>Before we estimate the reduced model, we need to redefine the control set. There are two approaches to this task. We can construct a new <code>Microdata</code> from scratch:</p><pre><code class="language-julia">julia&gt; dta₂ = Microdata(dst, vcov = corr, response = &quot;admit&quot;, control = &quot;gre + gpa + 1&quot;);</code></pre><p>Or we can modify the control set of our existing <code>Microdata</code>:</p><pre><code class="language-julia">julia&gt; dta₂ = Microdata(dta₁, control = &quot;gre + gpa + 1&quot;);</code></pre><p>The second approach does not reconstruct the underlying data matrix. Therefore, it is faster and uses less memory. On the other hand, it only allows us to reassign existing variables across variable sets. We cannot add new variables or modify the correlation structure of the error term.</p><p>We next fit the reduced model:</p><pre><code class="language-julia">julia&gt; e₂ = fit(OLS, dta₂);
+julia&gt; coeftable(e₂);
+
+              Estimate  St. Err.   t-stat.   p-value      C.I. (95%)  
+gre             0.0005    0.0002    2.5642    0.0103    0.0001   0.001
+gpa             0.1542     0.065    2.3737    0.0176    0.0269  0.2816
+(Intercept)    -0.5279    0.2087   -2.5293    0.0114    -0.937 -0.1188</code></pre><p>The coeffients on <code>gre</code> and <code>gpa</code> seem to be robust.</p><p>For a formal equality test, we use a Hausman test:</p><pre><code class="language-julia">julia&gt; ht = hausman_1s(e₁, e₂, [&quot;gre&quot;, &quot;gpa&quot;]);
+julia&gt; tstat(ht)
+
+2-element Array{Float64,1}:
+ -2.07838
+  0.0749552</code></pre><p>As it turns out, the difference between the coefficients on <code>gre</code> is statistically significant.</p><p>To further investigate this result, we wish to estimate separate effects by rank. The keyword <code>subset</code> helps us construct the appropriate <code>Microdata</code>s:</p><pre><code class="language-julia">julia&gt; idx₁ = (dst[:rank] .== 1);
+julia&gt; dta₁ = Microdata(dst, subset = idx₁, vcov = corr, response = &quot;admit&quot;, control = &quot;gre + gpa + 1&quot;);
+julia&gt; e₁   = fit(OLS, dta₁);
+julia&gt; coeftable(e₁);
+
+              Estimate  St. Err.   t-stat.   p-value      C.I. (95%)  
+gre             0.0006    0.0006    1.0386    0.2990   -0.0005  0.0017
+gpa             0.2508    0.1929       1.3    0.1936   -0.1273   0.629
+(Intercept)    -0.6806    0.5662   -1.2021    0.2293   -1.7903  0.4291
+
+julia&gt; idx₂ = (dst[:rank] .== 2);
+julia&gt; dta₂ = Microdata(dst, subset = idx₂, vcov = corr, response = &quot;admit&quot;, control = &quot;gre + gpa + 1&quot;);
+julia&gt; e₂   = fit(OLS, dta₂);
+julia&gt; coeftable(e₂);
+
+              Estimate  St. Err.   t-stat.   p-value      C.I. (95%)  
+gre             0.0004    0.0004    0.8794    0.3792   -0.0004  0.0011
+gpa             0.1771    0.1028    1.7219    0.0851   -0.0245  0.3787
+(Intercept)     -0.447    0.3641   -1.2277    0.2196   -1.1607  0.2666
+
+julia&gt; ht = hausman_2s(e₁, e₂, [&quot;gre&quot;, &quot;gpa&quot;]);
+julia&gt; tstat(ht)
+
+2-element Array{Float64,1}:
+ 0.334261
+ 0.337304</code></pre><p>We used the function <code>hausman_2s</code> because these estimates are based on different samples. The difference in the effect of <code>gre</code> between ranks 1 and 2 is not significant.</p><footer><hr/><a class="previous" href="index.html"><span class="direction">Previous</span><span class="title">Introduction</span></a><a class="next" href="model_specification.html"><span class="direction">Next</span><span class="title">Model specification</span></a></footer></article></body></html>
