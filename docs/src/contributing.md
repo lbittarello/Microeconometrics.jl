@@ -2,7 +2,7 @@
 
 This section helps you specify your own estimator. You can then submit a pull request to add it to *Microeconometrics.jl*!
 
-We will analyze the implementation of OLS. Although it is a simple model, other models follow the same steps.
+We will analyze the implementation of OLS. Although it is a simple model, others follow the same steps.
 
 The first step is defining the output `struct`:
 ```julia
@@ -52,7 +52,7 @@ end
 function _fit!(obj::OLS, w::AbstractWeights)
     y     = getvector(obj, :response)
     x     = getmatrix(obj, :control)
-    v     = copy(x) .* w
+    v     = Diagonal(w) * x
     obj.β =  (v' * x) \ (v' * y)
 end
 ```

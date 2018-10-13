@@ -98,7 +98,13 @@ end
 # ALIGN STRING VECTOR AT FIRST OCCURRENCE OF CHARACTER
 
 function _alignatchar!(x::Vector{String}, y::Char)
-    pos    = findlast.(z -> z == y, x)
+
+    pos = fill(0, length(x))
+
+    for (xi, xx) in enumerate(x)
+        (xx == "") || (pos[xi] = findlast(z -> z == y, xx))
+    end
+    
     maxpos = maximum(pos)
     add    = " " .^ (maxpos .- pos)
     x     .= add .* x
