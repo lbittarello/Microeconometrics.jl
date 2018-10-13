@@ -19,7 +19,7 @@ function Base.isequal(corr₁::C, corr₂::C) where {C <: CorrStructure}
 
     output = true
 
-    for k in fieldnames(corr₁)
+    for k in fieldnames(typeof(corr₁))
         output *= isequal(getfield(corr₁, k), getfield(corr₂, k))
     end
 

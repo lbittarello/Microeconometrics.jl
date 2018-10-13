@@ -14,7 +14,7 @@ mutable struct ParEstimate
     β::AbstractArray
     V::AbstractArray
 
-    ParObject() = new()
+    ParEstimate() = new()
 end
 
 const Par1S  = Union{ParModel, GMM, ParEstimate}

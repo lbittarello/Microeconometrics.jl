@@ -11,10 +11,10 @@ function hausman_1s(obj₁::ParM2S, obj₂::ParM2S, name::String )
     return hausman_1s(obj₁, obj₂, [name])
 end
 
-function hausman_1s(obj₁::ParM2S, obj₂::ParM2S,names::Vector{String})
+function hausman_1s(obj₁::ParM2S, obj₂::ParM2S, names::Vector{String})
 
-    i₁    = indexin(names, coefnames(obj₁))
-    i₂    = indexin(names, coefnames(obj₂))
+    i₁    = findall((in)(names), coefnames(obj₁))
+    i₂    = findall((in)(names), coefnames(obj₂))
     w₁    = getweights(obj₁)
     w₂    = getweights(obj₂)
     corr₁ = getcorr(obj₁)
@@ -202,8 +202,8 @@ end
 
 function hausman_2s(obj₁::ParM2S, obj₂::ParM2S, names::Vector{String})
 
-    i₁ = indexin(names, coefnames(obj₁))
-    i₂ = indexin(names, coefnames(obj₂))
+    i₁ = findall((in)(names), coefnames(obj₁))
+    i₂ = findall((in)(names), coefnames(obj₂))
 
     (iszero(i₁) | iszero(i₂)) && throw("missing coefficients in at least one model")
 
@@ -229,8 +229,8 @@ end
 
 function hausman_2s(obj₁::ParM2S, obj₂::ParM2S, corr::CorrStructure, names::Vector{String})
 
-    i₁ = indexin(names, coefnames(obj₁))
-    i₂ = indexin(names, coefnames(obj₂))
+    i₁ = findall((in)(names), coefnames(obj₁))
+    i₂ = findall((in)(names), coefnames(obj₂))
     w₁ = getweights(obj₁)
     w₂ = getweights(obj₂)
 

@@ -10,21 +10,22 @@ function etable(args...;
     )
 
     N                  = length(args)
-    fspec              = FormatSpec("0.$(digits)f")
     cutpoints, symbols = _parsestars(stars)
 
     (titles == [""]) && (titles = String["(" * string(i) * ")" for i = 1:N])
 
-    μ = Vector{Vector{String}}(N)
-    β = Vector{Vector{String}}(N)
-    σ = Vector{Vector{String}}(N)
+    μ = Vector{Vector{String}}(undef, N)
+    β = Vector{Vector{String}}(undef, N)
+    σ = Vector{Vector{String}}(undef, N)
 
     for (i, ai) in enumerate(args)
 
         μ[i] = coefnames(ai)
-        β[i] = fmt.(fspec, coef(ai))
+        β[i] = format.("{:.$(digits)f}", coef(ai))
 
-        (typeof(aux) == Void) || (σ[i] = "(" .* fmt.(fspec, aux(ai)) .* ")")
+        if typeof(aux) != Nothing
+            σ[i] = "(" .* format.("{:.$(digits)f}", aux(ai)) .* ")"
+        end
 
         if cutpoints != []
             for (j, pj) in enumerate(pval(ai))
@@ -36,7 +37,7 @@ function etable(args...;
 
     inter = union(μ...)
 
-    if typeof(aux) == Void
+    if typeof(aux) == Nothing
         output = vcat("", inter)
     else
         output          = fill("", 2 * length(inter) + 1)
@@ -50,12 +51,12 @@ function etable(args...;
 
     for (i, (ni, ti, βi)) in enumerate(zip(μ, titles, β))
         idx = findall((in)(ni), inter)
-        (typeof(aux) == Void) || (idx .= 2 * idx - 1)
+        (typeof(aux) == Nothing) || (idx .= 2 .* idx .- 1)
         w2      .= ""
         w2[idx] .= βi
-        (typeof(aux) == Void) || (w2[idx + 1] .= σ[i])
+        (typeof(aux) == Nothing) || (w2[(idx .+ 1)] .= σ[i])
         _alignatchar!(w2, '.')
-        w1[1]     .= ti
+        w1[1]      = ti
         w1[2:end] .= w2
         _alignatchar!(w1)
         output .*= "    " .* w1
@@ -72,7 +73,7 @@ end
 
 function _parsestars(x::Matrix{Any})
     if size(x, 1) != 0
-        s         = sortrows(x)
+        s         = sort(x, dims = 1, rev = true)
         cutpoints = vcat(0.0, convert(Vector{Float64}, s[:, 1]), 1.0)
         symbols   = vcat(convert(Vector{String}, s[:, 2]), "")
     else
@@ -97,7 +98,7 @@ end
 # ALIGN STRING VECTOR AT FIRST OCCURRENCE OF CHARACTER
 
 function _alignatchar!(x::Vector{String}, y::Char)
-    pos    = search.(x, y)
+    pos    = findlast.(z -> z == y, x)
     maxpos = maximum(pos)
     add    = " " .^ (maxpos .- pos)
     x     .= add .* x
