@@ -1,7 +1,5 @@
 # Microeconometrics.jl
 
-[![0.6](https://pkg.julialang.org/badges/Microeconometrics_0.6.svg)](http://pkg.julialang.org/?pkg=Microeconometrics)
-
 [![Travis Build Status](https://travis-ci.org/lbittarello/Microeconometrics.jl.svg?branch=master)](https://travis-ci.org/lbittarello/Microeconometrics.jl/)
 
 Microeconometric estimation in Julia.
