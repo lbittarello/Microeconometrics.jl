@@ -170,7 +170,7 @@ function jacobian(obj::Poisson, w::AbstractWeights)
     else
         v  = x * obj.β
     end
-    
+
     v .= w .* exp.(v)
 
     return - crossprod(x, v)
@@ -227,49 +227,51 @@ end
 # LIKELIHOOD FUNCTION UNDER NULL MODEL
 
 function _nullloglikelihood(obj::Poisson, w::UnitWeights)
+
     if haskey(obj.sample.map, :offset)
 
         y  = getvector(obj, :response)
         o  = getmatrix(obj, :offset)
         β₀ = [log(mean(y))]
-    
+
         function L(β::Vector)
             β = β[1]
             return sum(exp.(o .+ β) .- y .* (o .+ β))
         end
-    
+
         function G!(g::Vector, β::Vector)
             β    = β[1]
             g[1] = sum(exp.(o .+ β) .- y)
         end
-    
+
         function LG!(g::Vector, β::Vector)
-    
+
             β    = β[1]
             ll   = 0.0
             g[1] = 0.0
-    
+
             @inbounds for (i, (yi, oi)) in enumerate(zip(y, o))
                 μi    = oi + β
                 ηi    = exp(μi)
                 g[1] += ηi - yi
                 ll   += ηi - yi * μi
             end
-    
+
             return ll
         end
-    
+
         function H!(h::Matrix, β::Vector)
             β       = β[1]
             h[1, 1] = sum(exp.(o .+ β))
         end
-    
+
         res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
         β   = Optim.minimizer(res)
 
         return sum(y .* (o .+ β) .- exp.(o .+ β) .- lgamma.(1.0 .+ y))
-    else
         
+    else
+
         y = getvector(obj, :response)
         η = mean(y, w)
         μ = log(η)
@@ -278,48 +280,51 @@ function _nullloglikelihood(obj::Poisson, w::UnitWeights)
 end
 
 function _nullloglikelihood(obj::Poisson, w::AbstractWeights)
+
     if haskey(obj.sample.map, :offset)
 
         y  = getvector(obj, :response)
         o  = getmatrix(obj, :offset)
         β₀ = [log(mean(y, w))]
-    
+
         function L(β::Vector)
             β = β[1]
             return sum(exp.(o .+ β) .- y .* (o .+ β), w)
         end
-    
+
         function G!(g::Vector, β::Vector)
             β    = β[1]
             g[1] = sum(exp.(o .+ β) .- y, w)
         end
-    
+
         function LG!(g::Vector, β::Vector)
-    
+
             β    = β[1]
             ll   = 0.0
             g[1] = 0.0
-    
+
             @inbounds for (i, (yi, oi, wi)) in enumerate(zip(y, o, w))
                 μi    = oi + β
                 ηi    = exp(μi)
                 g[1] += wi * (ηi - yi)
                 ll   += wi * (ηi - yi * μi)
             end
-    
+
             return ll
         end
-    
+
         function H!(h::Matrix, β::Vector)
             β       = β[1]
             h[1, 1] = sum(exp.(o .+ β), w)
         end
-    
+
         res = optimize(TwiceDifferentiable(L, G!, LG!, H!, β₀), β₀, Newton())
         β   = Optim.minimizer(res)
 
         return sum(y .* (o .+ β) .- exp.(o .+ β) .- lgamma.(1.0 .+ y), w)
+
     else
+
         y = getvector(obj, :response)
         η = mean(y, w)
         μ = log(η)
