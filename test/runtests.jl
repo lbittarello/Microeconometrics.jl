@@ -287,3 +287,22 @@ M = Dict(
     @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
     @test dof(E) == 2
 end
+
+#==========================================================================================#
+
+S = CSV.read(joinpath(datadir, "income.csv"))
+X = (S[:male] .== 1)
+M = Dict(:response => "inc", :control => "edu + exp + 1")
+
+@testset "Hausman" begin
+
+    E0    = fit(OLS, Microdata(S, M, subset = X))
+    E0.V .= E0.V .* ((nobs(E0) - 1) / nobs(E0)) * (277 / 276)
+    E1    = fit(OLS, Microdata(S, M, subset = .!X))
+    E1.V .= E1.V .* ((nobs(E1) - 1) / nobs(E1)) * (277 / 276)
+    E     = hausman_2s(E0, E1)
+
+    p = [0.20345785; 0.59592600; 0.28068223]
+
+    @test isapprox(pval(E), p, atol = 1e-7, rtol = 1e-7)
+end
