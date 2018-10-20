@@ -2,6 +2,9 @@
 
 # ONE-SAMPLE FINITE-SAMPLE ADJUSTMENT
 
+function adjfactor!(V::Matrix, obj::Micromodel, corr::Homoscedastic)
+end
+
 function adjfactor!(V::Matrix, obj::Micromodel, corr::Heteroscedastic)
     if corr.adj == true
         n = nobs(obj)
@@ -33,7 +36,7 @@ function adjfactor!(V::Matrix, obj₁::Micromodel, obj₂::Micromodel, corr::Het
         nonmissing₁ = getnonmissing(obj₁)
         nonmissing₂ = getnonmissing(obj₂)
         n           = sum(nonmissing₁ .* nonmissing₂)
-        
+
         lmul!(n / (n - 1), V)
     end
 end
