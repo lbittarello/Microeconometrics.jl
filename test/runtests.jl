@@ -199,6 +199,7 @@ M = Dict(
     @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
     @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
     @test isapprox(deviance(E), 12.13236640, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(nulldeviance(E), 644.26899081, atol = 1e-7, rtol = 1e-7)
     @test isapprox(loglikelihood(E), -33.60015344, atol = 1e-7, rtol = 1e-7)
     @test isapprox(nullloglikelihood(E), -495.06763568, atol = 1e-7, rtol = 1e-7)
 end
