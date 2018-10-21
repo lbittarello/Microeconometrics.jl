@@ -22,7 +22,7 @@ S        = CSV.read(joinpath(datadir, "auto.csv"))
 S[:gpmw] = ((1.0 ./ S[:mpg]) ./ S[:weight]) * 100000
 M        = Dict(:response => "gpmw", :control => "foreign + 1")
 
-@testset "OLS_Homoscedastic" begin
+@testset "OLS Homoscedastic" begin
 
     D = Microdata(S, M, vcov = Homoscedastic())
     E = fit(OLS, D)
@@ -32,12 +32,16 @@ M        = Dict(:response => "gpmw", :control => "foreign + 1")
 
     @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
     @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(loglikelihood(E), 9.39839211)
+    @test isapprox(nullloglikelihood(E), 0.30171734)
+    @test isapprox(deviance(E), 3.36079458)
+    @test isapprox(nulldeviance(E), 4.29750019)
     @test isapprox(r2(E), 0.21796522, atol = 1e-7, rtol = 1e-7)
     @test isapprox(adjr2(E), 0.20710363, atol = 1e-7, rtol = 1e-7)
     @test dof(E) == 2
 end
 
-@testset "OLS_Heteroscedastic" begin
+@testset "OLS Heterosc." begin
 
     D = Microdata(S, M, vcov = Heteroscedastic())
     E = fit(OLS, D)
@@ -51,7 +55,6 @@ end
     @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
     @test isapprox(r2(E), 0.21796522, atol = 1e-7, rtol = 1e-7)
     @test isapprox(adjr2(E), 0.20710363, atol = 1e-7, rtol = 1e-7)
-    @test dof(E) == 2
 end
 
 T        = Dict("age" => Union{Int, Missing})
@@ -60,7 +63,7 @@ S[:age2] = Array{eltype(S[:age])}(S[:age].^2)
 W        = Clustered(S, :idcode)
 M        = Dict(:response => "ln_wage", :control => "age + age2 + tenure + 1")
 
-@testset "OLS_Clustered" begin
+@testset "OLS Clustered" begin
 
     D = Microdata(S, M, vcov = W)
     E = fit(OLS, D)
@@ -74,7 +77,6 @@ M        = Dict(:response => "ln_wage", :control => "age + age2 + tenure + 1")
     @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
     @test isapprox(r2(E), 0.16438516, atol = 1e-7, rtol = 1e-7)
     @test isapprox(adjr2(E), 0.16429594, atol = 1e-7, rtol = 1e-7)
-    @test dof(E) == 4
 end
 
 #==========================================================================================#
@@ -99,7 +101,6 @@ M = Dict(
     @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
     @test isapprox(r2(E), 0.59888202, atol = 1e-7, rtol = 1e-7)
     @test isapprox(adjr2(E), 0.58181317, atol = 1e-7, rtol = 1e-7)
-    @test dof(E) == 3
 end
 
 @testset "IV GMM" begin
@@ -116,7 +117,6 @@ end
     @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
     @test isapprox(r2(E), 0.66162834, atol = 1e-7, rtol = 1e-7)
     @test isapprox(adjr2(E), 0.64722954, atol = 1e-7, rtol = 1e-7)
-    @test dof(E) == 3
 end
 
 #==========================================================================================#
@@ -143,7 +143,6 @@ D = Microdata(S, M, vcov = Homoscedastic(), contrasts = C)
     @test isapprox(aic(E), 219.44799113, atol = 1e-7, rtol = 1e-7)
     @test isapprox(aicc(E), 220.45357772, atol = 1e-7, rtol = 1e-7)
     @test isapprox(bic(E), 248.62371427, atol = 1e-7, rtol = 1e-7)
-    @test dof(E) == 9
 end
 
 @testset "Probit" begin
@@ -160,10 +159,6 @@ end
     @test isapprox(deviance(E), 201.12189887, atol = 1e-7, rtol = 1e-7)
     @test isapprox(loglikelihood(E), -100.56094943, atol = 1e-7, rtol = 1e-7)
     @test isapprox(nullloglikelihood(E), -117.33599810, atol = 1e-7, rtol = 1e-7)
-    @test isapprox(aic(E), 219.12189887, atol = 1e-7, rtol = 1e-7)
-    @test isapprox(aicc(E), 220.12748546, atol = 1e-7, rtol = 1e-7)
-    @test isapprox(bic(E), 248.29762201, atol = 1e-7, rtol = 1e-7)
-    @test dof(E) == 9
 end
 
 @testset "Cloglog" begin
@@ -180,10 +175,6 @@ end
     @test isapprox(deviance(E), 202.16661013, atol = 1e-7, rtol = 1e-7)
     @test isapprox(loglikelihood(E), -101.08330506, atol = 1e-7, rtol = 1e-7)
     @test isapprox(nullloglikelihood(E), -117.33599810, atol = 1e-7, rtol = 1e-7)
-    @test isapprox(aic(E), 220.16661013, atol = 1e-7, rtol = 1e-7)
-    @test isapprox(aicc(E), 221.17219672, atol = 1e-7, rtol = 1e-7)
-    @test isapprox(bic(E), 249.34233326, atol = 1e-7, rtol = 1e-7)
-    @test dof(E) == 9
 end
 
 #==========================================================================================#
@@ -210,10 +201,6 @@ M = Dict(
     @test isapprox(deviance(E), 12.13236640, atol = 1e-7, rtol = 1e-7)
     @test isapprox(loglikelihood(E), -33.60015344, atol = 1e-7, rtol = 1e-7)
     @test isapprox(nullloglikelihood(E), -495.06763568, atol = 1e-7, rtol = 1e-7)
-    @test isapprox(aic(E), 79.20030688, atol = 1e-7, rtol = 1e-7)
-    @test isapprox(aicc(E), 107.20030688, atol = 1e-7, rtol = 1e-7)
-    @test isapprox(bic(E), 81.01581744, atol = 1e-7, rtol = 1e-7)
-    @test dof(E) == 6
 end
 
 S = CSV.read(joinpath(datadir, "website.csv"))
@@ -236,7 +223,6 @@ M = Dict(
 
     @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
     @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
-    @test dof(E) == 4
 end
 
 S = CSV.read(joinpath(datadir, "trip.csv"))
@@ -259,7 +245,6 @@ M = Dict(
 
     @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
     @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
-    @test dof(E) == 6
 end
 
 #==========================================================================================#

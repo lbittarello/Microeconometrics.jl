@@ -10,7 +10,6 @@ function getvector(MD::Microdata, x::Symbol)
 end
 
 getvector(MM::ParModel, x::Symbol)      = getvector(MM.sample, x)
-getvector(MM::GMM, x::Symbol)           = getvector(MM.sample, x)
 getvector(MM::TwoStageModel, x::Symbol) = getvector(MM.second_stage.sample, x)
 
 function getmatrix(MD::Microdata, args...)
@@ -32,7 +31,6 @@ function getmatrix(MD::Microdata, args...)
 end
 
 getmatrix(MM::ParModel, args...)        = getmatrix(MM.sample, args...)
-getmatrix(MM::GMM, args...)             = getmatrix(MM.sample, args...)
 getmatrix(MM::TwoStageModel, x::Symbol) = getmatrix(MM.second_stage.sample, x)
 
 #==========================================================================================#
@@ -58,7 +56,6 @@ function getnames(MD::Microdata, args...)
 end
 
 getnames(MM::ParModel, args...)      = getnames(MM.sample, args...)
-getnames(MM::GMM, args...)           = getnames(MM.sample, args...)
 getnames(MM::TwoStageModel, args...) = getnames(MM.second_stage.sample, args...)
 
 #==========================================================================================#
@@ -67,7 +64,6 @@ getnames(MM::TwoStageModel, args...) = getnames(MM.second_stage.sample, args...)
 
 getcorr(obj::Microdata)     = obj.corr
 getcorr(obj::ParModel)      = getcorr(obj.sample)
-getcorr(obj::GMM)           = getcorr(obj.sample)
 getcorr(obj::TwoStageModel) = getcorr(second_stage(obj).sample)
 
 #==========================================================================================#
@@ -76,7 +72,6 @@ getcorr(obj::TwoStageModel) = getcorr(second_stage(obj).sample)
 
 getnonmissing(obj::Microdata)     = obj.nonmissing
 getnonmissing(obj::ParModel)      = getnonmissing(obj.sample)
-getnonmissing(obj::GMM)           = getnonmissing(obj.sample)
 getnonmissing(obj::TwoStageModel) = getnonmissing(second_stage(obj).sample)
 
 #==========================================================================================#

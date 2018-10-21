@@ -4,7 +4,7 @@ abstract type ParModel <: Micromodel end
 
 abstract type MLE <: ParModel end
 
-abstract type GMM <: Micromodel end
+abstract type GMM <: ParModel end
 
 abstract type TwoStageModel <: Micromodel end
 
@@ -17,6 +17,6 @@ mutable struct ParEstimate
     ParEstimate() = new()
 end
 
-const Par1S  = Union{ParModel, GMM, ParEstimate}
-const Par2S  = Union{ParModel, GMM, TwoStageModel, ParEstimate}
-const ParM2S = Union{ParModel, GMM, TwoStageModel}
+const Par1S  = Union{ParModel, ParEstimate}
+const Par2S  = Union{ParModel, TwoStageModel, ParEstimate}
+const ParM2S = Union{ParModel, TwoStageModel}

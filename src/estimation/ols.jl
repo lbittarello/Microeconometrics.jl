@@ -2,7 +2,7 @@
 
 # TYPE
 
-mutable struct OLS <: ParModel
+mutable struct OLS <: MLE
 
     sample::Microdata
     β::Vector{Float64}
@@ -51,7 +51,7 @@ jacobian(obj::OLS, w::AbstractWeights) = - crossprod(getmatrix(obj, :control), w
 
 # HOMOSCEDASTIC VARIANCE MATRIX
 
-function _vcov!(obj::OLS, corr::Homoscedastic, ::UnitWeights)
+function _vcov!(obj::OLS, corr::Homoscedastic, w::UnitWeights)
     σ²    = sum(abs2, residuals(obj)) / dof_residual(obj)
     obj.V = lmul!(-σ², inv(jacobian(obj, w)))
 end
@@ -101,4 +101,42 @@ function _r2(obj::OLS, w::AbstractWeights)
     rss = sum(abs2.(y .- ŷ), w)
     tss = sum(abs2.(y .- μ), w)
     return 1.0 - rss / tss
+end
+
+# LIKELIHOOD FUNCTION
+
+function _loglikelihood(obj::OLS, w::AbstractWeights)
+    n  = sum(w)
+    r  = residuals(obj)
+    r .= abs2.(r)
+    σ² = sum(r, w) / n
+    return - (log(σ²) + log2π + 1.0) * n / 2.0
+end
+
+# LIKELIHOOD FUNCTION UNDER NULL MODEL
+
+function _nullloglikelihood(obj::OLS, w::AbstractWeights)
+    n  = sum(w)
+    r  = copy(getvector(obj, :response))
+    μ  = mean(r, w)
+    r .= abs2.(r .- μ)
+    σ² = sum(r, w) / n
+    return - (log(σ²) + log2π + 1.0) * n / 2.0
+end
+
+# DEVIANCE
+
+function _deviance(obj::OLS, w::AbstractWeights)
+    r  = residuals(obj)
+    r .= abs2.(r)
+    return sum(r, w)
+end
+
+# DEVIANCE UNDER NULL MODEL
+
+function _nulldeviance(obj::OLS, w::AbstractWeights)
+    r  = copy(getvector(obj, :response))
+    μ  = mean(r, w)
+    r .= abs2.(r .- μ)
+    return sum(r)
 end

@@ -10,8 +10,8 @@ Model structures are subtypes of broader abstract types, such as `MLE` or `GMM`,
 
 ```
 RegressionModel
-    GMM
     ParModel
+        GMM
         MLE
     TwoStageModel
 ```
@@ -24,7 +24,7 @@ RegressionModel
 fit(OLS, MD::Microdata)
 ```
 
-The `Microdata` must contain: `response` and `control`. See the documentation for linear IV if `Microdata` includes a treatment. `OLS` is a subtype of `ParModel`.
+The `Microdata` must contain: `response` and `control`. See the documentation for linear IV if `Microdata` includes a treatment. `OLS` is a subtype of `MLE`.
 
 ### Linear IV
 
