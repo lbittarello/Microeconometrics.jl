@@ -7,7 +7,6 @@
 
 # MISE EN PLACE
 
-using Revise
 using Test
 using CSV
 using DataFrames
