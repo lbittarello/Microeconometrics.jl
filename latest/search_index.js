@@ -181,7 +181,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Estimators",
     "title": "Estimators",
     "category": "section",
-    "text": "The function fit estimates models. It returns a model structure, which contains the estimation sample, the coefficients and their covariance matrix. For example, the output of fit(OLS, MD) has type OLS. Some have additional fields: e.g., two-stage models carry estimates from the first stage and GMM models carry the inverse of the weight matrix.note: Note\nIf you only need coefficients, pass novar = true to fit.Model structures are subtypes of broader abstract types, such as MLE or GMM, which are ultimately instances of RegressionModel. The type hierarchy is:RegressionModel\n    GMM\n    ParModel\n        MLE\n    TwoStageModel"
+    "text": "The function fit estimates models. It returns a model structure, which contains the estimation sample, the coefficients and their covariance matrix. For example, the output of fit(OLS, MD) has type OLS. Some have additional fields: e.g., two-stage models carry estimates from the first stage and GMM models carry the inverse of the weight matrix.note: Note\nIf you only need coefficients, pass novar = true to fit.Model structures are subtypes of broader abstract types, such as MLE or GMM, which are ultimately instances of RegressionModel. The type hierarchy is:RegressionModel\n    ParModel\n        GMM\n        MLE\n    TwoStageModel"
 },
 
 {
@@ -197,7 +197,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Estimators",
     "title": "Ordinary least squares",
     "category": "section",
-    "text": "fit(OLS, MD::Microdata)The Microdata must contain: response and control. See the documentation for linear IV if Microdata includes a treatment. OLS is a subtype of ParModel."
+    "text": "fit(OLS, MD::Microdata)The Microdata must contain: response and control. See the documentation for linear IV if Microdata includes a treatment. OLS is a subtype of MLE."
 },
 
 {
@@ -269,7 +269,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Hypothesis tests",
     "title": "Significance tests",
     "category": "section",
-    "text": "tstat(model::Union{GMM, ParModel, TwoStageModel})This function returns the t-statistic (i.e. the ratio of coefficients to standard error).pval(model::Union{GMM, ParModel, TwoStageModel})This function returns the p-value of a two-sided significance test."
+    "text": "tstat(model::Union{GMM, ParModel, TwoStageModel, ParEstimate})This function returns the t-statistic (i.e. the ratio of coefficients to standard error).pval(model::Union{GMM, ParModel, TwoStageModel, ParEstimate})This function returns the p-value of a two-sided significance test."
 },
 
 {
@@ -277,7 +277,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Hypothesis tests",
     "title": "Hausman test",
     "category": "section",
-    "text": "This procedure tests the difference in coefficients between two parametric models (Hausman, 1984). It can be used in replacement of the Chow test and the Sobel test. Our implementation is based on the GMM representation of the joint estimation problem (see Subsection 8.3.2 of Cameron and Trivedi (2005)). Neither model need be efficient.The optional argument names specifies the coefficients of interest as they appear on regression tables (be careful with categorical variables!). The output is a ParObject, which contains the vector of differences, their covariance matrix and labels.hausman_1s(\n        model₁::Union{GMM, ParModel, TwoStageModel},\n        model₂::Union{GMM, ParModel, TwoStageModel},\n        names::Vector{String} = intersect(coefnames(obj₁), coefnames(obj₂))\n)This function is appropriate when model₁ and model₂ were based on a single estimation sample. hausman_2s(\n         model₁::Union{GMM, ParModel, TwoStageModel},\n         model₂::Union{GMM, ParModel, TwoStageModel},\n         names::Vector{String} = intersect(coefnames(obj₁), coefnames(obj₂))\n )This function is appropriate when model₁ and model₂ were based on independent samples. For example, the samples might consist of independent observations with no overlap. hausman_2s(\n         model₁::Union{GMM, ParModel, TwoStageModel},\n         model₂::Union{GMM, ParModel, TwoStageModel},\n         corr::CorrStructure,\n         names::Vector{String} = intersect(coefnames(obj₁), coefnames(obj₂))\n )This function is appropriate when model₁ and model₂ were based on dependent samples. For example, the samples might consist of independent observations with some overlap or clustered observations with shared clusters. The correlation structure corr must specify the correlation between all observations of both estimation samples. For example, you could construct corr for the entire dataset and construct the samples via the subset keyword to Microdata."
+    "text": "This procedure tests the difference in coefficients between two parametric models (Hausman, 1984). It can be used in replacement of the Chow test and the Sobel test. Our implementation is based on the GMM representation of the joint estimation problem (see Subsection 8.3.2 of Cameron and Trivedi (2005)). Neither model need be efficient.The optional argument names specifies the coefficients of interest as they appear on regression tables (be careful with categorical variables!). The output is a ParEstimate, which contains the vector of differences, their covariance matrix and labels.hausman_1s(\n        model₁::Union{GMM, ParModel, TwoStageModel},\n        model₂::Union{GMM, ParModel, TwoStageModel},\n        names::Vector{String} = intersect(coefnames(obj₁), coefnames(obj₂))\n)This function is appropriate when model₁ and model₂ were based on a single estimation sample. hausman_2s(\n         model₁::Union{GMM, ParModel, TwoStageModel},\n         model₂::Union{GMM, ParModel, TwoStageModel},\n         names::Vector{String} = intersect(coefnames(obj₁), coefnames(obj₂))\n )This function is appropriate when model₁ and model₂ were based on independent samples. For example, the samples might consist of independent observations with no overlap. hausman_2s(\n         model₁::Union{GMM, ParModel, TwoStageModel},\n         model₂::Union{GMM, ParModel, TwoStageModel},\n         corr::CorrStructure,\n         names::Vector{String} = intersect(coefnames(obj₁), coefnames(obj₂))\n )This function is appropriate when model₁ and model₂ were based on dependent samples. For example, the samples might consist of independent observations with some overlap or clustered observations with shared clusters. The correlation structure corr must specify the correlation between all observations of both estimation samples. For example, you could construct corr for the entire dataset and construct the samples via the subset keyword to Microdata."
 },
 
 {
