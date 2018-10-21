@@ -250,6 +250,7 @@ end
 # UTILITIES
 
 coefnames(obj::Probit) = getnames(obj, :control)
+mtitle(obj::Probit)    = "Probit MLE"
 
 # LIKELIHOOD FUNCTION
 

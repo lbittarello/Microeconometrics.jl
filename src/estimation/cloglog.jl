@@ -253,6 +253,7 @@ end
 # UTILITIES
 
 coefnames(obj::Cloglog) = getnames(obj, :control)
+mtitle(obj::Cloglog)    = "Complementary log-log MLE"
 
 # LIKELIHOOD FUNCTION
 

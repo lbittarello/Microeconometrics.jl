@@ -345,3 +345,4 @@ end
 # UTILITIES
 
 coefnames(obj::Mullahy) = getnames(obj, :treatment, :control)
+mtitle(obj::Mullahy)    = "IV Poisson with mult. errors"

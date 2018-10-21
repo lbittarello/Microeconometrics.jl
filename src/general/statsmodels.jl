@@ -90,3 +90,7 @@ function coeftable(obj::Par2S; level::Float64 = 0.95, digits::Int = 4)
 
     return CT
 end
+
+function show(io::IO, obj::Par2S)
+    println(io, "$(mtitle(obj))\n\n", coeftable(obj))
+end

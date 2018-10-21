@@ -83,8 +83,12 @@ jacobexp(obj::OLS) = copy(getmatrix(obj, :control))
 # UTILITIES
 
 coefnames(obj::OLS) = getnames(obj, :control)
-adjr2(obj::OLS)     = 1.0 - (1.0 - r2(obj)) * (nobs(obj) - 1) / dof_residual(obj)
-r2(obj::OLS)        = _r2(obj, getweights(obj))
+mtitle(obj::OLS)    = "OLS"
+
+# COEFFICIENT OF DETERMINATION
+
+adjr2(obj::OLS) = 1.0 - (1.0 - r2(obj)) * (nobs(obj) - 1) / dof_residual(obj)
+r2(obj::OLS)    = _r2(obj, getweights(obj))
 
 function _r2(obj::OLS, ::UnitWeights)
     y   = response(obj)

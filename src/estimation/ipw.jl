@@ -130,3 +130,4 @@ jacobexp(obj::IPW) = jacobexp(second_stage(obj))
 # UTILITIES
 
 coefnames(obj::IPW) = coefnames(second_stage(obj))
+mtitle(obj::IPW)    = "Inverse probability weighting"

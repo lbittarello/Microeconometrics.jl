@@ -140,3 +140,4 @@ jacobexp(obj::FrölichMelly) = jacobexp(second_stage(obj))
 # UTILITIES
 
 coefnames(obj::FrölichMelly) = coefnames(second_stage(obj))
+mtitle(obj::FrölichMelly)    = "Frölich and Melly (2013)"

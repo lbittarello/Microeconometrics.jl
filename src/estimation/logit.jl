@@ -236,6 +236,7 @@ end
 # UTILITIES
 
 coefnames(obj::Logit) = getnames(obj, :control)
+mtitle(obj::Logit)    = "Logit MLE"
 
 # LIKELIHOOD FUNCTION
 

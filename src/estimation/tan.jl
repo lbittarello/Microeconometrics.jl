@@ -132,4 +132,5 @@ jacobexp(obj::Tan) = jacobexp(second_stage(obj))
 
 # UTILITIES
 
-coefnames(obj::Tan) = coefnames(second_stage(obj))
+coefnames(obj::Tan)   = coefnames(second_stage(obj))
+model_title(obj::Tan) = "Tan (2006)"

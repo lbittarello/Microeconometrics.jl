@@ -142,3 +142,4 @@ jacobexp(obj::Abadie) = jacobexp(second_stage(obj))
 # UTILITIES
 
 coefnames(obj::Abadie) = coefnames(second_stage(obj))
+mtitle(obj::Abadie)    = "Abadie (2003)"

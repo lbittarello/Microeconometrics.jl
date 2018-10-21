@@ -215,6 +215,7 @@ end
 # UTILITIES
 
 coefnames(obj::Poisson) = getnames(obj, :control)
+mtitle(obj::Poisson)    = "Poisson MLE"
 
 # LIKELIHOOD FUNCTION
 

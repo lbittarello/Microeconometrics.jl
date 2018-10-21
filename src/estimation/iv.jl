@@ -216,8 +216,12 @@ jacobexp(obj::IV) = getmatrix(obj, :treatment, :control)
 # UTILITIES
 
 coefnames(obj::IV) = getnames(obj, :treatment, :control)
-adjr2(obj::IV)     = 1.0 - (1.0 - r2(obj)) * (nobs(obj) - 1) / dof_residual(obj)
-r2(obj::IV)        = _r2(obj, getweights(obj))
+mtitle(obj::IV)    =  "Linear GMM"
+
+# COEFFICIENT OF DETERMINATION
+
+adjr2(obj::IV) = 1.0 - (1.0 - r2(obj)) * (nobs(obj) - 1) / dof_residual(obj)
+r2(obj::IV)    = _r2(obj, getweights(obj))
 
 function _r2(obj::IV, ::UnitWeights)
     y   = response(obj)

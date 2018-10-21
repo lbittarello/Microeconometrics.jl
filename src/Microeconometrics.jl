@@ -17,7 +17,7 @@ using StatsBase:   AbstractWeights, CoefTable, RegressionModel
 using StatsBase:   AnalyticWeights, FrequencyWeights, ProbabilityWeights, Weights
 using StatsBase:   mean, sum, pweights
 
-import Base:       copy, deepcopy, isequal, sum
+import Base:       copy, deepcopy, isequal, show, sum
 import Statistics: mean
 import StatsBase:  fit, coef, coefnames, coeftable, confint, stderror, vcov
 import StatsBase:  deviance, loglikelihood, nulldeviance, nullloglikelihood
