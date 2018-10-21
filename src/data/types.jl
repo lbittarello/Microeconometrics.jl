@@ -6,10 +6,10 @@ mutable struct Microdata
     nonmissing::BitVector
     corr::CorrStructure
     weights::AbstractWeights{Int, Float64, Vector{Float64}}
-    mat::ModelMatrix{Matrix{Float64}}
+    mat::Matrix{Float64}
     names::Vector{String}
     map::Dict{Symbol, Vector{Int}}
-    terms::StatsModels.Terms
+    terms::Vector
 end
 
 # CONSTRUCTOR
@@ -24,7 +24,7 @@ function Microdata(
 
     input    = reduce((x, y) -> x * " + " * model[y], keys(model), init = "")
     formula  = @eval @formula $nothing ~ $(Meta.parse(input))
-    terms    = StatsModels.Terms(formula)
+    terms    = StatsModels.Terms(formula) ; terms.intercept = true
     eterms   = terms.eterms
     msng     = BitVector(completecases(df[terms.eterms]))
     msng    .= msng .* .!iszero.(weights) .* BitVector(subset)
@@ -34,13 +34,14 @@ function Microdata(
     frame    = ModelFrame(new_df, terms, msng, StatsModels.evalcontrasts(new_df, contrasts))
     names    = StatsModels.coefnames(frame)
     mat      = ModelMatrix(frame)
+    eterms   = eterms[mat.assign[2:end]]
     new_map  = Dict{Symbol, Vector{Int}}()
 
     for (i, j) in model
-        new_map[i] = assign_columns(j, terms, mat.assign)
+        new_map[i] = assign_columns(j, eterms)
     end
 
-    return Microdata(msng, new_corr, new_wts, mat, names, new_map, terms)
+    return Microdata(msng, new_corr, new_wts, mat.m, names, new_map, eterms)
 end
 
 # REASSIGN VARIABLE SETS
@@ -50,11 +51,7 @@ function Microdata(MD::Microdata, model::Dict{Symbol, String})
     new_map = copy(MD.map)
 
     for (i, j) in model
-        if j == ""
-            pop!(new_map, i)
-        else
-            new_map[i] = assign_columns(j, MD.terms, MD.mat.assign)
-        end
+        (j == "") ? pop!(new_map, i) : (new_map[i] = assign_columns(j, MD.terms))
     end
 
     Microdata(MD.nonmissing, MD.corr, MD.weights, MD.mat, MD.names, new_map, MD.terms)

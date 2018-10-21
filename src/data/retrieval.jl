@@ -6,7 +6,7 @@ function getvector(MD::Microdata, x::Symbol)
     haskey(MD.map, x)       || throw(string(x) * " not found")
     iszero(MD.map[x])       && throw(string(x) * " not found")
     (length(MD.map[x]) > 1) && throw(string(x) * " is not a vector")
-    return view(MD.mat.m, :, MD.map[x]...)
+    return view(MD.mat, :, MD.map[x]...)
 end
 
 getvector(MM::ParModel, x::Symbol)      = getvector(MM.sample, x)
@@ -28,7 +28,7 @@ function getmatrix(MD::Microdata, args...)
         x = vcat(x, MD.map[i])
     end
 
-    return view(MD.mat.m, :, x)
+    return view(MD.mat, :, x)
 end
 
 getmatrix(MM::ParModel, args...)        = getmatrix(MM.sample, args...)

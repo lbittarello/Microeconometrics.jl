@@ -25,7 +25,7 @@ end
 
 # ESTIMATION
 
-function _fit!(obj::OLS, w::UnitWeights)
+function _fit!(obj::OLS, ::UnitWeights)
     y     = getvector(obj, :response)
     x     = getmatrix(obj, :control)
     obj.β = x \ y
@@ -46,17 +46,17 @@ score(obj::OLS) = Diagonal(residuals(obj)) * getmatrix(obj, :control)
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-jacobian(obj::OLS, w::UnitWeights)     = - crossprod(getmatrix(obj, :control))
+jacobian(obj::OLS, ::UnitWeights)      = - crossprod(getmatrix(obj, :control))
 jacobian(obj::OLS, w::AbstractWeights) = - crossprod(getmatrix(obj, :control), w)
 
 # HOMOSCEDASTIC VARIANCE MATRIX
 
-function _vcov!(obj::OLS, corr::Homoscedastic, w::UnitWeights)
+function _vcov!(obj::OLS, corr::Homoscedastic, ::UnitWeights)
     σ²    = sum(abs2, residuals(obj)) / dof_residual(obj)
     obj.V = lmul!(-σ², inv(jacobian(obj, w)))
 end
 
-function _vcov!(obj::OLS, corr::Homoscedastic, w::Union{FrequencyWeights, AnalyticWeights})
+function _vcov!(obj::OLS, corr::Homoscedastic, w::AbstractWeights)
     σ²    = sum(abs2.(residuals(obj)), w) / dof_residual(obj)
     obj.V = lmul!(-σ², inv(jacobian(obj, w)))
 end
@@ -66,9 +66,7 @@ end
 # LINEAR PREDICTOR
 
 function predict(obj::OLS, MD::Microdata)
-    if getnames(obj, :control) != getnames(MD, :control)
-        throw("some variables are missing")
-    end
+    (getnames(obj, :control) != getnames(MD, :control)) && throw("missing variables")
     getmatrix(MD, :control) * obj.β
 end
 
@@ -88,7 +86,7 @@ coefnames(obj::OLS) = getnames(obj, :control)
 adjr2(obj::OLS)     = 1.0 - (1.0 - r2(obj)) * (nobs(obj) - 1) / dof_residual(obj)
 r2(obj::OLS)        = _r2(obj, getweights(obj))
 
-function _r2(obj::OLS, w::UnitWeights)
+function _r2(obj::OLS, ::UnitWeights)
     y   = response(obj)
     ŷ   = fitted(obj)
     rss = sum(abs2, y .- ŷ)

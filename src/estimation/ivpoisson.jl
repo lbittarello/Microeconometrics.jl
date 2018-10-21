@@ -94,7 +94,7 @@ end
 
 # ESTIMATION
 
-function _fit!(obj::IVPoisson, w::UnitWeights)
+function _fit!(obj::IVPoisson, ::UnitWeights)
 
     O  = haskey(obj.sample.map, :offset)
     y  = getvector(obj, :response)
@@ -260,7 +260,7 @@ score(obj::IVPoisson) = Diagonal(residuals(obj)) * getmatrix(obj, :instrument, :
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-function jacobian(obj::IVPoisson, w::UnitWeights)
+function jacobian(obj::IVPoisson, ::UnitWeights)
 
     if haskey(obj.sample.map, :offset)
         x = getmatrix(obj, :offset, :treatment, :control)
@@ -297,10 +297,10 @@ end
 # LINEAR PREDICTOR
 
 function predict(obj::IVPoisson, MD::Microdata)
-    if getnames(obj, :control) != getnames(MD, :control)
-        throw("some variables are missing")
+    if getnames(obj, :treatment, :control) != getnames(MD, :treatment, :control)
+        throw("missing variables")
     end
-    if haskey(MD.map, :offset)
+    if haskey(obj.sample.map, :offset)
         return getmatrix(MD, :offset, :treatment, :control) * vcat(1.0, obj.β)
     else
         return getmatrix(MD, :treatment, :control) * obj.β

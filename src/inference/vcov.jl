@@ -57,60 +57,65 @@ end
 
 # COVARIANCE MATRIX FOR ONE-STAGE PARAMETRIC MODELS
 
-function _vcov!(obj::ParTSM, corr::Heteroscedastic, w::UnitWeights)
-    ψ = influence(obj, w)
-    V = crossprod(ψ)
-    adjfactor!(V, obj, corr)
-    _vcov!(obj, V)
-end
+for m in (MLE, TwoStageModel)
+    @eval begin
 
-function _vcov!(obj::ParTSM, corr::Heteroscedastic, w::FrequencyWeights)
-    ψ = influence(obj, w)
-    V = crossprod(ψ, w)
-    adjfactor!(V, obj, corr)
-    _vcov!(obj, V)
-end
+        function _vcov!(obj::$m, corr::Heteroscedastic, w::UnitWeights)
+            ψ = influence(obj, w)
+            V = crossprod(ψ)
+            adjfactor!(V, obj, corr)
+            _vcov!(obj, V)
+        end
 
-function _vcov!(obj::ParTSM, corr::Heteroscedastic, w::AbstractWeights)
-    ψ = influence(obj, w) ; lmul!(Diagonal(w), ψ)
-    V = crossprod(ψ)
-    adjfactor!(V, obj, corr)
-    _vcov!(obj, V)
-end
+        function _vcov!(obj::$m, corr::Heteroscedastic, w::FrequencyWeights)
+            ψ = influence(obj, w)
+            V = crossprod(ψ, w)
+            adjfactor!(V, obj, corr)
+            _vcov!(obj, V)
+        end
 
-function _vcov!(obj::ParTSM, corr::Clustered, w::UnitWeights)
-    ψ = corr.mat * influence(obj, w)
-    V = crossprod(ψ)
-    adjfactor!(V, obj, corr)
-    _vcov!(obj, V)
-end
+        function _vcov!(obj::$m, corr::Heteroscedastic, w::AbstractWeights)
+            ψ = influence(obj, w) ; lmul!(Diagonal(w), ψ)
+            V = crossprod(ψ)
+            adjfactor!(V, obj, corr)
+            _vcov!(obj, V)
+        end
 
-function _vcov!(obj::ParTSM, corr::Clustered, w::AbstractWeights)
-    ψ = corr.mat * influence(obj, w) ; lmul!(Diagonal(w), ψ)
-    V = crossprod(ψ)
-    adjfactor!(V, obj, corr)
-    _vcov!(obj, V)
-end
+        function _vcov!(obj::$m, corr::Clustered, w::UnitWeights)
+            ψ = corr.mat * influence(obj, w)
+            V = crossprod(ψ)
+            adjfactor!(V, obj, corr)
+            _vcov!(obj, V)
+        end
 
-function _vcov!(obj::ParTSM, corr::CrossCorrelated, w::UnitWeights)
-    ψ = influence(obj, w)
-    V = crossprod(ψ, corr.mat)
-    adjfactor!(V, obj, corr)
-    _vcov!(obj, V)
-end
+        function _vcov!(obj::$m, corr::Clustered, w::AbstractWeights)
+            ψ = corr.mat * influence(obj, w) ; lmul!(Diagonal(w), ψ)
+            V = crossprod(ψ)
+            adjfactor!(V, obj, corr)
+            _vcov!(obj, V)
+        end
 
-function _vcov!(obj::ParTSM, corr::CrossCorrelated, w::AbstractWeights)
-    ψ = influence(obj, w) ; lmul!(Diagonal(w), ψ)
-    V = crossprod(ψ, corr.mat)
-    adjfactor!(V, obj, corr)
-    _vcov!(obj, V)
+        function _vcov!(obj::$m, corr::CrossCorrelated, w::UnitWeights)
+            ψ = influence(obj, w)
+            V = crossprod(ψ, corr.mat)
+            adjfactor!(V, obj, corr)
+            _vcov!(obj, V)
+        end
+
+        function _vcov!(obj::$m, corr::CrossCorrelated, w::AbstractWeights)
+            ψ = influence(obj, w) ; lmul!(Diagonal(w), ψ)
+            V = crossprod(ψ, corr.mat)
+            adjfactor!(V, obj, corr)
+            _vcov!(obj, V)
+        end
+    end
 end
 
 #==========================================================================================#
 
 # GMM WEIGHT MATRIX
 
-function wmatrix(obj::GMM, corr::Heteroscedastic, w::UnitWeights)
+function wmatrix(obj::GMM, corr::Heteroscedastic, ::UnitWeights)
     s = score(obj)
     return crossprod(s)
 end
@@ -125,7 +130,7 @@ function wmatrix(obj::GMM, corr::Heteroscedastic, w::AbstractWeights)
     return crossprod(s)
 end
 
-function wmatrix(obj::GMM, corr::Clustered, w::UnitWeights)
+function wmatrix(obj::GMM, corr::Clustered, ::UnitWeights)
     s = corr.mat * score(obj)
     return crossprod(s)
 end
@@ -135,7 +140,7 @@ function wmatrix(obj::GMM, corr::Clustered, w::AbstractWeights)
     return crossprod(s)
 end
 
-function wmatrix(obj::GMM, corr::CrossCorrelated, w::UnitWeights)
+function wmatrix(obj::GMM, corr::CrossCorrelated, ::UnitWeights)
     s = score(obj)
     return crossprod(s, corr.mat)
 end

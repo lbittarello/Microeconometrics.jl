@@ -25,7 +25,7 @@ end
 
 # ESTIMATION
 
-function _fit!(obj::Logit, w::UnitWeights)
+function _fit!(obj::Logit, ::UnitWeights)
 
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
@@ -177,7 +177,7 @@ score(obj::Logit) = Diagonal(residuals(obj)) * getmatrix(obj, :control)
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-function jacobian(obj::Logit, w::UnitWeights)
+function jacobian(obj::Logit, ::UnitWeights)
 
     x = getmatrix(obj, :control)
     v = x * obj.β
@@ -208,9 +208,7 @@ end
 # LINEAR PREDICTOR
 
 function predict(obj::Logit, MD::Microdata)
-    if getnames(obj, :control) != getnames(MD, :control)
-        throw("some variables are missing")
-    end
+    (getnames(obj, :control) != getnames(MD, :control)) && throw("missing variables")
     getmatrix(MD, :control) * obj.β
 end
 
@@ -241,7 +239,7 @@ coefnames(obj::Logit) = getnames(obj, :control)
 
 # LIKELIHOOD FUNCTION
 
-function _loglikelihood(obj::Logit, w::UnitWeights)
+function _loglikelihood(obj::Logit, ::UnitWeights)
 
     y  = getvector(obj, :response)
     μ  = predict(obj)

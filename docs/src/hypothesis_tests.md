@@ -3,13 +3,13 @@
 ## Significance tests
 
 ```julia
-tstat(model::Union{GMM, ParModel, TwoStageModel})
+tstat(model::Union{GMM, ParModel, TwoStageModel, ParEstimate})
 ```
 
 This function returns the *t*-statistic (i.e. the ratio of coefficients to standard error).
 
 ```julia
-pval(model::Union{GMM, ParModel, TwoStageModel})
+pval(model::Union{GMM, ParModel, TwoStageModel, ParEstimate})
 ```
 
 This function returns the *p*-value of a two-sided significance test.
@@ -18,7 +18,7 @@ This function returns the *p*-value of a two-sided significance test.
 
 This procedure tests the difference in coefficients between two parametric models ([Hausman, 1984](http://jstor.org/stable/1913827)). It can be used in replacement of the Chow test and the Sobel test. Our implementation is based on the GMM representation of the joint estimation problem (see Subsection 8.3.2 of Cameron and Trivedi (2005)). Neither model need be efficient.
 
-The optional argument `names` specifies the coefficients of interest as they appear on regression tables (be careful with categorical variables!). The output is a `ParObject`, which contains the vector of differences, their covariance matrix and labels.
+The optional argument `names` specifies the coefficients of interest as they appear on regression tables (be careful with categorical variables!). The output is a `ParEstimate`, which contains the vector of differences, their covariance matrix and labels.
 
 ```julia
 hausman_1s(

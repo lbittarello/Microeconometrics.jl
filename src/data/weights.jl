@@ -58,8 +58,8 @@ reweight(w::AbstractWeights, v::ProbabilityWeights) = pweights(w .* v)
 
 # OPERATIONS
 
-sum(v::AbstractArray, w::UnitWeights)  = sum(v)
-mean(v::AbstractArray, w::UnitWeights) = mean(v)
+sum(v::AbstractArray{T,N}  where N where T<:Real, ::UnitWeights) = sum(v)
+mean(v::AbstractArray{T,N} where N where T<:Real, ::UnitWeights) = mean(v)
 
 function isequal(x::UnitWeights, y::UnitWeights)
     return isequal(x.sum, y.sum) && isequal(x.values, y.values)

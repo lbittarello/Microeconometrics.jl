@@ -93,7 +93,7 @@ end
 
 # ESTIMATION
 
-function _fit!(obj::IV, w::UnitWeights)
+function _fit!(obj::IV, ::UnitWeights)
 
     y = getvector(obj, :response)
     x = getmatrix(obj, :treatment, :control)
@@ -107,7 +107,7 @@ function _fit!(obj::IV, w::UnitWeights)
     end
 end
 
-function _fit!(obj::IV, W::Matrix{Float64}, w::UnitWeights)
+function _fit!(obj::IV, W::Matrix{Float64}, ::UnitWeights)
 
     y = getvector(obj, :response)
     x = getmatrix(obj, :treatment, :control)
@@ -152,7 +152,7 @@ score(obj::IV) = Diagonal(residuals(obj)) * getmatrix(obj, :instrument, :control
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-function jacobian(obj::IV, w::UnitWeights)
+function jacobian(obj::IV, ::UnitWeights)
     x = getmatrix(obj, :treatment, :control)
     z = getmatrix(obj, :instrument, :control)
     return - z' * x
@@ -167,7 +167,7 @@ end
 
 # VARIANCE MATRIX
 
-function _vcov!(obj::IV, corr::Homoscedastic, w::UnitWeights)
+function _vcov!(obj::IV, corr::Homoscedastic, ::UnitWeights)
 
     x  = getmatrix(obj, :treatment, :control)
     z  = getmatrix(obj, :instrument, :control)
@@ -179,7 +179,7 @@ function _vcov!(obj::IV, corr::Homoscedastic, w::UnitWeights)
     obj.V = lmul!(σ², inv(V))
 end
 
-function _vcov!(obj::IV, corr::Homoscedastic, w::Union{FrequencyWeights, AnalyticWeights})
+function _vcov!(obj::IV, corr::Homoscedastic, w::AbstractWeights)
 
     x  = getmatrix(obj, :treatment, :control)
     z  = getmatrix(obj, :instrument, :control)
@@ -198,7 +198,7 @@ end
 
 function predict(obj::IV, MD::Microdata)
     if getnames(obj, :treatment, :control) != getnames(MD, :treatment, :control)
-        throw("some variables are missing")
+        throw("missing variables")
     end
     getmatrix(MD, :treatment, :control) * obj.β
 end
@@ -219,7 +219,7 @@ coefnames(obj::IV) = getnames(obj, :treatment, :control)
 adjr2(obj::IV)     = 1.0 - (1.0 - r2(obj)) * (nobs(obj) - 1) / dof_residual(obj)
 r2(obj::IV)        = _r2(obj, getweights(obj))
 
-function _r2(obj::IV, w::UnitWeights)
+function _r2(obj::IV, ::UnitWeights)
     y   = response(obj)
     ŷ   = fitted(obj)
     rss = sum(abs2, y .- ŷ)

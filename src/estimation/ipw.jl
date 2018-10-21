@@ -7,7 +7,7 @@ mutable struct IPW <: TwoStageModel
     first_stage::Micromodel
     second_stage::OLS
     pscore::Vector{Float64}
-    eweights::PWeights
+    eweights::ProbabilityWeights{Float64, Float64, Vector{Float64}}
 
     IPW() = new()
 end
@@ -74,7 +74,7 @@ score(obj::IPW) = lmul!(Diagonal(obj.eweights), score(second_stage(obj)))
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-jacobian(obj::IPW, w::UnitWeights) = jacobian(second_stage(obj), obj.eweights)
+jacobian(obj::IPW, ::UnitWeights) = jacobian(second_stage(obj), obj.eweights)
 
 function jacobian(obj::IPW, w::AbstractWeights)
     return jacobian(second_stage(obj), reweight(w, obj.eweights))
@@ -82,7 +82,7 @@ end
 
 # EXPECTED JACOBIAN OF SCORE W.R.T. FIRST-STAGE PARAMETERS × NUMBER OF OBSERVATIONS
 
-function crossjacobian(obj::IPW, w::UnitWeights)
+function crossjacobian(obj::IPW, ::UnitWeights)
 
     d = getvector(obj, :treatment)
     π = obj.pscore

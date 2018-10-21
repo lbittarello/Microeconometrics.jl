@@ -25,7 +25,7 @@ end
 
 # ESTIMATION
 
-function _fit!(obj::Probit, w::UnitWeights)
+function _fit!(obj::Probit, ::UnitWeights)
 
     y  = iszero.(getvector(obj, :response))
     x  = getmatrix(obj, :control)
@@ -105,7 +105,7 @@ function _fit!(obj::Probit, w::AbstractWeights)
     x  = getmatrix(obj, :control)
     μ  = Array{Float64}(undef, length(y))
     xx = Array{Float64}(undef, size(x)...)
-    
+
     p  = mean(y)
     p  = 1.0 / normpdf(norminvcdf(p))
     β₀ = lmul!(p, x \ y)
@@ -193,7 +193,7 @@ end
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-function jacobian(obj::Probit, w::UnitWeights)
+function jacobian(obj::Probit, ::UnitWeights)
 
     y = getvector(obj, :response)
     x = getmatrix(obj, :control)
@@ -228,9 +228,7 @@ end
 # LINEAR PREDICTOR
 
 function predict(obj::Probit, MD::Microdata)
-    if getnames(obj, :control) != getnames(MD, :control)
-        throw("some variables are missing")
-    end
+    (getnames(obj, :control) != getnames(MD, :control)) && throw("missing variables")
     getmatrix(MD, :control) * obj.β
 end
 
@@ -255,7 +253,7 @@ coefnames(obj::Probit) = getnames(obj, :control)
 
 # LIKELIHOOD FUNCTION
 
-function _loglikelihood(obj::Probit, w::UnitWeights)
+function _loglikelihood(obj::Probit, ::UnitWeights)
 
     y  = getvector(obj, :response)
     μ  = predict(obj)

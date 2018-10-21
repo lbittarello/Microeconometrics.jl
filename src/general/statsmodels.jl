@@ -43,7 +43,7 @@ nobs(obj::Microdata)     = sum(obj.weights)
 nobs(obj::Micromodel)    = nobs(obj.sample)
 nobs(obj::TwoStageModel) = nobs(second_stage(obj))
 
-dof(obj::ParM1S)          = length(coef(obj))
+dof(obj::ParModel)        = length(coef(obj))
 dof(obj::TwoStageModel)   = dof(second_stage(obj))
 dof_residual(obj::ParM2S) = nobs(obj) - dof(obj)
 
@@ -86,7 +86,7 @@ function coeftable(obj::Par2S; level::Float64 = 0.95, digits::Int = 4)
         label  = vcat(label, ["     C.I.", "($(lprint)%)  "])
     end
 
-    CT = StatsBase.CoefTable(table, label, coefnames(obj))
+    CT = CoefTable(table, label, coefnames(obj))
 
     return CT
 end

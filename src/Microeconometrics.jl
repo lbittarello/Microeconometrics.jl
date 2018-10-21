@@ -9,10 +9,13 @@ using LinearAlgebra
 using Optim
 using SparseArrays
 using SpecialFunctions: lgamma
-using StatsBase
 using StatsFuns
 using StatsModels
 using SuiteSparse
+
+using StatsBase:   AbstractWeights, CoefTable, RegressionModel
+using StatsBase:   AnalyticWeights, FrequencyWeights, ProbabilityWeights, Weights
+using StatsBase:   mean, sum, pweights
 
 import Base:       copy, deepcopy, isequal, sum
 import Statistics: mean
@@ -20,8 +23,6 @@ import StatsBase:  fit, coef, coefnames, coeftable, confint, stderror, vcov
 import StatsBase:  deviance, loglikelihood, nulldeviance, nullloglikelihood
 import StatsBase:  adjr2, dof, dof_residual, nobs, r2
 import StatsBase:  fitted, predict, residuals, response
-
-const PWeights = ProbabilityWeights{Float64, Float64, Vector{Float64}}
 
 include("./inference/corr.jl")
 include("./data/types.jl")

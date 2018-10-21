@@ -7,7 +7,7 @@ mutable struct Tan <: TwoStageModel
     first_stage::Micromodel
     second_stage::IV
     pscore::Vector{Float64}
-    eweights::PWeights
+    eweights::ProbabilityWeights{Float64, Float64, Vector{Float64}}
 
     Tan() = new()
 end
@@ -74,7 +74,7 @@ score(obj::Tan) = lmul!(Diagonal(obj.eweights), score(second_stage(obj)))
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-jacobian(obj::Tan, w::UnitWeights) = jacobian(second_stage(obj), obj.eweights)
+jacobian(obj::Tan, ::UnitWeights) = jacobian(second_stage(obj), obj.eweights)
 
 function jacobian(obj::Tan, w::AbstractWeights)
     return jacobian(second_stage(obj), reweight(w, obj.eweights))
@@ -82,7 +82,7 @@ end
 
 # EXPECTED JACOBIAN OF SCORE W.R.T. FIRST-STAGE PARAMETERS × NUMBER OF OBSERVATIONS
 
-function crossjacobian(obj::Tan, w::UnitWeights)
+function crossjacobian(obj::Tan, ::UnitWeights)
 
     z = getvector(obj, :instrument)
     p = mean(z)

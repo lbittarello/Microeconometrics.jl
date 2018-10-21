@@ -7,7 +7,7 @@ mutable struct FrölichMelly <: TwoStageModel
     first_stage::Micromodel
     second_stage::OLS
     pscore::Vector{Float64}
-    eweights::PWeights
+    eweights::ProbabilityWeights{Float64, Float64, Vector{Float64}}
 
     FrölichMelly() = new()
 end
@@ -81,7 +81,7 @@ end
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-jacobian(obj::FrölichMelly, w::UnitWeights) = jacobian(second_stage(obj), obj.eweights)
+jacobian(obj::FrölichMelly, ::UnitWeights) = jacobian(second_stage(obj), obj.eweights)
 
 function jacobian(obj::FrölichMelly, w::AbstractWeights)
     return jacobian(second_stage(obj), reweight(w, obj.eweights))
@@ -89,7 +89,7 @@ end
 
 # EXPECTED JACOBIAN OF SCORE W.R.T. FIRST-STAGE PARAMETERS × NUMBER OF OBSERVATIONS
 
-function crossjacobian(obj::FrölichMelly, w::UnitWeights)
+function crossjacobian(obj::FrölichMelly, ::UnitWeights)
 
     d = getvector(obj, :treatment)
     z = getvector(obj, :instrument)

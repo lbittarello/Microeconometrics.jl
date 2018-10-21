@@ -25,7 +25,7 @@ end
 
 # ESTIMATION
 
-function _fit!(obj::Poisson, w::UnitWeights)
+function _fit!(obj::Poisson, ::UnitWeights)
 
     O  = haskey(obj.sample.map, :offset)
     y  = getvector(obj, :response)
@@ -144,7 +144,7 @@ score(obj::Poisson) = Diagonal(residuals(obj)) * getmatrix(obj, :control)
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-function jacobian(obj::Poisson, w::UnitWeights)
+function jacobian(obj::Poisson, ::UnitWeights)
 
     x = getmatrix(obj, :control)
 
@@ -181,10 +181,10 @@ end
 # LINEAR PREDICTOR
 
 function predict(obj::Poisson, MD::Microdata)
-    if getnames(obj, :control) != getnames(MD, :control)
-        throw("some variables are missing")
-    end
-    if haskey(MD.map, :offset)
+
+    (getnames(obj, :control) != getnames(MD, :control)) && throw("missing variables")
+
+    if haskey(obj.sample.map, :offset)
         return getmatrix(MD, :offset, :control) * vcat(1.0, obj.β)
     else
         return getmatrix(MD, :control) * obj.β
@@ -226,7 +226,7 @@ end
 
 # LIKELIHOOD FUNCTION UNDER NULL MODEL
 
-function _nullloglikelihood(obj::Poisson, w::UnitWeights)
+function _nullloglikelihood(obj::Poisson, ::UnitWeights)
 
     if haskey(obj.sample.map, :offset)
 
@@ -269,7 +269,7 @@ function _nullloglikelihood(obj::Poisson, w::UnitWeights)
         β   = Optim.minimizer(res)
 
         return sum(y .* (o .+ β) .- exp.(o .+ β) .- lgamma.(1.0 .+ y))
-        
+
     else
 
         y = getvector(obj, :response)

@@ -40,7 +40,7 @@ function _hausman_1s!(
         i₁::Vector{Int},
         obj₂::ParM2S,
         i₂::Vector{Int},
-        w::UnitWeights,
+        ::UnitWeights,
         corr::Heteroscedastic
     )
 
@@ -106,7 +106,7 @@ function _hausman_1s!(
         i₁::Vector{Int},
         obj₂::ParM2S,
         i₂::Vector{Int},
-        w::UnitWeights,
+        ::UnitWeights,
         corr::Clustered
     )
 
@@ -150,7 +150,7 @@ function _hausman_1s!(
         i₁::Vector{Int},
         obj₂::ParM2S,
         i₂::Vector{Int},
-        w::UnitWeights,
+        ::UnitWeights,
         corr::CrossCorrelated
     )
 

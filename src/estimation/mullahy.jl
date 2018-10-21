@@ -54,7 +54,7 @@ function fit(
         obj                = Poisson(FSD)
 
         _fit!(obj, getweights(obj))
-        
+
     else
 
         if length(MD.map[:treatment]) == length(MD.map[:instrument])
@@ -94,7 +94,7 @@ end
 
 # ESTIMATION
 
-function _fit!(obj::Mullahy, w::UnitWeights)
+function _fit!(obj::Mullahy, ::UnitWeights)
 
     O  = haskey(obj.sample.map, :offset)
     y  = getvector(obj, :response)
@@ -260,7 +260,7 @@ score(obj::Mullahy) = Diagonal(residuals(obj)) * getmatrix(obj, :instrument, :co
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-function jacobian(obj::Mullahy, w::UnitWeights)
+function jacobian(obj::Mullahy, ::UnitWeights)
 
     y = getvector(obj, :response)
     x = getmatrix(obj, :treatment, :control)
@@ -303,10 +303,10 @@ end
 # LINEAR PREDICTOR
 
 function predict(obj::Mullahy, MD::Microdata)
-    if getnames(obj, :control) != getnames(MD, :control)
-        throw("some variables are missing")
+    if getnames(obj, :treatment, :control) != getnames(MD, :treatment, :control)
+        throw("missing variables")
     end
-    if haskey(MD.map, :offset)
+    if haskey(obj.sample.map, :offset)
         return getmatrix(MD, :offset, :treatment, :control) * vcat(1.0, obj.β)
     else
         return getmatrix(MD, :treatment, :control) * obj.β

@@ -25,7 +25,7 @@ end
 
 # ESTIMATION
 
-function _fit!(obj::Cloglog, w::UnitWeights)
+function _fit!(obj::Cloglog, ::UnitWeights)
 
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
@@ -196,7 +196,7 @@ end
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-function jacobian(obj::Cloglog, w::UnitWeights)
+function jacobian(obj::Cloglog, ::UnitWeights)
 
     y = getvector(obj, :response)
     x = getmatrix(obj, :control)
@@ -231,9 +231,7 @@ end
 # LINEAR PREDICTOR
 
 function predict(obj::Cloglog, MD::Microdata)
-    if getnames(obj, :control) != getnames(MD, :control)
-        throw("some variables are missing")
-    end
+    (getnames(obj, :control) != getnames(MD, :control)) && throw("missing variables")
     getmatrix(MD, :control) * obj.β
 end
 
@@ -258,7 +256,7 @@ coefnames(obj::Cloglog) = getnames(obj, :control)
 
 # LIKELIHOOD FUNCTION
 
-function _loglikelihood(obj::Cloglog, w::UnitWeights)
+function _loglikelihood(obj::Cloglog, ::UnitWeights)
 
     y  = getvector(obj, :response)
     μ  = predict(obj)

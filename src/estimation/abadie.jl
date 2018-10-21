@@ -7,7 +7,7 @@ mutable struct Abadie <: TwoStageModel
     first_stage::Micromodel
     second_stage::ParModel
     pscore::Vector{Float64}
-    eweights::PWeights
+    eweights::ProbabilityWeights{Float64, Float64, Vector{Float64}}
 
     Abadie() = new()
 end
@@ -83,7 +83,7 @@ score(obj::Abadie) = lmul!(Diagonal(obj.eweights), score(second_stage(obj)))
 
 # EXPECTED JACOBIAN OF SCORE × NUMBER OF OBSERVATIONS
 
-jacobian(obj::Abadie, w::UnitWeights) = jacobian(second_stage(obj), obj.eweights)
+jacobian(obj::Abadie, ::UnitWeights) = jacobian(second_stage(obj), obj.eweights)
 
 function jacobian(obj::Abadie, w::AbstractWeights)
     return jacobian(second_stage(obj), reweight(w, obj.eweights))
@@ -91,7 +91,7 @@ end
 
 # EXPECTED JACOBIAN OF SCORE W.R.T. FIRST-STAGE PARAMETERS × NUMBER OF OBSERVATIONS
 
-function crossjacobian(obj::Abadie, w::UnitWeights)
+function crossjacobian(obj::Abadie, ::UnitWeights)
 
     d = getvector(obj, :treatment)
     z = getvector(obj, :instrument)
