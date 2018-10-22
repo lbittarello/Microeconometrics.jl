@@ -6,7 +6,7 @@ We will analyze the implementation of OLS. Although it is a simple model, others
 
 The first step is defining the output `struct`:
 ```julia
-mutable struct OLS <: ParModel
+mutable struct OLS <: MLE
 
     sample::Microdata     # estimation sample
     β::Vector{Float64}    # coefficient vector
@@ -104,4 +104,4 @@ coefnames(obj::OLS) = getnames(obj, :control)
 ```
 The syntax of `getnames` is similar to that of `getmatrix`.
 
-You can implement additional methods. For example, *Microeconometrics.jl* extends `r2` and `adjr2` to OLS (the fallback method only cover subtypes of `MLE`).
+You can implement additional methods. For example, *Microeconometrics.jl* extends `r2`, `adjr2`, `loglikelihood`, etc. to OLS.
