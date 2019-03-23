@@ -52,6 +52,7 @@ The `Microdata` must contain: `response`, `treatment`, `control` and `instrument
 fit(Logit, MD::Microdata)
 fit(Probit, MD::Microdata)
 fit(Cloglog, MD::Microdata)
+fit(Gompit, MD::Microdata)
 ```
 
 The `Microdata` must contain: `response` and `control`. The outcome should be binary. The model structures are subtypes of `MLE`.

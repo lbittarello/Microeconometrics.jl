@@ -14,6 +14,7 @@ More models are planned. If your preferred model is not currently available, [fi
     - Logit
     - Probit
     - Complementary log-log
+    - Gompit
 - [Count data](estimators.md#count-data)
     - Poisson
     - IV Poisson with additive errors

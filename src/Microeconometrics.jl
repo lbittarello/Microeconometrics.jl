@@ -42,6 +42,7 @@ include("./estimation/iv.jl")
 include("./estimation/logit.jl")
 include("./estimation/probit.jl")
 include("./estimation/cloglog.jl")
+include("./estimation/gompit.jl")
 include("./estimation/poisson.jl")
 include("./estimation/ivpoisson.jl")
 include("./estimation/mullahy.jl")
@@ -52,7 +53,7 @@ include("./estimation/tan.jl")
 
 export
     Microdata, Homoscedastic, Heteroscedastic, Clustered, CrossCorrelated,
-    OLS, Logit, Probit, Cloglog, Poisson,
+    OLS, Logit, Probit, Cloglog, Gompit, Poisson,
     IV, IVPoisson, Mullahy,
     IPW, Abadie, FrölichMelly, Tan
 

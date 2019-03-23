@@ -177,6 +177,22 @@ end
     @test isapprox(nullloglikelihood(E), -117.33599810, atol = 1e-7, rtol = 1e-7)
 end
 
+@testset "Gompit" begin
+
+    E = fit(Gompit, D)
+
+    β = [ 0.01937153; 0.00827072; -0.65246666; -0.46606001; -0.55757061;
+         -0.40377232; -1.06494339; -0.51695211; -0.63626157]
+    σ = [0.02104003; 0.00375728; 0.32497917; 0.24843060; 0.23366182;
+         0.25411648; 0.48787151; 0.29917807; 0.67163691]
+
+    @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(deviance(E), 200.35974543, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(loglikelihood(E), -100.17987271, atol = 1e-7, rtol = 1e-7)
+    @test isapprox(nullloglikelihood(E), -117.33599810, atol = 1e-7, rtol = 1e-7)
+end
+
 #==========================================================================================#
 
 S          = CSV.read(joinpath(datadir, "dollhill3.csv"))
