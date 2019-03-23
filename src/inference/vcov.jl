@@ -55,7 +55,9 @@ function _vcov!(obj::MLE, corr::Homoscedastic, w::AbstractWeights)
     end
 end
 
-# COVARIANCE MATRIX FOR ONE-STAGE PARAMETRIC MODELS
+#==========================================================================================#
+
+# COVARIANCE MATRIX FOR MLE AND TWO-STAGE MODELS
 
 for m in (MLE, TwoStageModel)
     @eval begin
