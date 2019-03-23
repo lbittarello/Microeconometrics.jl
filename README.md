@@ -15,6 +15,7 @@ Currently supported estimators:
     - Logit
     - Probit
     - Complementary log-log
+    - Gompit
 - Count data
     - Poisson
     - IV Poisson with additive errors
