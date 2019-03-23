@@ -91,6 +91,18 @@ function coeftable(obj::Par2S; level::Float64 = 0.95, digits::Int = 4)
     return CT
 end
 
-function show(io::IO, obj::Par2S)
-    println(io, "$(mtitle(obj))\n\n", coeftable(obj))
+function show(io::IO, obj::Par1S)
+    if isdefined(obj, :V)
+        println(io, "$(mtitle(obj))\n\n", coeftable(obj))
+    else
+        println(io, "$(mtitle(obj))\n\n", coef(obj))
+    end
+end
+
+function show(io::IO, obj::TwoStageModel)
+    if isdefined(obj.second_stage, :V)
+        println(io, "$(mtitle(obj))\n\n", coeftable(obj))
+    else
+        println(io, "$(mtitle(obj))\n\n", coef(obj))
+    end
 end
