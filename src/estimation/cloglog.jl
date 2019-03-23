@@ -237,7 +237,7 @@ end
 
 # FITTED VALUES
 
-fitted(obj::Cloglog, MD::Microdata) = 1.0 .- exp.(exp.(predict(obj, MD)))
+fitted(obj::Cloglog, MD::Microdata) = 1.0 .- exp.(.- exp.(predict(obj, MD)))
 
 # DERIVATIVE OF FITTED VALUES
 
