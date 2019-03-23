@@ -21,7 +21,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Introduction",
     "title": "Supported estimators",
     "category": "section",
-    "text": "More models are planned. If your preferred model is not currently available, file an issue or contribute!Linear regression\nOrdinary least squares\nTwo-stage least squares\nLinear GMM\nBinary choice\nLogit\nProbit\nComplementary log-log\nCount data\nPoisson\nIV Poisson with additive errors\nIV Poisson with multiplicative errors\nReweighting methods\nInverse probability weighting\nAbadie (2003)\nFrölich and Melly (2013)\nTan (2006)"
+    "text": "More models are planned. If your preferred model is not currently available, file an issue or contribute!Linear regression\nOrdinary least squares\nTwo-stage least squares\nLinear GMM\nBinary choice\nLogit\nProbit\nComplementary log-log\nGompit\nCount data\nPoisson\nIV Poisson with additive errors\nIV Poisson with multiplicative errors\nReweighting methods\nInverse probability weighting\nAbadie (2003)\nFrölich and Melly (2013)\nTan (2006)"
 },
 
 {
@@ -213,7 +213,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Estimators",
     "title": "Binary choice",
     "category": "section",
-    "text": "fit(Logit, MD::Microdata)\nfit(Probit, MD::Microdata)\nfit(Cloglog, MD::Microdata)The Microdata must contain: response and control. The outcome should be binary. The model structures are subtypes of MLE."
+    "text": "fit(Logit, MD::Microdata)\nfit(Probit, MD::Microdata)\nfit(Cloglog, MD::Microdata)\nfit(Gompit, MD::Microdata)The Microdata must contain: response and control. The outcome should be binary. The model structures are subtypes of MLE."
 },
 
 {
