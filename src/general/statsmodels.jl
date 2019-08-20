@@ -23,13 +23,13 @@ second_stage(obj::TwoStageModel) = obj.second_stage
 
 # ESTIMATES
 
-coef(obj::Par1S)         = obj.β
-coef(obj::TwoStageModel) = coef(second_stage(obj))
-vcov(obj::Par1S)         = obj.V
-vcov(obj::TwoStageModel) = vcov(second_stage(obj))
-stderror(obj::Par2S)     = sqrt.(diag(vcov(obj)))
-tstat(obj::Par2S)        = coef(obj) ./ stderror(obj)
-pval(obj::Par2S)         = 2.0 * normccdf.(abs.(tstat(obj)))
+coef(obj::Par1S)           = obj.β
+coef(obj::TwoStageModel)   = coef(second_stage(obj))
+vcov(obj::Par1S)           = obj.V
+vcov(obj::TwoStageModel)   = vcov(second_stage(obj))
+stderror(obj::ParEstimate) = sqrt.(diag(vcov(obj)))
+tstat(obj::Par2S)          = coef(obj) ./ stderror(obj)
+pval(obj::Par2S)           = 2.0 * normccdf.(abs.(tstat(obj)))
 
 function confint(obj::Par2S, level::Real = 0.95)
     return coef(obj) .+ norminvcdf((1.0 - level) / 2.0) * stderror(obj) .* [1.0 -1.0]
@@ -91,7 +91,7 @@ function coeftable(obj::Par2S; level::Float64 = 0.95, digits::Int = 4)
     return CT
 end
 
-function show(io::IO, obj::Par1S)
+function show(io::IO, obj::ParModel)
     if isdefined(obj, :V)
         println(io, "$(mtitle(obj))\n\n", coeftable(obj))
     else
@@ -104,5 +104,13 @@ function show(io::IO, obj::TwoStageModel)
         println(io, "$(mtitle(obj))\n\n", coeftable(obj))
     else
         println(io, "$(mtitle(obj))\n\n", coef(obj))
+    end
+end
+
+function show(io::IO, obj::ParEstimate)
+    if isdefined(obj, :V)
+        println(io, coeftable(obj))
+    else
+        println(io, coef(obj))
     end
 end
