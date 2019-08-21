@@ -2,7 +2,7 @@
 
 # INFLUENCE FUNCTION
 
-function influence(obj::ParModel, w::AbstractWeights)
+function influence(obj::MLE, w::AbstractWeights)
     s = score(obj)
     j = jacobian(obj, w)
     return - s / j'
@@ -15,30 +15,11 @@ function influence(obj::TwoStageModel, w::AbstractWeights)
     return - (s + c) / j'
 end
 
-function influence(obj::GMM, w::AbstractWeights)
-
-    s = score(obj)
-    j = jacobian(obj, w)
-
-    if obj.method == "Method of moments"
-        return - s / j'
-    elseif obj.method == "One-step GMM"
-        ψ = j / (j' * j)
-        return - s * ψ
-    elseif (obj.method == "Two-step GMM") | (obj.method == "Optimal GMM")
-        ω = obj.W \ j
-        ψ = ω / (j' * ω)
-        return - s * ψ
-    end
-end
-
 #==========================================================================================#
 
 # SET COVARIANCE MATRIX
 
-_vcov!(obj::ParModel, V::Matrix)      = (obj.V = V)
-_vcov!(obj::GMM, V::Matrix)           = (obj.V = V)
-_vcov!(obj::TwoStageModel, V::Matrix) = (obj.second_stage.V = V)
+_vcov!(obj::ParModel, V::Matrix) = (switch_stage(obj).V = V)
 
 #==========================================================================================#
 

@@ -77,13 +77,13 @@ function Microdata(
         hints::Dict{Symbol} = Dict{Symbol, Any}(),
         subset::AbstractVector{Bool} = trues(size(df, 1)),
         vcov::CorrStructure = Heteroscedastic(),
-        weights::AbstractWeights = UnitWeights(1.0, size(df, 1))
+        weights::AbstractWeights = UnitWeights(Float64, size(df, 1))
     )
 
     nonmissing  = completecases(df, termvars(model))
-    nonmissing .= nonmissing .* .!iszero.(weights) .* BitVector(subset)
-    corr        = adjmissing!(nonmissing, vcov)
-    weights     = parse_weights(weights, nonmissing)
+    nonmissing .= nonmissing .* .!iszero.(weights) .* subset
+    corr        = parse_corr!(nonmissing, vcov)
+    weights     = parse_weights(nonmissing, weights)
     columns     = termvars(model)
     data        = DataFrame(map(x -> disallowmissing(df[nonmissing, x]), columns), columns)
     model       = apply_schema(model, schema(model, data, hints))
@@ -104,3 +104,9 @@ function Microdata(MD::Microdata)
         MD.corr
     )
 end
+
+#==========================================================================================#
+
+# COPY
+
+copy(m::Microdata) = Microdata([copy(getfield(m, k))     for k in fieldnames(m)]...)

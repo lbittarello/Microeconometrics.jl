@@ -1,12 +1,6 @@
-abstract type Micromodel <: RegressionModel end
-
-abstract type ParModel <: Micromodel end
-
-abstract type MLE <: ParModel end
-
-abstract type GMM <: ParModel end
-
-abstract type TwoStageModel <: Micromodel end
+abstract type MLE <: RegressionModel end
+abstract type GMM <: RegressionModel end
+abstract type TwoStageModel <: RegressionModel end
 
 mutable struct ParEstimate
 
@@ -17,6 +11,7 @@ mutable struct ParEstimate
     ParEstimate() = new()
 end
 
-const Par1S  = Union{ParModel, ParEstimate}
-const Par2S  = Union{ParModel, TwoStageModel, ParEstimate}
-const ParM2S = Union{ParModel, TwoStageModel}
+const OneStageModel = Union{MLE, GMM}
+const ParModel      = Union{MLE, GMM, TwoStageModel}
+const AnyModel      = Union{MLE, GMM, TwoStageModel}
+const ParObject     = Union{MLE, GMM, TwoStageModel, ParEstimate}

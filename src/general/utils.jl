@@ -10,6 +10,35 @@ crossprod(x::AbstractMatrix, w::AbstractMatrix)       = x' * (w * x)
 
 #==========================================================================================#
 
+# FIRST AND SECOND STAGES
+
+first_stage(obj::TwoStageModel)  = obj.first_stage
+second_stage(obj::TwoStageModel) = obj.second_stage
+
+switch_stage(obj::OneStageModel) = obj
+switch_stage(obj::TwoStageModel) = obj.second_stage
+switch_stage(obj::ParEstimate)   = obj
+
+#==========================================================================================#
+
+# RETRIEVAL
+
+getvector(obj::ParModel, x::Symbol) = getvector(switch_stage(obj).sample, x)
+getmatrix(obj::ParModel, args...)   = getmatrix(switch_stage(obj).sample, args...)
+getnames(obj::ParModel, args...)    = getnames(switch_stage(obj).sample, args...)
+getcorr(obj::ParModel)              = getcorr(switch_stage(obj).sample)
+getnonmissing(obj::AnyModel)        = getnonmissing(switch_stage(obj).sample)
+getweights(obj::AnyModel)           = getweights(switch_stage(obj).sample)
+
+#==========================================================================================#
+
+# REWEIGHTING
+
+reweight(w::UnitWeights, v::ProbabilityWeights)     = v
+reweight(w::AbstractWeights, v::ProbabilityWeights) = pweights(w .* v)
+
+#==========================================================================================#
+
 # FORMATTER
 
 function frmtr(X::Array{<: Real}, d::Int)

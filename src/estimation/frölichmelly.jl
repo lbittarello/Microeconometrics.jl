@@ -4,7 +4,7 @@
 
 mutable struct FrölichMelly <: TwoStageModel
 
-    first_stage::Micromodel
+    first_stage::OneStageModel
     second_stage::OLS
     pscore::Vector{Float64}
     eweights::ProbabilityWeights{Float64, Float64, Vector{Float64}}
@@ -16,7 +16,7 @@ end
 
 # FIRST STAGE
 
-function first_stage(::Type{FrölichMelly}, MM::Type{<:Micromodel}, MD::Microdata; kwargs...)
+function first_stage(::Type{FrölichMelly}, MM::Type{<:OneStageModel}, MD::Microdata; kwargs...)
 
     FSD                    = Microdata(MD)
     FSD.mapping[:response] = MD.mapping[:instrument]
@@ -33,7 +33,7 @@ end
 
 function fit(
         ::Type{FrölichMelly},
-        MM::Type{<:Micromodel},
+        MM::Type{<:OneStageModel},
         MD::Microdata;
         novar::Bool = false,
         kwargs...
@@ -45,7 +45,7 @@ end
 
 function fit(
         ::Type{FrölichMelly},
-        MM::Micromodel,
+        MM::OneStageModel,
         MD::Microdata;
         novar::Bool = false,
         trim::AbstractFloat = 0.0,

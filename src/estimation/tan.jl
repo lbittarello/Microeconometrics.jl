@@ -4,7 +4,7 @@
 
 mutable struct Tan <: TwoStageModel
 
-    first_stage::Micromodel
+    first_stage::OneStageModel
     second_stage::IV
     pscore::Vector{Float64}
     eweights::ProbabilityWeights{Float64, Float64, Vector{Float64}}
@@ -16,7 +16,7 @@ end
 
 # FIRST STAGE
 
-function first_stage(::Type{Tan}, MM::Type{<:Micromodel}, MD::Microdata; kwargs...)
+function first_stage(::Type{Tan}, MM::Type{<:OneStageModel}, MD::Microdata; kwargs...)
 
     FSD                    = Microdata(MD)
     FSD.mapping[:response] = MD.mapping[:instrument]
@@ -32,7 +32,7 @@ end
 # ESTIMATION
 
 function fit(
-        ::Type{Tan}, MM::Type{<:Micromodel}, MD::Microdata; novar::Bool = false, kwargs...
+        ::Type{Tan}, MM::Type{<:OneStageModel}, MD::Microdata; novar::Bool = false, kwargs...
     )
 
     m = first_stage(Tan, MM, MD; novar = novar)
@@ -41,7 +41,7 @@ end
 
 function fit(
         ::Type{Tan},
-        MM::Micromodel,
+        MM::OneStageModel,
         MD::Microdata;
         novar::Bool = false,
         trim::AbstractFloat = 0.0,

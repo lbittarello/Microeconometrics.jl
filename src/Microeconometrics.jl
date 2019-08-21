@@ -18,7 +18,7 @@ using StatsBase: AbstractWeights, CoefTable, RegressionModel
 using StatsBase: AnalyticWeights, FrequencyWeights, ProbabilityWeights, Weights
 using StatsBase: mean, sum, pweights
 
-import Base:        copy, deepcopy, isequal, show, sum
+import Base:        copy, isequal, show, sum
 import Statistics:  mean
 import StatsBase:   fit, coef, coefnames, coeftable, confint, stderror, vcov
 import StatsBase:   deviance, loglikelihood, nulldeviance, nullloglikelihood
@@ -30,7 +30,6 @@ include("./inference/corr.jl")
 include("./data/types.jl")
 include("./data/weights.jl")
 include("./general/types.jl")
-include("./data/retrieval.jl")
 include("./data/utils.jl")
 include("./general/etable.jl")
 include("./general/statsmodels.jl")

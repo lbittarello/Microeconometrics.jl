@@ -2,35 +2,26 @@
 
 # ONE-SAMPLE FINITE-SAMPLE ADJUSTMENT
 
-function adjfactor!(V::Matrix, obj::Micromodel, corr::Homoscedastic)
+function adjfactor!(V::Matrix, obj::ParModel, corr::Homoscedastic)
 end
 
-function adjfactor!(V::Matrix, obj::Micromodel, corr::Heteroscedastic)
-    if corr.adj == true
-        n = nobs(obj)
-        lmul!(n / (n - 1), V)
-    end
+function adjfactor!(V::Matrix, obj::ParModel, corr::Heteroscedastic)
+    (corr.adj == true) && (n = nobs(obj) ; lmul!(n / (n - 1), V))
 end
 
-function adjfactor!(V::Matrix, obj::Micromodel, corr::Clustered)
-    if corr.adj == true
-        n = corr.nc
-        lmul!(n / (n - 1), V)
-    end
+function adjfactor!(V::Matrix, obj::ParModel, corr::Clustered)
+    (corr.adj == true) && (n = corr.nc ; lmul!(n / (n - 1), V))
 end
 
-function adjfactor!(V::Matrix, obj::Micromodel, corr::CrossCorrelated)
-    if corr.adj == true
-        n = nobs(obj)
-        lmul!(n / (n - 1), V)
-    end
+function adjfactor!(V::Matrix, obj::ParModel, corr::CrossCorrelated)
+    (corr.adj == true) && (n = nobs(obj) ; lmul!(n / (n - 1), V))
 end
 
 #==========================================================================================#
 
 # TWO-SAMPLE FINITE-SAMPLE ADJUSTMENT
 
-function adjfactor!(V::Matrix, obj₁::Micromodel, obj₂::Micromodel, corr::Heteroscedastic)
+function adjfactor!(V::Matrix, obj₁::ParModel, obj₂::ParModel, corr::Heteroscedastic)
     if corr.adj == true
 
         nonmissing₁ = getnonmissing(obj₁)
@@ -41,7 +32,7 @@ function adjfactor!(V::Matrix, obj₁::Micromodel, obj₂::Micromodel, corr::Het
     end
 end
 
-function adjfactor!(V::Matrix, obj₁::Micromodel, obj₂::Micromodel, corr::Clustered)
+function adjfactor!(V::Matrix, obj₁::ParModel, obj₂::ParModel, corr::Clustered)
     if corr.adj == true
 
         corr₁ = getcorr(obj₁)
@@ -54,7 +45,7 @@ function adjfactor!(V::Matrix, obj₁::Micromodel, obj₂::Micromodel, corr::Clu
     end
 end
 
-function adjfactor!(V::Matrix, obj₁::Micromodel, obj₂::Micromodel, corr::CrossCorrelated)
+function adjfactor!(V::Matrix, obj₁::ParModel, obj₂::ParModel, corr::CrossCorrelated)
     if corr.adj == true
 
         corr₁ = getcorr(obj₁)

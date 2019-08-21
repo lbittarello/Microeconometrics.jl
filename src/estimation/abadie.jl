@@ -4,7 +4,7 @@
 
 mutable struct Abadie <: TwoStageModel
 
-    first_stage::Micromodel
+    first_stage::OneStageModel
     second_stage::ParModel
     pscore::Vector{Float64}
     eweights::ProbabilityWeights{Float64, Float64, Vector{Float64}}
@@ -16,7 +16,7 @@ end
 
 # FIRST STAGE
 
-function first_stage(::Type{Abadie}, M₁::Type{<:Micromodel}, MD::Microdata; kwargs...)
+function first_stage(::Type{Abadie}, M₁::Type{<:OneStageModel}, MD::Microdata; kwargs...)
 
     FSD                    = Microdata(MD)
     FSD.mapping[:response] = MD.mapping[:instrument]
@@ -33,7 +33,7 @@ end
 
 function fit(
         ::Type{Abadie},
-        M₂::Type{<:Micromodel},
+        M₂::Type{<:OneStageModel},
         M₁::Type{<:ParModel},
         MD::Microdata;
         novar::Bool = false,
@@ -46,8 +46,8 @@ end
 
 function fit(
         ::Type{Abadie},
-        M₂::Type{<:Micromodel},
-        M₁::Micromodel,
+        M₂::Type{<:OneStageModel},
+        M₁::OneStageModel,
         MD::Microdata;
         novar::Bool = false,
         trim::AbstractFloat = 0.0,

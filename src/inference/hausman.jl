@@ -2,16 +2,16 @@
 
 # ONE SAMPLE: INTERFACE
 
-function hausman_1s(obj₁::ParM2S, obj₂::ParM2S)
+function hausman_1s(obj₁::ParModel, obj₂::ParModel)
     return hausman_1s(obj₁, obj₂, intersect(coefnames(obj₁), coefnames(obj₂)))
 end
 
-function hausman_1s(obj₁::ParM2S, obj₂::ParM2S, name::String )
+function hausman_1s(obj₁::ParModel, obj₂::ParModel, name::String)
 
     return hausman_1s(obj₁, obj₂, [name])
 end
 
-function hausman_1s(obj₁::ParM2S, obj₂::ParM2S, names::Vector{String})
+function hausman_1s(obj₁::ParModel, obj₂::ParModel, names::Vector{String})
 
     i₁    = findall((in)(names), coefnames(obj₁))
     i₂    = findall((in)(names), coefnames(obj₂))
@@ -36,9 +36,9 @@ end
 
 function _hausman_1s!(
         output::ParEstimate,
-        obj₁::ParM2S,
+        obj₁::ParModel,
         i₁::Vector{Int},
-        obj₂::ParM2S,
+        obj₂::ParModel,
         i₂::Vector{Int},
         w::UnitWeights,
         corr::Heteroscedastic
@@ -58,9 +58,9 @@ end
 
 function _hausman_1s!(
         output::ParEstimate,
-        obj₁::ParM2S,
+        obj₁::ParModel,
         i₁::Vector{Int},
-        obj₂::ParM2S,
+        obj₂::ParModel,
         i₂::Vector{Int},
         w::FrequencyWeights,
         corr::Heteroscedastic
@@ -80,9 +80,9 @@ end
 
 function _hausman_1s!(
         output::ParEstimate,
-        obj₁::ParM2S,
+        obj₁::ParModel,
         i₁::Vector{Int},
-        obj₂::ParM2S,
+        obj₂::ParModel,
         i₂::Vector{Int},
         w::AbstractWeights,
         corr::Heteroscedastic
@@ -102,9 +102,9 @@ end
 
 function _hausman_1s!(
         output::ParEstimate,
-        obj₁::ParM2S,
+        obj₁::ParModel,
         i₁::Vector{Int},
-        obj₂::ParM2S,
+        obj₂::ParModel,
         i₂::Vector{Int},
         w::UnitWeights,
         corr::Clustered
@@ -124,9 +124,9 @@ end
 
 function _hausman_1s!(
         output::ParEstimate,
-        obj₁::ParM2S,
+        obj₁::ParModel,
         i₁::Vector{Int},
-        obj₂::ParM2S,
+        obj₂::ParModel,
         i₂::Vector{Int},
         w::AbstractWeights,
         corr::Clustered
@@ -146,9 +146,9 @@ end
 
 function _hausman_1s!(
         output::ParEstimate,
-        obj₁::ParM2S,
+        obj₁::ParModel,
         i₁::Vector{Int},
-        obj₂::ParM2S,
+        obj₂::ParModel,
         i₂::Vector{Int},
         w::UnitWeights,
         corr::CrossCorrelated
@@ -168,9 +168,9 @@ end
 
 function _hausman_1s!(
         output::ParEstimate,
-        obj₁::ParM2S,
+        obj₁::ParModel,
         i₁::Vector{Int},
-        obj₂::ParM2S,
+        obj₂::ParModel,
         i₂::Vector{Int},
         w::AbstractWeights,
         corr::CrossCorrelated
@@ -192,15 +192,15 @@ end
 
 # TWO INDEPENDENT SAMPLES
 
-function hausman_2s(obj₁::ParM2S, obj₂::ParM2S)
+function hausman_2s(obj₁::ParModel, obj₂::ParModel)
     return hausman_2s(obj₁, obj₂, intersect(coefnames(obj₁), coefnames(obj₂)))
 end
 
-function hausman_2s(obj₁::ParM2S, obj₂::ParM2S, name::String)
+function hausman_2s(obj₁::ParModel, obj₂::ParModel, name::String)
     return hausman_2s(obj₁, obj₂, [name])
 end
 
-function hausman_2s(obj₁::ParM2S, obj₂::ParM2S, names::Vector{String})
+function hausman_2s(obj₁::ParModel, obj₂::ParModel, names::Vector{String})
 
     i₁ = findall((in)(names), coefnames(obj₁))
     i₂ = findall((in)(names), coefnames(obj₂))
@@ -219,15 +219,15 @@ end
 
 # TWO DEPENDENT SAMPLES: INTERFACE
 
-function hausman_2s(obj₁::ParM2S, obj₂::ParM2S, corr::CorrStructure)
+function hausman_2s(obj₁::ParModel, obj₂::ParModel, corr::CorrStructure)
     return hausman_2s(obj₁, obj₂, corr, intersect(coefnames(obj₁), coefnames(obj₂)))
 end
 
-function hausman_2s(obj₁::ParM2S, obj₂::ParM2S, corr::CorrStructure, name::String)
+function hausman_2s(obj₁::ParModel, obj₂::ParModel, corr::CorrStructure, name::String)
     return hausman_2s(obj₁, obj₂, corr, [name])
 end
 
-function hausman_2s(obj₁::ParM2S, obj₂::ParM2S, corr::CorrStructure, names::Vector{String})
+function hausman_2s(obj₁::ParModel, obj₂::ParModel, corr::CorrStructure, names::Vector{String})
 
     i₁ = findall((in)(names), coefnames(obj₁))
     i₂ = findall((in)(names), coefnames(obj₂))
@@ -252,10 +252,10 @@ end
 
 function _hausman_2s!(
         output::ParEstimate,
-        obj₁::ParM2S,
+        obj₁::ParModel,
         i₁::Vector{Int},
         w₁::UnitWeights,
-        obj₂::ParM2S,
+        obj₂::ParModel,
         i₂::Vector{Int},
         w₂::UnitWeights,
         corr::Heteroscedastic
@@ -281,10 +281,10 @@ end
 
 function _hausman_2s!(
         output::ParEstimate,
-        obj₁::ParM2S,
+        obj₁::ParModel,
         i₁::Vector{Int},
         w₁::AbstractWeights,
-        obj₂::ParM2S,
+        obj₂::ParModel,
         i₂::Vector{Int},
         w₂::AbstractWeights,
         corr::Heteroscedastic
@@ -310,10 +310,10 @@ end
 
 function _hausman_2s!(
         output::ParEstimate,
-        obj₁::ParM2S,
+        obj₁::ParModel,
         i₁::Vector{Int},
         w₁::UnitWeights,
-        obj₂::ParM2S,
+        obj₂::ParModel,
         i₂::Vector{Int},
         w₂::UnitWeights,
         corr::Clustered
@@ -336,10 +336,10 @@ end
 
 function _hausman_2s!(
         output::ParEstimate,
-        obj₁::ParM2S,
+        obj₁::ParModel,
         i₁::Vector{Int},
         w₁::AbstractWeights,
-        obj₂::ParM2S,
+        obj₂::ParModel,
         i₂::Vector{Int},
         w₂::AbstractWeights,
         corr::Clustered
@@ -362,10 +362,10 @@ end
 
 function _hausman_2s!(
         output::ParEstimate,
-        obj₁::ParM2S,
+        obj₁::ParModel,
         i₁::Vector{Int},
         w₁::UnitWeights,
-        obj₂::ParM2S,
+        obj₂::ParModel,
         i₂::Vector{Int},
         w₂::UnitWeights,
         corr::CorrStructure
@@ -388,10 +388,10 @@ end
 
 function _hausman_2s!(
         output::ParEstimate,
-        obj₁::ParM2S,
+        obj₁::ParModel,
         i₁::Vector{Int},
         w₁::AbstractWeights,
-        obj₂::ParM2S,
+        obj₂::ParModel,
         i₂::Vector{Int},
         w₂::AbstractWeights,
         corr::CorrStructure
