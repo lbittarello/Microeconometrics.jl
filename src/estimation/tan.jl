@@ -18,9 +18,11 @@ end
 
 function first_stage(::Type{Tan}, MM::Type{<:Micromodel}, MD::Microdata; kwargs...)
 
-    FSM                = Dict(:treatment => "", :instrument => "")
-    FSD                = Microdata(MD, FSM)
-    FSD.map[:response] = MD.map[:instrument]
+    FSD                    = Microdata(MD)
+    FSD.mapping[:response] = MD.mapping[:instrument]
+
+    pop!(FSD.mapping, :treatment)
+    pop!(FSD.mapping, :instrument)
 
     return fit(MM, FSD; kwargs...)
 end
@@ -53,12 +55,14 @@ function fit(
 
     v[((trim .> π) .| (1.0 - trim .< π))] .= 0.0
 
-    SSD              = Microdata(MD, Dict(:control => "1"))
+    SSD                   = Microdata(MD)
+    SSD.mapping[:control] = asgn(MD.model, InterceptTerm{true}())
+
     obj              = Tan()
     obj.first_stage  = MM
     obj.second_stage = IV(SSD)
     obj.pscore       = π
-    obj.eweights      = pweights(v)
+    obj.eweights     = pweights(v)
 
     _fit!(second_stage(obj), reweight(w, obj.eweights))
     novar || _vcov!(obj, getcorr(obj), w)

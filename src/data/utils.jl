@@ -37,20 +37,3 @@ function adjmissing!(nonmissing::BitVector, corr::CrossCorrelated)
 
     return CrossCorrelated(corr.adj, nonmissing, new_mat)
 end
-
-#==========================================================================================#
-
-# ASSIGN COLUMNS TO VARIABLE SET
-
-function assign_columns(input::String, urterms::Vector)
-
-    formula = @eval @formula $nothing ~ $(Meta.parse(input))
-    terms   = StatsModels.Terms(formula)
-    output  = findall((in)(terms.eterms), urterms) .+ 1
-
-    if occursin("+ 1", "+ " * input) | occursin("+1", input)
-        iszero(output) ? (output = [1]) : (output = vcat(output, 1))
-    end
-
-    return output
-end

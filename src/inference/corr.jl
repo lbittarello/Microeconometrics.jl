@@ -44,14 +44,12 @@ Heteroscedastic(; adj::Bool = true) = Heteroscedastic(adj)
 
 function Clustered(df::DataFrame, x::Symbol; adj::Bool = true)
 
-    nonmissing  = BitVector(undef, size(df, 1))
-    nonmissing .= .!ismissing.(df[x])
-    ic          = disallowmissing(df[x][nonmissing])
-    n           = sum(nonmissing)
-    iter        = sort(unique(ic))
-    nc          = length(iter)
-    idx₁        = Vector{Int}()
-    idx₂        = Vector{Int}()
+    nonmissing = completecases(df, x)
+    ic         = disallowmissing(df[nonmissing, x])
+    iter       = sort(unique(ic))
+    nc         = length(iter)
+    idx₁       = Vector{Int}()
+    idx₂       = Vector{Int}()
 
     @inbounds for (i, ci) in enumerate(iter)
         idx = findall((in)([ci]), ic)
@@ -60,8 +58,9 @@ function Clustered(df::DataFrame, x::Symbol; adj::Bool = true)
     end
 
     val = fill(1.0, length(idx₁))
+    V   = sparse(idx₁, idx₂, val)
 
-    return Clustered(adj, nonmissing, sparse(idx₁, idx₂, val), ic, nc)
+    return Clustered(adj, nonmissing, SuiteSparse.CHOLMOD.Sparse(V), ic, nc)
 end
 
 #==========================================================================================#
@@ -86,10 +85,9 @@ end
 
 function cc_twowayclustering(df::DataFrame, x₁::Symbol, x₂::Symbol; adj::Bool = true)
 
-    nonmissing  = BitVector(undef, size(df, 1))
-    nonmissing .= .!(ismissing.(df[x₁]) .& ismissing.(df[x₂]))
-    ic₁         = disallowmissing(df[x₁][nonmissing])
-    ic₂         = disallowmissing(df[x₂][nonmissing])
+    nonmissing  = completecases(df, [x₁, x₂])
+    ic₁         = disallowmissing(df[nonmissing, x₁])
+    ic₂         = disallowmissing(df[nonmissing, x₂])
     n           = sum(nonmissing)
     iter₁       = unique(ic₁)
     iter₂       = unique(ic₂)
@@ -149,13 +147,12 @@ function cc_time(
         adj::Bool = true
     )
 
-    nonmissing  = BitVector(undef, size(df, 1))
-    nonmissing .= .!ismissing.(df[x])
-    xx          = Vector{Date}(df[x][nonmissing])
-    n           = sum(nonmissing)
-    idx₁        = Vector{Int}(1:n)
-    idx₂        = Vector{Int}(1:n)
-    val         = fill(1.0, n)
+    nonmissing = completecases(df, x)
+    xx         = Vector{Date}(df[nonmissing, x])
+    n          = sum(nonmissing)
+    idx₁       = Vector{Int}(1:n)
+    idx₂       = Vector{Int}(1:n)
+    val        = fill(1.0, n)
 
     kernel(z) = k(z / float(b))
 
@@ -187,10 +184,9 @@ function cc_space(
         adj::Bool = true
     )
 
-    nonmissing  = BitVector(undef, size(df, 1))
-    nonmissing .= .!(ismissing.(df[y]) .& ismissing.(df[x]))
-    yy          = Vector{Float64}(df[y][nonmissing])
-    xx          = Vector{Float64}(df[x][nonmissing])
+    nonmissing  = completecases(df, [y, x])
+    yy          = Vector{Float64}(df[nonmissing, y])
+    xx          = Vector{Float64}(df[nonmissing, x])
     n           = sum(nonmissing)
     idx₁        = Vector{Int}(1:n)
     idx₂        = Vector{Int}(1:n)
@@ -228,11 +224,10 @@ function cc_timespace(
         adj::Bool = true
     )
 
-    nonmissing  = BitVector(undef, size(df, 1))
-    nonmissing .= .!(ismissing.(df[x₁]) .& ismissing.(df[y₂]) .& ismissing.(df[x₂]))
-    xx₁         = Vector{Date}(df[x₁][nonmissing])
-    yy₂         = Vector{Float64}(df[y₂][nonmissing])
-    xx₂         = Vector{Float64}(df[x₂][nonmissing])
+    nonmissing  = completecases(df, [x₁, y₂, x₂])
+    xx₁         = Vector{Date}(df[nonmissing, x₁])
+    yy₂         = Vector{Float64}(df[nonmissing, y₂])
+    xx₂         = Vector{Float64}(df[nonmissing, x₂])
     n           = sum(nonmissing)
     idx₁        = Vector{Int}(1:n)
     idx₂        = Vector{Int}(1:n)

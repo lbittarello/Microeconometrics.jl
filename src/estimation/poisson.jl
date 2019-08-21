@@ -27,7 +27,7 @@ end
 
 function _fit!(obj::Poisson, ::UnitWeights)
 
-    O  = haskey(obj.sample.map, :offset)
+    O  = haskey(obj.sample.mapping, :offset)
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
     μ  = Array{Float64}(undef, length(y))
@@ -82,7 +82,7 @@ end
 
 function _fit!(obj::Poisson, w::AbstractWeights)
 
-    O  = haskey(obj.sample.map, :offset)
+    O  = haskey(obj.sample.mapping, :offset)
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :control)
     μ  = Array{Float64}(undef, length(y))
@@ -148,7 +148,7 @@ function jacobian(obj::Poisson, ::UnitWeights)
 
     x = getmatrix(obj, :control)
 
-    if haskey(obj.sample.map, :offset)
+    if haskey(obj.sample.mapping, :offset)
         xo = getmatrix(obj, :offset, :control)
         v  = xo * vcat(1.0, obj.β)
     else
@@ -164,7 +164,7 @@ function jacobian(obj::Poisson, w::AbstractWeights)
 
     x = getmatrix(obj, :control)
 
-    if haskey(obj.sample.map, :offset)
+    if haskey(obj.sample.mapping, :offset)
         xo = getmatrix(obj, :offset, :control)
         v  = xo * vcat(1.0, obj.β)
     else
@@ -184,7 +184,7 @@ function predict(obj::Poisson, MD::Microdata)
 
     (getnames(obj, :control) != getnames(MD, :control)) && throw("missing variables")
 
-    if haskey(obj.sample.map, :offset)
+    if haskey(obj.sample.mapping, :offset)
         return getmatrix(MD, :offset, :control) * vcat(1.0, obj.β)
     else
         return getmatrix(MD, :control) * obj.β
@@ -199,7 +199,7 @@ fitted(obj::Poisson, MD::Microdata) = exp.(predict(obj, MD))
 
 function jacobexp(obj::Poisson)
 
-    if haskey(obj.sample.map, :offset)
+    if haskey(obj.sample.mapping, :offset)
         v = getmatrix(obj, :offset, :control) * vcat(1.0, obj.β)
     else
         v = getmatrix(obj, :control) * obj.β
@@ -229,7 +229,7 @@ end
 
 function _nullloglikelihood(obj::Poisson, ::UnitWeights)
 
-    if haskey(obj.sample.map, :offset)
+    if haskey(obj.sample.mapping, :offset)
 
         y  = getvector(obj, :response)
         o  = getmatrix(obj, :offset)
@@ -282,7 +282,7 @@ end
 
 function _nullloglikelihood(obj::Poisson, w::AbstractWeights)
 
-    if haskey(obj.sample.map, :offset)
+    if haskey(obj.sample.mapping, :offset)
 
         y  = getvector(obj, :response)
         o  = getmatrix(obj, :offset)

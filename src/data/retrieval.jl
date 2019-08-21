@@ -2,61 +2,34 @@
 
 # GET VARIABLE SETS
 
-function getvector(MD::Microdata, x::Symbol)
-    haskey(MD.map, x)       || throw(string(x) * " not found")
-    iszero(MD.map[x])       && throw(string(x) * " not found")
-    (length(MD.map[x]) > 1) && throw(string(x) * " is not a vector")
-    return view(MD.mat, :, MD.map[x]...)
+function getvector(obj::Microdata, x::Symbol)
+    (length(obj.mapping[x]) == 1) || throw(ArgumentError(string(x) * " is not a vector"))
+    return view(obj.matrix, :, obj.mapping[x]...)
 end
 
-getvector(MM::ParModel, x::Symbol)      = getvector(MM.sample, x)
-getvector(MM::TwoStageModel, x::Symbol) = getvector(MM.second_stage.sample, x)
+getvector(obj::ParModel, x::Symbol)      = getvector(obj.sample, x)
+getvector(obj::TwoStageModel, x::Symbol) = getvector(obj.second_stage.sample, x)
 
-function getmatrix(MD::Microdata, args...)
-
-    n = length(args)
-
-    for i in args
-        haskey(MD.map, i) || throw(string(i) * " not found")
-        iszero(MD.map[i]) && throw(string(i) * " not found")
-    end
-
-    x = Vector{Int64}()
-
-    for i in args
-        x = vcat(x, MD.map[i])
-    end
-
-    return view(MD.mat, :, x)
+function getmatrix(obj::Microdata, args...)
+    x = mapreduce(i -> obj.mapping[i], vcat, args, init = Vector{Int64}())
+    return view(obj.matrix, :, x)
 end
 
-getmatrix(MM::ParModel, args...)        = getmatrix(MM.sample, args...)
-getmatrix(MM::TwoStageModel, x::Symbol) = getmatrix(MM.second_stage.sample, x)
+getmatrix(obj::ParModel, args...)      = getmatrix(obj.sample, args...)
+getmatrix(obj::TwoStageModel, args...) = getmatrix(obj.second_stage.sample, args...)
 
 #==========================================================================================#
 
 # GET VARIABLE NAMES
 
-function getnames(MD::Microdata, args...)
-
-    n = length(args)
-
-    for i in args
-        haskey(MD.map, i) || throw(string(x) * " not found")
-        iszero(MD.map[i]) && throw(string(i) * " not found")
-    end
-
-    x = Vector{Int64}()
-
-    for i in args
-        x = vcat(x, MD.map[i])
-    end
-
-    return MD.names[x]
+function getnames(obj::Microdata, args...)
+    n = coefnames(eterms(obj.model))
+    x = mapreduce(i -> obj.mapping[i], vcat, args, init = Vector{Int64}())
+    return n[x]
 end
 
-getnames(MM::ParModel, args...)      = getnames(MM.sample, args...)
-getnames(MM::TwoStageModel, args...) = getnames(MM.second_stage.sample, args...)
+getnames(obj::ParModel, args...)      = getnames(obj.sample, args...)
+getnames(obj::TwoStageModel, args...) = getnames(obj.second_stage.sample, args...)
 
 #==========================================================================================#
 
@@ -64,7 +37,7 @@ getnames(MM::TwoStageModel, args...) = getnames(MM.second_stage.sample, args...)
 
 getcorr(obj::Microdata)     = obj.corr
 getcorr(obj::ParModel)      = getcorr(obj.sample)
-getcorr(obj::TwoStageModel) = getcorr(second_stage(obj).sample)
+getcorr(obj::TwoStageModel) = getcorr(obj.second_stage.sample)
 
 #==========================================================================================#
 
@@ -72,12 +45,12 @@ getcorr(obj::TwoStageModel) = getcorr(second_stage(obj).sample)
 
 getnonmissing(obj::Microdata)     = obj.nonmissing
 getnonmissing(obj::ParModel)      = getnonmissing(obj.sample)
-getnonmissing(obj::TwoStageModel) = getnonmissing(second_stage(obj).sample)
+getnonmissing(obj::TwoStageModel) = getnonmissing(obj.second_stage.sample)
 
 #==========================================================================================#
 
 # GET WEIGHT
 
-getweights(MD::Microdata)     = MD.weights
-getweights(MM::Micromodel)    = getweights(MM.sample)
-getweights(MM::TwoStageModel) = getweights(MM.second_stage.sample)
+getweights(obj::Microdata)     = obj.weights
+getweights(obj::Micromodel)    = getweights(obj.sample)
+getweights(obj::TwoStageModel) = getweights(obj.second_stage.sample)

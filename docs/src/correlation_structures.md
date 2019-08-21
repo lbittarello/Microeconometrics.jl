@@ -70,7 +70,7 @@ CrossCorrelated("Space",
     )
 ```
 
-The maximum possible correlation between two observations declines with the spatial distance between them. The actual correlation is arbitrary below that limit. (See [Conley (1999)](https://www.sciencedirect.com/science/article/pii/S0304407698000840).) The bandwidth and the kernel function control the upper bound. `latitude` and `longitude` specify the columns of `DF` that contain the coordinates of each observation in radians (of type `Float64`).
+The maximum possible correlation between two observations declines with the spatial distance between them. The actual correlation is arbitrary below that limit. (See [Conley (1999)](https://www.sciencedirect.com/science/article/pii/S0304407698000840).) The bandwidth and the kernel function control the upper bound. `latitude` and `longitude` specify the columns of `DF` that contain the coordinates of each observation in decimal degrees (of type `Float64`).
 
 The following kernels are predefined for convenience: Bartlett (`bartlett`), Parzen (`parzen`), Truncated (`truncated`) and Tukey-Hanning (`tukeyhanning`). See [Andrews (1991)](http://jstor.org/stable/2938229) for formulae.
 
@@ -88,6 +88,6 @@ CrossCorrelated("Time and space",
     )
 ```
 
-The maximum possible correlation between two observations declines with the time difference and the spatial distance between them. The actual correlation is arbitrary below that limit. (See [Conley (1999)](https://www.sciencedirect.com/science/article/pii/S0304407698000840).) The bandwidths and the kernel function control the upper bound. `time` specifies the column of `DF` that contains the date of each observation. `latitude` and `longitude` specify the columns of `DF` that contain the coordinates of each observation in radians (`Float64`).
+The maximum possible correlation between two observations declines with the time difference and the spatial distance between them. The actual correlation is arbitrary below that limit. (See [Conley (1999)](https://www.sciencedirect.com/science/article/pii/S0304407698000840).) The bandwidths and the kernel function control the upper bound. `time` specifies the column of `DF` that contains the date of each observation. `latitude` and `longitude` specify the columns of `DF` that contain the coordinates of each observation in decimal degrees (`Float64`).
 
 The following kernels are predefined for convenience: Bartlett (`bartlett`), Parzen (`parzen`), Truncated (`truncated`) and Tukey-Hanning (`tukeyhanning`). See [Andrews (1991)](http://jstor.org/stable/2938229) for formulae.

@@ -36,11 +36,11 @@ julia> S = CSV.read("admit.csv") ; categorical!(S, :rank) ;
 ```
 This sample is available [here](http://github.com/lbittarello/Microeconometrics.jl/tree/master/data), if you wish to replicate this exercise. It comprises 400 observations and four variables (`admit`, `gre`, `gpa` and `rank`). The second command converts `S[:rank]` into a [categorical array](http://juliadata.github.io/DataFrames.jl/stable/man/categorical.html) (a.k.a. a factor variable).
 
-We wish to regress `admit` on `gre`, `gpa`, `rank` and an intercept. We specify this model via a dictionary:
+We wish to regress `admit` on `gre`, `gpa`, `rank` and an intercept. We first specify the model:
 ```julia
-julia> M = Dict(:response => "admit", :control => "gre + gpa + rank + 1") ;
+julia> M = @micromodel(response => admit, control => gre + gpa + rank + 1) ;
 ```
-The syntax is due to [*StatsModels.jl*](http://juliastats.github.io/StatsModels.jl/latest/formula.html).
+The syntax is due to [*StatsModels.jl*](http://juliastats.github.io/StatsModels.jl/latest/formula.html). The `@micromodel` macro generalizes `@formula`.
 
 We then define the [correlation structure](correlation_structures.md) of the errors. Let's assume that observations are independent and identically distributed, so that errors are homoscedastic:
 ```julia
@@ -90,7 +90,7 @@ To illustrate more advanced features, suppose that we want to compare specificat
 
 We start with the full model. We now assume that the data are heteroscedastic. Because it is the default, we need not specify it.
 ```julia
-julia> M₁ = Dict(:response => "admit", :control => "gre + gpa + rank + 1") ;
+julia> M₁ = @micromodel(response => admit, control => gre + gpa + rank + 1) ;
 julia> D₁ = Microdata(S, M₁) ;
 julia> E₁ = fit(OLS, D₁)
 
@@ -105,18 +105,11 @@ rank: 4        -0.3230    0.0780   -4.1408    0.0000   -0.4759 -0.1701
 (Intercept)    -0.2589    0.2110   -1.2268    0.2199   -0.6725  0.1547
 ```
 
-Before we estimate the reduced model, we must redefine the control set. There are two approaches to this task. We can construct a new `Microdata` from scratch:
+Before we estimate the reduced model, we must redefine the control set.:
 ```julia
-julia> M₂ = Dict(:response => "admit", :control => "gre + gpa + 1") ;
+julia> M₂ = @micromodel(response => admit, :control => gre + gpa + 1) ;
 julia> D₂ = Microdata(S, M₂) ;
 ```
-Or we can modify the control set of our existing `Microdata`:
-```julia
-julia> M₂ = Dict(:control => "gre + gpa + 1") ;
-julia> D₂ = Microdata(D₁, M₂) ;
-```
-The second approach does not reconstruct the underlying data matrix. Therefore, it is faster and uses less memory. On the other hand, it only allows us to reassign existing variables across variable sets. We cannot add new variables to the data matrix or modify the correlation structure of the error term.
-
 We can now fit the reduced model:
 ```julia
 julia> E₂ = fit(OLS, D₂)
@@ -142,7 +135,7 @@ As it turns out, the difference between the coefficients on `gre` is statistical
 
 To further investigate this result, we wish to estimate separate effects by rank. The keyword `subset` helps us construct the appropriate `Microdata`:
 ```julia
-julia> M = Dict(:response => "admit", :control => "gre + gpa + 1") ;
+julia> M = @micromodel(response => admit, control => gre + gpa + 1) ;
 
 julia> I₁ = (S[:rank] .== 1) ;
 julia> D₁ = Microdata(S, M, subset = I₁) ;

@@ -2,17 +2,28 @@ language: julia
 os:
   - linux
   - osx
+  - windows
 julia:
   - 1.0
+  - 1.1
+  - 1.2
   - nightly
 matrix:
- allow_failures:
- - julia: nightly
+  allow_failures:
+    - julia: nightly
+  fast_finish: true
 branches:
   except:
   - development
 notifications:
   email: false
-after_success:
-  - julia -e 'using Pkg; cd(Pkg.dir("Microeconometrics")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
-  - julia -e 'using Pkg; cd(Pkg.dir("Microeconometrics")); ps=Pkg.PackageSpec(name="Documenter", version="0.19"); Pkg.add(ps); Pkg.pin(ps); include(joinpath("docs", "make.jl"))'
+jobs:
+  include:
+    - stage: Documentation
+      julia: 1.0
+      script: julia --project=docs -e '
+          using Pkg;
+          Pkg.develop(PackageSpec(path=pwd()));
+          Pkg.instantiate();
+          include("docs/make.jl");'
+      after_success: skip

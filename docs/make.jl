@@ -3,11 +3,10 @@ using Microeconometrics
 
 makedocs(
     modules  = [Microeconometrics],
-    doctest  = false,
-    clean    = false,
     sitename = "Microeconometrics.jl",
-    format   = :html,
-    pages    = Any[
+    format   = Documenter.HTML(),
+    doctest  = false,
+    pages    = [
         "Introduction"           => "index.md",
         "Getting started"        => "getting_started.md",
         "Model specification"    => "model_specification.md",
@@ -22,10 +21,4 @@ makedocs(
     ]
 )
 
-deploydocs(
-    repo   = "github.com/lbittarello/Microeconometrics.jl.git",
-    target = "build",
-    julia  = "1.0",
-    deps   = nothing,
-    make   = nothing,
-)
+deploydocs(repo = "github.com/lbittarello/Microeconometrics.jl.git")

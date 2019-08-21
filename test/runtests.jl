@@ -18,9 +18,9 @@ const datadir = joinpath(dirname(@__FILE__), "..", "data")
 
 #==========================================================================================#
 
-S        = CSV.read(joinpath(datadir, "auto.csv"))
-S[:gpmw] = ((1.0 ./ S[:mpg]) ./ S[:weight]) * 100000
-M        = Dict(:response => "gpmw", :control => "foreign + 1")
+S           = CSV.read(joinpath(datadir, "auto.csv"))
+S[!, :gpmw] = ((1.0 ./ S[:, :mpg]) ./ S[:, :weight]) * 100000
+M           = @micromodel(response => gpmw, control => foreign + 1)
 
 @testset "OLS Homoscedastic" begin
 
@@ -41,7 +41,7 @@ M        = Dict(:response => "gpmw", :control => "foreign + 1")
     @test dof(E) == 2
 end
 
-@testset "OLS Heterosc." begin
+@testset "OLS Heteroscedastic" begin
 
     D = Microdata(S, M, vcov = Heteroscedastic())
     E = fit(OLS, D)
@@ -57,11 +57,11 @@ end
     @test isapprox(adjr2(E), 0.20710363, atol = 1e-7, rtol = 1e-7)
 end
 
-T        = Dict("age" => Union{Int, Missing})
-S        = CSV.read(joinpath(datadir, "regsmpl.csv"), types = T)
-S[:age2] = Array{eltype(S[:age])}(S[:age].^2)
-W        = Clustered(S, :idcode)
-M        = Dict(:response => "ln_wage", :control => "age + age2 + tenure + 1")
+T           = Dict("age" => Union{Int, Missing})
+S           = CSV.read(joinpath(datadir, "regsmpl.csv"), types = T)
+S[!, :age2] = S[:, :age].^2
+W           = Clustered(S, :idcode)
+M           = @micromodel(response => ln_wage, control => age + age2 + tenure + 1)
 
 @testset "OLS Clustered" begin
 
@@ -82,11 +82,11 @@ end
 #==========================================================================================#
 
 S = CSV.read(joinpath(datadir, "hsng2.csv"))
-M = Dict(
-        :response   => "rent",
-        :control    => "pcturban + 1",
-        :treatment  => "hsngval",
-        :instrument => "faminc + region"
+M = @micromodel(
+        response   => rent,
+        control    => pcturban + 1,
+        treatment  => hsngval,
+        instrument => faminc + region
     )
 
 @testset "TSLS" begin
@@ -105,13 +105,13 @@ end
 
 @testset "IV GMM" begin
 
-    D = Microdata(S, M, vcov = Heteroscedastic()) ;
+    D = Microdata(S, M, vcov = Heteroscedastic())
     E = fit(IV, D, method = "Two-step GMM")
 
-    β = [0.00146433; 0.76154816; 112.12271295] ;
-    σ = [0.00044727; 0.28951046;  10.80234023] ;
-    c = nobs(E) / (nobs(E) - 1) ;
-    σ = σ * sqrt(c) ;
+    β = [0.00146433; 0.76154816; 112.12271295]
+    σ = [0.00044727; 0.28951046;  10.80234023]
+    c = nobs(E) / (nobs(E) - 1)
+    σ = σ * sqrt(c)
 
     @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
     @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
@@ -122,9 +122,9 @@ end
 #==========================================================================================#
 
 S = CSV.read(joinpath(datadir, "lbw.csv"))
-M = Dict(:response => "low", :control => "age + lwt + race + smoke + ptl + ht + ui + 1")
+M = @micromodel(response => low, control => age + lwt + race + smoke + ptl + ht + ui + 1)
 C = Dict(:race => DummyCoding(base = "white"))
-D = Microdata(S, M, vcov = Homoscedastic(), contrasts = C)
+D = Microdata(S, M, vcov = Homoscedastic(), hints = C)
 
 @testset "Logit" begin
 
@@ -165,10 +165,10 @@ end
 
     E = fit(Cloglog, D)
 
-    β = [-0.02309612; -0.01129839; 1.07937099; 0.72856146; 0.73324598;
+    β = [-0.02309612; -0.01129839; 1.07937099;  0.72856146; 0.73324598;
           0.33131635;  1.42557598; 0.56457925; -0.09224780]
-    σ = [0.02906676; 0.00521572; 0.40185917; 0.32942310; 0.30247340;
-         0.20833347; 0.45334563; 0.34357409; 0.90994949]
+    σ = [ 0.02906676;  0.00521572; 0.40185917;  0.32942310; 0.30247340;
+          0.20833347;  0.45334563; 0.34357409;  0.90994949]
 
     @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
     @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
@@ -181,10 +181,10 @@ end
 
     E = fit(Gompit, D)
 
-    β = [ 0.01937153; 0.00827072; -0.65246666; -0.46606001; -0.55757061;
+    β = [ 0.01937153;  0.00827072; -0.65246666; -0.46606001; -0.55757061;
          -0.40377232; -1.06494339; -0.51695211; -0.63626157]
-    σ = [0.02104003; 0.00375728; 0.32497917; 0.24843060; 0.23366182;
-         0.25411648; 0.48787151; 0.29917807; 0.67163691]
+    σ = [ 0.02104003;  0.00375728;  0.32497917;  0.24843060;  0.23366182;
+          0.25411648;  0.48787151;  0.29917807;  0.67163691]
 
     @test isapprox(coef(E), β, atol = 1e-7, rtol = 1e-7)
     @test isapprox(stderror(E), σ, atol = 1e-7, rtol = 1e-7)
@@ -195,13 +195,13 @@ end
 
 #==========================================================================================#
 
-S          = CSV.read(joinpath(datadir, "dollhill3.csv"))
-S[:pyears] = log.(S[:pyears])
+S             = CSV.read(joinpath(datadir, "dollhill3.csv"))
+S[!, :pyears] = log.(S[:, :pyears])
 
-M = Dict(
-        :response => "deaths",
-        :control  => "smokes + agecat + 1",
-        :offset   => "pyears"
+M = @micromodel(
+        response => deaths,
+        control  => smokes + agecat + 1,
+        offset   => pyears
     )
 
 @testset "Poisson" begin
@@ -221,11 +221,11 @@ M = Dict(
 end
 
 S = CSV.read(joinpath(datadir, "website.csv"))
-M = Dict(
-        :response   => "visits",
-        :control    => "ad + female + 1",
-        :treatment  => "time",
-        :instrument => "phone + frfam"
+M = @micromodel(
+        response   => visits,
+        control    => ad + female + 1,
+        treatment  => time,
+        instrument => phone + frfam
     )
 
 @testset "IVPoisson" begin
@@ -243,11 +243,11 @@ M = Dict(
 end
 
 S = CSV.read(joinpath(datadir, "trip.csv"))
-M = Dict(
-        :response   => "trips",
-        :control    => "cbd + ptn + worker + weekend + 1",
-        :treatment  => "tcost",
-        :instrument => "pt"
+M = @micromodel(
+        response   => trips,
+        control    => cbd + ptn + worker + weekend + 1,
+        treatment  => tcost,
+        instrument => pt
     )
 
 @testset "Mullahy" begin
@@ -266,13 +266,13 @@ end
 
 #==========================================================================================#
 
-S         = CSV.read(joinpath(datadir, "cattaneo2.csv"))
-S[:mage2] = S[:mage].^2
+S            = CSV.read(joinpath(datadir, "cattaneo2.csv"))
+S[!, :mage2] = S[:, :mage].^2
 
-M = Dict(
-        :response  => "bweight",
-        :control   => "mmarried + mage + mage2 + fbaby + medu + 1",
-        :treatment => "mbsmoke",
+M = @micromodel(
+        response  => bweight,
+        control   => mmarried + mage + mage2 + fbaby + medu + 1,
+        treatment => mbsmoke
     )
 
 @testset "IPW" begin
@@ -293,8 +293,8 @@ end
 #==========================================================================================#
 
 S = CSV.read(joinpath(datadir, "income.csv"))
-X = (S[:male] .== 1)
-M = Dict(:response => "inc", :control => "edu + exp + 1")
+X = (S[:, :male] .== 1)
+M = @micromodel(response => inc, control => edu + exp + 1)
 
 @testset "Hausman" begin
 

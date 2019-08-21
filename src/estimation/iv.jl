@@ -32,36 +32,45 @@ function fit(::Type{IV}, MD::Microdata; novar::Bool = false, method::String = "T
 
     if method == "OLS"
 
-        FSM               = Dict(:treatment => "", :instrument => "")
-        FSD               = Microdata(MD, FSM)
-        FSD.map[:control] = vcat(MD.map[:treatment], MD.map[:control])
-        obj               = OLS(FSD)
+        FSD                   = Microdata(MD)
+        FSD.mapping[:control] = vcat(MD.mapping[:treatment], MD.mapping[:control])
+
+        pop!(FSD.mapping, :treatment)
+        pop!(FSD.mapping, :instrument)
+
+        obj = OLS(FSD)
 
         _fit!(obj, getweights(obj))
 
     elseif method == "Reduced form"
 
-        FSM               = Dict(:treatment => "", :instrument => "")
-        FSD               = Microdata(MD, FSM)
-        FSD.map[:control] = vcat(MD.map[:instrument], MD.map[:control])
-        obj               = OLS(FSD)
+        FSD                   = Microdata(MD)
+        FSD.mapping[:control] = vcat(MD.mapping[:instrument], MD.mapping[:control])
+
+        pop!(FSD.mapping, :treatment)
+        pop!(FSD.mapping, :instrument)
+
+        obj = OLS(FSD)
 
         _fit!(obj, getweights(obj))
 
     elseif method == "First stage"
 
-        FSM                = Dict(:treatment => "", :instrument => "")
-        FSD                = Microdata(MD, FSM)
-        FSD.map[:response] = MD.map[:treatment]
-        FSD.map[:control]  = vcat(MD.map[:instrument], MD.map[:control])
-        obj                = OLS(FSD)
+        FSD                    = Microdata(MD)
+        FSD.mapping[:control]  = vcat(MD.mapping[:instrument], MD.mapping[:control])
+        FSD.mapping[:response] = MD.mapping[:treatment]
+
+        pop!(FSD.mapping, :treatment)
+        pop!(FSD.mapping, :instrument)
+
+        obj = OLS(FSD)
 
         _fit!(obj, getweights(obj))
 
-    elseif length(MD.map[:treatment]) == length(MD.map[:instrument])
+    elseif length(MD.mapping[:treatment]) == length(MD.mapping[:instrument])
 
         obj   = IV(MD, "Method of moments")
-        k     = length(MD.map[:instrument]) + length(MD.map[:control])
+        k     = length(MD.mapping[:instrument]) + length(MD.mapping[:control])
         obj.W = Matrix{Float64}(I, k, k)
 
         _fit!(obj, getweights(obj))

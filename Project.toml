@@ -1,6 +1,6 @@
 name = "Microeconometrics"
 uuid = "5d8a72c5-1e5a-5861-b6ae-c8e9564f9d17"
-version = "0.4.2"
+version = "0.5.0"
 
 [deps]
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
@@ -17,15 +17,15 @@ StatsModels = "3eaba693-59b7-5ba5-a881-562e759f1c8d"
 SuiteSparse = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 
 [compat]
+julia = "≥ 1.0.0"
 CSV = "≥ 0.3.0"
-DataFrames = "≥ 0.13.0"
+DataFrames = "≥ 0.19.2"
 Format = "≥ 0.7.0"
 Optim = "≥ 0.17.0"
 SpecialFunctions = "≥ 0.7.0"
 StatsBase = "≥ 0.25.0"
 StatsFuns = "≥ 0.7.0"
-StatsModels = "0.3, 0.4, 0.5"
-julia = "≥ 1.0.0"
+StatsModels = "≥ 0.6.3"
 
 [extras]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
@@ -35,4 +35,4 @@ StatsModels = "3eaba693-59b7-5ba5-a881-562e759f1c8d"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["CSV", "StatsModels", "StatsBase", "Test", "DataFrames"]
+test = ["CSV", "DataFrames", "StatsModels", "StatsBase", "Test"]

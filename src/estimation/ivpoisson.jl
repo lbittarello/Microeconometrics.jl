@@ -38,46 +38,40 @@ function fit(
 
     if method == "Poisson"
 
-        FSM               = Dict(:treatment => "", :instrument => "")
-        FSD               = Microdata(MD, FSM)
-        FSD.map[:control] = vcat(MD.map[:treatment], MD.map[:control])
-        obj               = Poisson(FSD)
+        FSD                   = Microdata(MD)
+        FSD.mapping[:control] = vcat(MD.mapping[:treatment], MD.mapping[:control])
+
+        pop!(FSD.mapping, :treatment)
+        pop!(FSD.mapping, :instrument)
+
+        obj = Poisson(FSD)
 
         _fit!(obj, getweights(obj))
 
     elseif method == "Reduced form"
 
-        FSM                = Dict(:treatment => "", :instrument => "")
-        FSD                = Microdata(MD, FSM)
-        FSD.map[:response] = MD.map[:treatment]
-        FSD.map[:control]  = vcat(MD.map[:instrument], MD.map[:control])
-        obj                = Poisson(FSD)
+        FSD                   = Microdata(MD)
+        FSD.mapping[:control] = vcat(MD.mapping[:instrument], MD.mapping[:control])
+
+        pop!(FSD.mapping, :treatment)
 
         _fit!(obj, getweights(obj))
 
     else
 
-        if length(MD.map[:treatment]) == length(MD.map[:instrument])
-
-            k   = length(MD.map[:instrument]) + length(MD.map[:control])
+        if length(MD.mapping[:treatment]) == length(MD.mapping[:instrument])
+            k   = length(MD.mapping[:instrument]) + length(MD.mapping[:control])
             obj = IVPoisson(MD, Matrix{Float64}(I, k, k), "Method of moments")
-
         elseif method == "One-step GMM"
-
-            k   = length(MD.map[:instrument]) + length(MD.map[:control])
+            k   = length(MD.mapping[:instrument]) + length(MD.mapping[:control])
             obj = IVPoisson(MD, Matrix{Float64}(I, k, k), "One-step GMM")
-
         elseif (method == "TSLS") | (method == "2SLS")
-
             W   = crossprod(getmatrix(MD, :instrument, :control), getweights(MD))
             obj = IVPoisson(MD, W, "Two-step GMM")
-
         elseif (method == "Two-step GMM") | (method == "Optimal GMM")
-
             W     = crossprod(getmatrix(MD, :instrument, :control), getweights(MD))
             obj   = IVPoisson(MD, W, method) ; _fit!(obj, getweights(obj))
             obj.W = wmatrix(obj, getcorr(obj), getweights(obj))
-
         else
             throw("unknown method")
         end
@@ -96,7 +90,7 @@ end
 
 function _fit!(obj::IVPoisson, ::UnitWeights)
 
-    O  = haskey(obj.sample.map, :offset)
+    O  = haskey(obj.sample.mapping, :offset)
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :treatment, :control)
     z  = getmatrix(obj, :instrument, :control)
@@ -175,7 +169,7 @@ end
 
 function _fit!(obj::IVPoisson, w::AbstractWeights)
 
-    O  = haskey(obj.sample.map, :offset)
+    O  = haskey(obj.sample.mapping, :offset)
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :treatment, :control)
     z  = getmatrix(obj, :instrument, :control)
@@ -262,7 +256,7 @@ score(obj::IVPoisson) = Diagonal(residuals(obj)) * getmatrix(obj, :instrument, :
 
 function jacobian(obj::IVPoisson, ::UnitWeights)
 
-    if haskey(obj.sample.map, :offset)
+    if haskey(obj.sample.mapping, :offset)
         x = getmatrix(obj, :offset, :treatment, :control)
         v = xo * vcat(1.0, obj.β)
     else
@@ -278,7 +272,7 @@ end
 
 function jacobian(obj::IVPoisson, w::AbstractWeights)
 
-    if haskey(obj.sample.map, :offset)
+    if haskey(obj.sample.mapping, :offset)
         x = getmatrix(obj, :offset, :treatment, :control)
         v = xo * vcat(1.0, obj.β)
     else
@@ -300,7 +294,7 @@ function predict(obj::IVPoisson, MD::Microdata)
     if getnames(obj, :treatment, :control) != getnames(MD, :treatment, :control)
         throw("missing variables")
     end
-    if haskey(obj.sample.map, :offset)
+    if haskey(obj.sample.mapping, :offset)
         return getmatrix(MD, :offset, :treatment, :control) * vcat(1.0, obj.β)
     else
         return getmatrix(MD, :treatment, :control) * obj.β
@@ -315,7 +309,7 @@ fitted(obj::IVPoisson, MD::Microdata) = exp.(predict(obj, MD))
 
 function jacobexp(obj::IVPoisson)
 
-    if haskey(obj.sample.map, :offset)
+    if haskey(obj.sample.mapping, :offset)
         v = getmatrix(obj, :offset, :treatment, :control) * vcat(1.0, obj.β)
     else
         v = getmatrix(obj, :treatment, :control) * obj.β
@@ -331,4 +325,4 @@ end
 # UTILITIES
 
 coefnames(obj::IVPoisson) = getnames(obj, :treatment, :control)
-mtitle(obj::IVPoisson)    = "IV Poisson with add. errors"
+mtitle(obj::IVPoisson)    = "IV Poisson with additive errors"
