@@ -77,7 +77,7 @@ function Microdata(
         hints::Dict{Symbol} = Dict{Symbol, Any}(),
         subset::AbstractVector{Bool} = trues(size(df, 1)),
         vcov::CorrStructure = Heteroscedastic(),
-        weights::AbstractWeights = uweights(fill(1.0, size(df, 1)))
+        weights::AbstractWeights = UnitWeights(1.0, size(df, 1))
     )
 
     nonmissing  = completecases(df, termvars(model))
