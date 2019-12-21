@@ -7,6 +7,5 @@
     args...;
     digits::Int = 4,
     aux::Union{Function, Nothing} = nothing,
-    stars::Matrix{Any} = [0.1 &quot;*&quot;; 0.05 &quot;**&quot;; 0.01 &quot;***&quot;],
-    titles::Vector{String} = [&quot;&quot;]
-)</code></pre><p>This function displays a simple regression table. The keyword arguments are:</p><ul><li><code>digits</code>: the number of digits on display.</li><li><code>aux</code>: an auxiliary statistic (e.g., stderr), displayed below each coefficient.</li><li><code>stars</code>: the star scheme.</li><li><code>titles</code>: the title of each regression (defaults to numbers).</li></ul><footer><hr/><a class="previous" href="../hypothesis_tests/"><span class="direction">Previous</span><span class="title">Hypothesis tests</span></a><a class="next" href="../bootstrapping/"><span class="direction">Next</span><span class="title">Bootstrapping</span></a></footer></article></body></html>
+    stars::AbstractMatrix{Any} = [0.1 &quot;*&quot;; 0.05 &quot;**&quot;; 0.01 &quot;***&quot;]
+)</code></pre><p>This function displays a simple regression table. The keyword arguments are:</p><ul><li><code>digits</code>: the number of digits on display;</li><li><code>aux</code>: an auxiliary statistic (e.g., <code>stderror</code>), displayed below each coefficient;</li><li><code>stars</code>: the star scheme.</li></ul><footer><hr/><a class="previous" href="../hypothesis_tests/"><span class="direction">Previous</span><span class="title">Hypothesis tests</span></a><a class="next" href="../bootstrapping/"><span class="direction">Next</span><span class="title">Bootstrapping</span></a></footer></article></body></html>
