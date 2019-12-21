@@ -2,16 +2,16 @@
 
 Before fitting the model, you must specify the correlation between observations (a `CorrStructure`). It determines the calculation of covariance matrices. The default is always `Heteroscedastic`, i.e. independent but not identically distributed observations.
 
-All constructors accept the Boolean keyword `adj` (omitted in the following), which defaults to `true`. If `true`, a finite-sample adjustment is applied to the covariance matrix. The adjustment factor is n / (n - 1), where n is the number of clusters for clustered data and the number of observations otherwise.
+All constructors accept the Boolean keyword `corrected` (omitted in the following), which defaults to `true`. If `true`, a finite-sample adjustment is applied to the covariance matrix. The adjustment factor is n / (n - 1), where n is the number of clusters for clustered data and the number of observations otherwise.
 
 Four subtypes are currently available: `Homoscedastic`, `Heteroscedastic`, `Clustered` and `CrossCorrelated`.
 
 ## `Homoscedastic`
 
 ```julia
-Homoscedastic(method::String = "OIM")
+Homoscedastic(; expected::Bool = false)
 ```
-Observations are independent and identically distributed. The optional argument `method` is only relevant for maximum-likelihood estimators. It controls the estimation of the covariance matrix: `"OIM"` uses the observed information matrix, whereas `"OPG"` uses the outer product of the gradient. Only linear and maximum-likelihood estimators support homoscedastic errors.
+Observations are independent and identically distributed. The optional keyword argument `expected` controls the estimation of the covariance matrix of maximum-likelihood estimators: `false` uses the observed information matrix, whereas `"true"` uses the outer product of the gradient. Only linear and maximum-likelihood estimators support homoscedastic errors.
 
 ## `Heteroscedastic`
 

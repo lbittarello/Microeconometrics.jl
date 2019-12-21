@@ -49,14 +49,12 @@ julia> C = Homoscedastic() ;
 
 We now construct the [estimation sample](model_specification.md):
 ```julia
-julia> D = Microdata(S, M, vcov = C) ;
+julia> D = Microdata(S, M, corr = C) ;
 ```
 
 We can finally fit the model and visualize the results:
 ```julia
 julia> E = fit(OLS, D)
-
-OLS
 
               Estimate  St. Err.   t-stat.   p-value      C.I. (95%)  
 gre             0.0004    0.0002    2.0384    0.0415    0.0000  0.0008
@@ -94,8 +92,6 @@ julia> M₁ = @micromodel(response => admit, control => gre + gpa + rank + 1) ;
 julia> D₁ = Microdata(S, M₁) ;
 julia> E₁ = fit(OLS, D₁)
 
-OLS
-
               Estimate  St. Err.   t-stat.   p-value      C.I. (95%)  
 gre             0.0004    0.0002    2.0501    0.0404    0.0000  0.0008
 gpa             0.1555    0.0653    2.3833    0.0172    0.0276  0.2834
@@ -105,7 +101,7 @@ rank: 4        -0.3230    0.0780   -4.1408    0.0000   -0.4759 -0.1701
 (Intercept)    -0.2589    0.2110   -1.2268    0.2199   -0.6725  0.1547
 ```
 
-Before we estimate the reduced model, we must redefine the control set.:
+Before we estimate the reduced model, we must first redefine the control set:
 ```julia
 julia> M₂ = @micromodel(response => admit, :control => gre + gpa + 1) ;
 julia> D₂ = Microdata(S, M₂) ;
@@ -113,8 +109,6 @@ julia> D₂ = Microdata(S, M₂) ;
 We can now fit the reduced model:
 ```julia
 julia> E₂ = fit(OLS, D₂)
-
-OLS
 
               Estimate  St. Err.   t-stat.   p-value      C.I. (95%)  
 gre             0.0005    0.0002    2.5642    0.0103    0.0001  0.0010
@@ -124,7 +118,7 @@ gpa             0.1542    0.0650    2.3737    0.0176    0.0269  0.2816
 
 The coefficients on `gre` and `gpa` seem to be robust. For a formal equality test, we use a Hausman test:
 ```julia
-julia> H = hausman_1s(E₁, E₂, ["gre", "gpa"]) ;
+julia> H = hausman_test(E₁, E₂, ["gre", "gpa"]) ;
 julia> tstat(H)
 
 2-element Array{Float64,1}:
@@ -141,8 +135,6 @@ julia> I₁ = (S[:rank] .== 1) ;
 julia> D₁ = Microdata(S, M, subset = I₁) ;
 julia> E₁ = fit(OLS, D₁)
 
-OLS
-
               Estimate  St. Err.   t-stat.   p-value      C.I. (95%)  
 gre             0.0006    0.0006    1.0386    0.2990   -0.0005  0.0017
 gpa             0.2508    0.1929    1.3000    0.1936   -0.1273  0.6290
@@ -152,18 +144,16 @@ julia> I₂ = (S[:rank] .== 2) ;
 julia> D₂ = Microdata(S, M, subset = I₂) ;
 julia> E₂ = fit(OLS, D₂)
 
-OLS
-
               Estimate  St. Err.   t-stat.   p-value      C.I. (95%)  
 gre             0.0004    0.0004    0.8794    0.3792   -0.0004  0.0011
 gpa             0.1771    0.1028    1.7219    0.0851   -0.0245  0.3787
 (Intercept)    -0.4470    0.3641   -1.2277    0.2196   -1.1607  0.2666
 
-julia> H = hausman_2s(E₁, E₂, ["gre", "gpa"]) ;
+julia> H = chow_test(E₁, E₂, ["gre", "gpa"]) ;
 julia> tstat(H)
 
 2-element Array{Float64,1}:
   0.334261
   0.337304
 ```
-We used the function `hausman_2s` because these estimates are based on different samples. The difference in the effect of `gre` between ranks 1 and 2 is not significant.
+We used the function `chow_test` because these estimates are based on different samples. The difference in the effect of `gre` between ranks 1 and 2 is not significant.

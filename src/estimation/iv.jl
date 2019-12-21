@@ -7,8 +7,8 @@ mutable struct IV <: GMM
     method::String
     sample::Microdata
     β::Vector{Float64}
-    V::Matrix{Float64}
-    W::Matrix{Float64}
+    V::AbstractMatrix{Float64}
+    W::AbstractMatrix{Float64}
 
     IV() = new()
 end
@@ -116,7 +116,7 @@ function _fit!(obj::IV, ::UnitWeights)
     end
 end
 
-function _fit!(obj::IV, W::Matrix{Float64}, ::UnitWeights)
+function _fit!(obj::IV, W::AbstractMatrix{Float64}, ::UnitWeights)
 
     y = getvector(obj, :response)
     x = getmatrix(obj, :treatment, :control)
@@ -142,7 +142,7 @@ function _fit!(obj::IV, w::AbstractWeights)
     end
 end
 
-function _fit!(obj::IV, W::Matrix{Float64}, w::AbstractWeights)
+function _fit!(obj::IV, W::AbstractMatrix{Float64}, w::AbstractWeights)
 
     y = getvector(obj, :response)
     x = getmatrix(obj, :treatment, :control)
@@ -203,7 +203,7 @@ end
 
 #==========================================================================================#
 
-# LINEAR PREDICTOR
+# FITTED VALUES
 
 function predict(obj::IV, MD::Microdata)
     if getnames(obj, :treatment, :control) != getnames(MD, :treatment, :control)
@@ -211,10 +211,6 @@ function predict(obj::IV, MD::Microdata)
     end
     getmatrix(MD, :treatment, :control) * obj.β
 end
-
-# FITTED VALUES
-
-fitted(obj::IV, MD::Microdata) = predict(obj, MD)
 
 # DERIVATIVE OF FITTED VALUES
 
@@ -225,7 +221,6 @@ jacobexp(obj::IV) = getmatrix(obj, :treatment, :control)
 # UTILITIES
 
 coefnames(obj::IV) = getnames(obj, :treatment, :control)
-mtitle(obj::IV)    =  "Linear GMM"
 
 # COEFFICIENT OF DETERMINATION
 
@@ -234,7 +229,7 @@ r2(obj::IV)    = _r2(obj, getweights(obj))
 
 function _r2(obj::IV, ::UnitWeights)
     y   = response(obj)
-    ŷ   = fitted(obj)
+    ŷ   = predict(obj)
     rss = sum(abs2, y .- ŷ)
     tss = sum(abs2, y .- mean(y))
     return 1.0 - rss / tss
@@ -243,7 +238,7 @@ end
 function _r2(obj::IV, w::AbstractWeights)
     y   = response(obj)
     μ   = mean(y, w)
-    ŷ   = fitted(obj)
+    ŷ   = predict(obj)
     rss = sum(abs2.(y .- ŷ), w)
     tss = sum(abs2.(y .- μ), w)
     return 1.0 - rss / tss

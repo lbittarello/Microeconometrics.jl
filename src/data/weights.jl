@@ -2,47 +2,45 @@
 
 # UNIT WEIGHTS
 
-struct UnitWeights{S<:Real, T<:Real} <: AbstractWeights{S, T, V where V<:Vector{T}}
-
-    el::T
-    sum::S
-
-    UnitWeights{S, T}(el::Type{<:Real}, s::Real) where {S, T} = new(one(el), s)
+struct UnitWeights{T<:Real} <: AbstractWeights{Int, T, V where V<:Vector{T}}
+    len::Int
 end
 
-UnitWeights(::T, s::S)       where {S, T} = UnitWeights{S, T}(T, s)
-UnitWeights(::Type{T}, s::S) where {S, T} = UnitWeights{S, T}(T, s)
+Base.eltype(wv::UnitWeights{T}) where T = T
+Base.sum(wv::UnitWeights{T}) where T = convert(T, length(wv))
+Base.isempty(wv::UnitWeights) = iszero(wv.len)
+Base.length(wv::UnitWeights) = wv.len
+Base.size(wv::UnitWeights) = Tuple(length(wv))
 
-Base.eltype(wv::UnitWeights{S, T})  where {S, T} = T
-Base.values(wv::UnitWeights{S, T})  where {S, T} = fill(wv.el, length(wv))
-Base.sum(wv::UnitWeights{S, T})     where {S, T} = wv.sum
-Base.isempty(wv::UnitWeights{S, T}) where {S, T} = iszero(wv.sum)
-Base.length(wv::UnitWeights{S, T})  where {S, T} = Int(wv.sum)
-Base.size(wv::UnitWeights{S, T})    where {S, T} = Tuple(length(wv))
+Base.convert(::Type{Vector}, wv::UnitWeights{T}) where {T} = ones(T, length(wv))
 
-function Base.getindex(wv::UnitWeights{S, T}, i::Int) where {S, T}
-    (i > 0) & (i <= length(wv)) ? wv.el : Base.throw_boundserror(wv, i)
+@propagate_inbounds function Base.getindex(wv::UnitWeights{T}, i::Integer) where T
+    @boundscheck checkbounds(wv, i)
+    one(T)
 end
 
-function Base.getindex(wv::UnitWeights{S, T}, i::AbstractRange{<:Int}) where {S, T}
-    if (minimum(i) > 0) & (maximum(i) <= length(wv))
-        return fill(wv.el, length(i))
-    else
-        Base.throw_boundserror(wv, i)
-    end
+@propagate_inbounds function Base.getindex(wv::UnitWeights{T}, i::AbstractArray{<:Int}) where T
+    @boundscheck checkbounds(wv, i)
+    UnitWeights{T}(length(i))
 end
 
-function Base.getindex(wv::UnitWeights{S, T}, i::AbstractArray{<:Int}) where {S, T}
-    if (minimum(i) > 0) & (maximum(i) <= length(wv))
-        return fill(wv.el, size(i))
-    else
-        Base.throw_boundserror(wv, i)
-    end
+Base.getindex(wv::UnitWeights{T}, ::Colon) where {T} = UnitWeights{T}(wv.len)
+
+@inline function varcorrection(w::UnitWeights, corrected::Bool=false)
+    corrected ? (1 / (w.len - 1)) : (1 / w.len)
 end
 
-Base.getindex(wv::UnitWeights{S, T}, ::Colon) where {S, T} = fill(wv.el, length(wv))
+function Base.sum(A::AbstractArray, w::UnitWeights; dims::Union{Colon, Int}=:)
+    a = (dims === :) ? length(A) : size(A, dims)
+    a != length(w) && throw(DimensionMismatch("Inconsistent array dimension."))
+    return sum(A, dims=dims)
+end
 
-sum(v::AbstractArray, ::UnitWeights)  = sum(v)
-mean(v::AbstractArray, ::UnitWeights) = mean(v)
+function mean(A::AbstractArray, w::UnitWeights; dims::Union{Colon, Int}=:)
+    a = (dims === :) ? length(A) : size(A, dims)
+    a != length(w) && throw(DimensionMismatch("Inconsistent array dimension."))
+    return mean(A, dims=dims)
+end
 
-isequal(x::UnitWeights, y::UnitWeights) = (isequal(x.sum, y.sum) && isequal(x.el, y.el))
+Base.isequal(x::UnitWeights, y::UnitWeights) = isequal(x.len, y.len)
+Base.:(==)(x::UnitWeights, y::UnitWeights)   = (x.len == y.len)

@@ -7,9 +7,9 @@ Microdata(
         DF::DataFrame,
         model::Dict{Symbol, String};
         hints::Dict{Symbol, TermOrTerms},
-        subset::AbstractVector{Bool} = trues(size(DF, 1)),
-        vcov::CorrStructure = Heteroscedastic(),
+        subset::AbstractVector{Bool},
         weights::AbstractWeights = UnitWeights(size(DF, 1))
+        corr::CorrStructure,
     )
 ```
 
@@ -25,6 +25,6 @@ All regression models need a `response`, but other requirements may vary. (Check
 
 As for the keywords:
 - `hints`: a dictionary from column labels to [schemas](https://juliastats.github.io/StatsModels.jl/latest/internals.html) or [contrasts](https://juliastats.github.io/StatsModels.jl/latest/contrasts/).
-- `subset` determines the estimation sample. Set an entry to `true` if the corresponding row of `DF` should be included and `false` if it should be excluded. This keyword is useful if you are comparing subgroups and observations in different subgroups may correlate (e.g., they may belong to the same cluster). [`hausman_2s`](hypothesis_tests.md#hausman-test) will account for that correlation if the `Microdata` were constructed with `subset`.
+- `subset` determines the estimation sample. Set an entry to `true` if the corresponding row of `DF` should be included and `false` if it should be excluded. This keyword is useful if you are comparing subgroups and observations in different subgroups may correlate (e.g., they may belong to the same cluster). [`chow_test`](hypothesis_tests.md#hausman-test) will take that correlation into account if the `Microdata` were constructed with `subset`.
 - `weights` is a [weight vector](http://juliastats.github.io/StatsBase.jl/stable/weights.html). Except for frequency weights, the weight vector is normalized to sum up to the number of observations in the sample.
-- `vcov` is a [correlation structure](correlation_structures.md).
+- `corr` is a [correlation structure](correlation_structures.md).

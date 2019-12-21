@@ -2,16 +2,15 @@
 
 # ONE SAMPLE: INTERFACE
 
-function hausman_1s(obj₁::ParModel, obj₂::ParModel)
-    return hausman_1s(obj₁, obj₂, intersect(coefnames(obj₁), coefnames(obj₂)))
+function hausman_test(obj₁::ParModel, obj₂::ParModel)
+    hausman_test(obj₁, obj₂, intersect(coefnames(obj₁), coefnames(obj₂)))
 end
 
-function hausman_1s(obj₁::ParModel, obj₂::ParModel, name::String)
-
-    return hausman_1s(obj₁, obj₂, [name])
+function hausman_test(obj₁::ParModel, obj₂::ParModel, name::String)
+    hausman_test(obj₁, obj₂, [name])
 end
 
-function hausman_1s(obj₁::ParModel, obj₂::ParModel, names::Vector{String})
+function hausman_test(obj₁::ParModel, obj₂::ParModel, names::Vector{String})
 
     i₁    = findall((in)(names), coefnames(obj₁))
     i₂    = findall((in)(names), coefnames(obj₂))
@@ -22,19 +21,19 @@ function hausman_1s(obj₁::ParModel, obj₂::ParModel, names::Vector{String})
 
     (iszero(i₁) | iszero(i₂)) && throw("missing coefficients in at least one model")
     isequal(corr₁, corr₂) || throw("different correlation structures")
-    isequal(getweights(obj₁), getweights(obj₂)) || throw("different weighting schemes")
+    isequal(w₁, w₂) || throw("different weighting schemes")
 
     output       = ParEstimate()
     output.names = copy(names)
 
-    _hausman_1s!(output, obj₁, i₁, obj₂, i₂, w₁, corr₁)
+    _hausman_test!(output, obj₁, i₁, obj₂, i₂, w₁, corr₁)
 
     return output
 end
 
 # ONE SAMPLE: ESTIMATION
 
-function _hausman_1s!(
+function _hausman_test!(
         output::ParEstimate,
         obj₁::ParModel,
         i₁::Vector{Int},
@@ -50,13 +49,13 @@ function _hausman_1s!(
     ψ₂  = view(Ψ₂, :, i₂)
     V₁₂ = ψ₁' * ψ₂
 
-    adjfactor!(V₁₂, obj₁, corr)
+    corr.corrected && lmul!(varcorrection(corr, w), V₁₂)
 
     output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
     output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
 end
 
-function _hausman_1s!(
+function _hausman_test!(
         output::ParEstimate,
         obj₁::ParModel,
         i₁::Vector{Int},
@@ -72,13 +71,13 @@ function _hausman_1s!(
     ψ₂  = view(Ψ₂, :, i₂) ; lmul!(Diagonal(w), ψ₂)
     V₁₂ = ψ₁' * ψ₂
 
-    adjfactor!(V₁₂, obj₁, corr)
+    corr.corrected && lmul!(varcorrection(corr, w), V₁₂)
 
     output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
     output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
 end
 
-function _hausman_1s!(
+function _hausman_test!(
         output::ParEstimate,
         obj₁::ParModel,
         i₁::Vector{Int},
@@ -94,13 +93,13 @@ function _hausman_1s!(
     ψ₂  = view(Ψ₂, :, i₂) ; lmul!(Diagonal(w), ψ₂)
     V₁₂ = ψ₁' * ψ₂
 
-    adjfactor!(V₁₂, obj₁, corr)
+    corr.corrected && lmul!(varcorrection(corr, w), V₁₂)
 
     output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
     output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
 end
 
-function _hausman_1s!(
+function _hausman_test!(
         output::ParEstimate,
         obj₁::ParModel,
         i₁::Vector{Int},
@@ -116,13 +115,13 @@ function _hausman_1s!(
     ψ₂  = corr.mat * view(Ψ₂, :, i₂)
     V₁₂ = ψ₁' * ψ₂
 
-    adjfactor!(V₁₂, obj₁, corr)
+    corr.corrected && lmul!(varcorrection(corr, w), V₁₂)
 
     output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
     output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
 end
 
-function _hausman_1s!(
+function _hausman_test!(
         output::ParEstimate,
         obj₁::ParModel,
         i₁::Vector{Int},
@@ -138,13 +137,13 @@ function _hausman_1s!(
     ψ₂  = corr.mat * view(Ψ₂, :, i₂) ; lmul!(Diagonal(w), ψ₂)
     V₁₂ = ψ₁' * ψ₂
 
-    adjfactor!(V₁₂, obj₁, corr)
+    corr.corrected && lmul!(varcorrection(corr, w), V₁₂)
 
     output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
     output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
 end
 
-function _hausman_1s!(
+function _hausman_test!(
         output::ParEstimate,
         obj₁::ParModel,
         i₁::Vector{Int},
@@ -160,13 +159,13 @@ function _hausman_1s!(
     ψ₂  = view(Ψ₂, :, i₂)
     V₁₂ = ψ₁' * corr.mat * ψ₂
 
-    adjfactor!(V₁₂, obj₁, corr)
+    corr.corrected && lmul!(varcorrection(corr, w), V₁₂)
 
     output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
     output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
 end
 
-function _hausman_1s!(
+function _hausman_test!(
         output::ParEstimate,
         obj₁::ParModel,
         i₁::Vector{Int},
@@ -182,7 +181,7 @@ function _hausman_1s!(
     ψ₂  = view(Ψ₂, :, i₂) ; lmul!(Diagonal(w), ψ₂)
     V₁₂ = ψ₁' * corr.mat * ψ₂
 
-    adjfactor!(V₁₂, obj₁, corr)
+    corr.corrected && lmul!(varcorrection(corr, w), V₁₂)
 
     output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
     output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
@@ -192,15 +191,15 @@ end
 
 # TWO INDEPENDENT SAMPLES
 
-function hausman_2s(obj₁::ParModel, obj₂::ParModel)
-    return hausman_2s(obj₁, obj₂, intersect(coefnames(obj₁), coefnames(obj₂)))
+function chow_test(obj₁::ParModel, obj₂::ParModel)
+    chow_test(obj₁, obj₂, intersect(coefnames(obj₁), coefnames(obj₂)))
 end
 
-function hausman_2s(obj₁::ParModel, obj₂::ParModel, name::String)
-    return hausman_2s(obj₁, obj₂, [name])
+function chow_test(obj₁::ParModel, obj₂::ParModel, name::String)
+    chow_test(obj₁, obj₂, [name])
 end
 
-function hausman_2s(obj₁::ParModel, obj₂::ParModel, names::Vector{String})
+function chow_test(obj₁::ParModel, obj₂::ParModel, names::Vector{String})
 
     i₁ = findall((in)(names), coefnames(obj₁))
     i₂ = findall((in)(names), coefnames(obj₂))
@@ -219,15 +218,20 @@ end
 
 # TWO DEPENDENT SAMPLES: INTERFACE
 
-function hausman_2s(obj₁::ParModel, obj₂::ParModel, corr::CorrStructure)
-    return hausman_2s(obj₁, obj₂, corr, intersect(coefnames(obj₁), coefnames(obj₂)))
+function chow_test(obj₁::ParModel, obj₂::ParModel, corr::CorrStructure)
+    chow_test(obj₁, obj₂, corr, intersect(coefnames(obj₁), coefnames(obj₂)))
 end
 
-function hausman_2s(obj₁::ParModel, obj₂::ParModel, corr::CorrStructure, name::String)
-    return hausman_2s(obj₁, obj₂, corr, [name])
+function chow_test(obj₁::ParModel, obj₂::ParModel, corr::CorrStructure, name::String)
+    chow_test(obj₁, obj₂, corr, [name])
 end
 
-function hausman_2s(obj₁::ParModel, obj₂::ParModel, corr::CorrStructure, names::Vector{String})
+function chow_test(
+        obj₁::ParModel,
+        obj₂::ParModel,
+        corr::CorrStructure,
+        names::Vector{String}
+    )
 
     i₁ = findall((in)(names), coefnames(obj₁))
     i₂ = findall((in)(names), coefnames(obj₂))
@@ -243,14 +247,14 @@ function hausman_2s(obj₁::ParModel, obj₂::ParModel, corr::CorrStructure, nam
     output       = ParEstimate()
     output.names = copy(names)
 
-    _hausman_2s!(output, obj₁, i₁, w₁, obj₂, i₂, w₂, corr)
+    _chow_test!(output, obj₁, i₁, w₁, obj₂, i₂, w₂, corr)
 
     return output
 end
 
 # TWO DEPENDENT SAMPLES: ESTIMATION
 
-function _hausman_2s!(
+function _chow_test!(
         output::ParEstimate,
         obj₁::ParModel,
         i₁::Vector{Int},
@@ -273,22 +277,22 @@ function _hausman_2s!(
     ψ₂  = view(Ψ₂, touse₂, i₂)
     V₁₂ = ψ₁' * ψ₂
 
-    adjfactor!(V₁₂, obj₁, obj₂, corr)
+    corr.corrected && lmul!(varcorrection(corr, UnitWeights(sum(touse))), V₁₂)
 
     output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
     output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
 end
 
-function _hausman_2s!(
+function _chow_test!(
         output::ParEstimate,
         obj₁::ParModel,
         i₁::Vector{Int},
-        w₁::AbstractWeights,
+        w₁::W,
         obj₂::ParModel,
         i₂::Vector{Int},
-        w₂::AbstractWeights,
+        w₂::W,
         corr::Heteroscedastic
-    )
+    ) where W <: AbstractWeights
 
     nonmissing₁ = getnonmissing(obj₁)
     nonmissing₂ = getnonmissing(obj₂)
@@ -302,13 +306,13 @@ function _hausman_2s!(
     ψ₂  = view(Ψ₂, touse₂, i₂) ; lmul!(Diagonal(w₂), ψ₂)
     V₁₂ = ψ₁' * ψ₂
 
-    adjfactor!(V₁₂, obj₁, obj₂, corr)
+    corr.corrected && lmul!(varcorrection(corr, UnitWeights(sum(touse))), V₁₂)
 
     output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
     output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
 end
 
-function _hausman_2s!(
+function _chow_test!(
         output::ParEstimate,
         obj₁::ParModel,
         i₁::Vector{Int},
@@ -328,22 +332,22 @@ function _hausman_2s!(
     ψ₂  = view(corr.mat, :, nonmissing₂) * view(Ψ₂, :, i₂)
     V₁₂ = ψ₁' * ψ₂
 
-    adjfactor!(V₁₂, obj₁, obj₂, corr)
+    corr.corrected && lmul!(varcorrection(corr, UnitWeights(sum(touse))), V₁₂)
 
     output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
     output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
 end
 
-function _hausman_2s!(
+function _chow_test!(
         output::ParEstimate,
         obj₁::ParModel,
         i₁::Vector{Int},
-        w₁::AbstractWeights,
+        w₁::W,
         obj₂::ParModel,
         i₂::Vector{Int},
-        w₂::AbstractWeights,
+        w₂::W,
         corr::Clustered
-    )
+    ) where W <: AbstractWeights
 
     nonmissing₁ = getnonmissing(obj₁)
     nonmissing₂ = getnonmissing(obj₂)
@@ -354,13 +358,13 @@ function _hausman_2s!(
     ψ₂  = view(corr.mat, :, nonmissing₂) * view(Ψ₂, :, i₂) ; lmul!(Diagonal(w₂), ψ₂)
     V₁₂ = ψ₁' * ψ₂
 
-    adjfactor!(V₁₂, obj₁, obj₂, corr)
+    corr.corrected && lmul!(varcorrection(corr, UnitWeights(sum(touse))), V₁₂)
 
     output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
     output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
 end
 
-function _hausman_2s!(
+function _chow_test!(
         output::ParEstimate,
         obj₁::ParModel,
         i₁::Vector{Int},
@@ -380,22 +384,22 @@ function _hausman_2s!(
     ψ₂  = view(Ψ₂, :, i₂)
     V₁₂ = ψ₁' * view(corr.mat, nonmissing₁, nonmissing₂) * ψ₂
 
-    adjfactor!(V₁₂, obj₁, obj₂, corr)
+    corr.corrected && lmul!(varcorrection(corr, UnitWeights(sum(touse))), V₁₂)
 
     output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
     output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)
 end
 
-function _hausman_2s!(
+function _chow_test!(
         output::ParEstimate,
         obj₁::ParModel,
         i₁::Vector{Int},
-        w₁::AbstractWeights,
+        w₁::W,
         obj₂::ParModel,
         i₂::Vector{Int},
-        w₂::AbstractWeights,
+        w₂::W,
         corr::CorrStructure
-    )
+    ) where W <: AbstractWeights
 
     nonmissing₁ = getnonmissing(obj₁)
     nonmissing₂ = getnonmissing(obj₂)
@@ -406,7 +410,7 @@ function _hausman_2s!(
     ψ₂  = view(Ψ₂, :, i₂) ; lmul!(Diagonal(w₂), ψ₂)
     V₁₂ = ψ₁' * view(corr.mat, nonmissing₁, nonmissing₂) * ψ₂
 
-    adjfactor!(V₁₂, obj₁, obj₂, corr)
+    corr.corrected && lmul!(varcorrection(corr, UnitWeights(sum(touse))), V₁₂)
 
     output.β = view(coef(obj₁), i₁) - view(coef(obj₂), i₂)
     output.V = view(vcov(obj₁), i₁, i₁) + view(vcov(obj₂), i₂, i₂) - (V₁₂' + V₁₂)

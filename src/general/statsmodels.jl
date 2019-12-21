@@ -31,7 +31,7 @@ end
 # SUMMARY STATISTICS
 
 nobs(obj::Microdata) = sum(obj.weights)
-nobs(obj::ParModel)  = nobs(switch_stage(obj).sample)
+nobs(obj::AnyModel)  = nobs(switch_stage(obj).sample)
 
 dof(obj::ParModel)          = length(coef(obj))
 dof_residual(obj::ParModel) = nobs(obj) - dof(obj)
@@ -45,14 +45,15 @@ nulldeviance(obj::MLE)      = _nulldeviance(obj::MLE, getweights(obj))
 
 # PREDICTION
 
-predict(obj::AnyModel)   = predict(obj, obj.sample)
-fitted(obj::ParModel)    = fitted(obj, obj.sample)
-residuals(obj::AnyModel) = residuals(obj, obj.sample)
-response(obj::AnyModel)  = getvector(obj, :response)
+linear_predictor(obj::AnyModel) = linear_predictor(obj, switch_stage(obj).sample)
+predict(obj::AnyModel)          = predict(obj, switch_stage(obj).sample)
+fitted(obj::AnyModel)           = predict(obj)
+residuals(obj::AnyModel)        = residuals(obj, switch_stage(obj).sample)
+response(obj::AnyModel)         = getvector(obj, :response)
 
 function residuals(obj::AnyModel, MD::Microdata)
     y  = response(obj)
-    r  = fitted(obj, MD)
+    r  = predict(obj, MD)
     r .= y .- r
     return r
 end
@@ -67,24 +68,17 @@ coefnames(obj::ParEstimate) = obj.names
 
 function coeftable(obj::ParObject; level::Float64 = 0.95, digits::Int = 4)
 
-    table = frmtr(hcat(coef(obj), stderror(obj), tstat(obj), pval(obj)), digits)
+    table = formatter(hcat(coef(obj), stderror(obj), tstat(obj), pval(obj)), digits)
     label = [" Estimate", " St. Err.", "  t-stat.", "  p-value"]
 
     if level > 0.0
-        lprint = format("{:.0d}", 100 * 0.95)
-        table  = hcat(table, frmtr(confint(obj, level), digits))
-        label  = vcat(label, ["     C.I.", "($(lprint)%)  "])
+        table  = hcat(table, formatter(confint(obj, level), digits))
+        label  = vcat(label, ["     C.I.", "($(format("{:.0d}", 100 * level))%)  "])
     end
 
-    CT = CoefTable(table, label, coefnames(obj))
-
-    return CT
+    return CoefTable(table, label, coefnames(obj))
 end
 
-function show(io::IO, obj::ParObject)
-    if isdefined(switch_stage(obj), :V)
-        println(io, "$(mtitle(obj))\n\n", coeftable(obj))
-    else
-        println(io, "$(mtitle(obj))\n\n", coef(obj))
-    end
+function Base.show(io::IO, obj::ParObject)
+    isdefined(switch_stage(obj), :V) ? println(io, coeftable(obj)) : println(io, coef(obj))
 end

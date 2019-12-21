@@ -24,7 +24,7 @@ function first_stage(::Type{Tan}, MM::Type{<:OneStageModel}, MD::Microdata; kwar
     pop!(FSD.mapping, :treatment)
     pop!(FSD.mapping, :instrument)
 
-    return fit(MM, FSD; kwargs...)
+    fit(MM, FSD; kwargs...)
 end
 
 #==========================================================================================#
@@ -36,7 +36,7 @@ function fit(
     )
 
     m = first_stage(Tan, MM, MD; novar = novar)
-    return fit(Tan, m, MD; novar = novar, kwargs...)
+    fit(Tan, m, MD; novar = novar, kwargs...)
 end
 
 function fit(
@@ -50,7 +50,7 @@ function fit(
     w = getweights(MD)
     z = getvector(MD, :instrument)
     p = mean(z, getweights(MD))
-    π = fitted(MM)
+    π = predict(MM)
     v = [(1.0 - zi) * (1.0 - p) / (1.0 - πi) + zi * p / πi for (zi, πi) in zip(z, π)]
 
     v[((trim .> π) .| (1.0 - trim .< π))] .= 0.0
@@ -62,7 +62,7 @@ function fit(
     obj.first_stage  = MM
     obj.second_stage = IV(SSD)
     obj.pscore       = π
-    obj.eweights     = pweights(v)
+    obj.eweights     = ProbabilityWeights(v)
 
     _fit!(second_stage(obj), reweight(w, obj.eweights))
     novar || _vcov!(obj, getcorr(obj), w)
@@ -81,7 +81,7 @@ score(obj::Tan) = lmul!(Diagonal(obj.eweights), score(second_stage(obj)))
 jacobian(obj::Tan, ::UnitWeights) = jacobian(second_stage(obj), obj.eweights)
 
 function jacobian(obj::Tan, w::AbstractWeights)
-    return jacobian(second_stage(obj), reweight(w, obj.eweights))
+    jacobian(second_stage(obj), reweight(w, obj.eweights))
 end
 
 # EXPECTED JACOBIAN OF SCORE W.R.T. FIRST-STAGE PARAMETERS × NUMBER OF OBSERVATIONS
@@ -97,7 +97,7 @@ function crossjacobian(obj::Tan, ::UnitWeights)
     D[iszero.(obj.eweights)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
-    g₂ = score(obj.second_stage)
+    g₂ = score(second_stage(obj))
 
     return g₂' * lmul!(Diagonal(D), g₁)
 end
@@ -113,20 +113,16 @@ function crossjacobian(obj::Tan, w::AbstractWeights)
     D[iszero.(obj.eweights)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
-    g₂ = score(obj.second_stage)
+    g₂ = score(second_stage(obj))
 
     return g₂' * lmul!(Diagonal(D), g₁)
 end
 
 #==========================================================================================#
 
-# LINEAR PREDICTOR
-
-predict(obj::Tan) = predict(second_stage(obj))
-
 # FITTED VALUES
 
-fitted(obj::Tan) = fitted(second_stage(obj))
+predict(obj::Tan, MD::Microdata) = predict(second_stage(obj), MD)
 
 # DERIVATIVE OF FITTED VALUES
 

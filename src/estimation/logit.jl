@@ -6,7 +6,7 @@ mutable struct Logit <: MLE
 
     sample::Microdata
     β::Vector{Float64}
-    V::Matrix{Float64}
+    V::AbstractMatrix{Float64}
 
     Logit() = new()
 end
@@ -75,7 +75,7 @@ function _fit!(obj::Logit, ::UnitWeights)
         return ll
     end
 
-    function H!(h::Matrix, β::Vector)
+    function H!(h::AbstractMatrix, β::Vector)
 
         mul!(μ, x, β)
 
@@ -147,7 +147,7 @@ function _fit!(obj::Logit, w::AbstractWeights)
         return ll
     end
 
-    function H!(h::Matrix, β::Vector)
+    function H!(h::AbstractMatrix, β::Vector)
 
         mul!(μ, x, β)
 
@@ -207,14 +207,14 @@ end
 
 # LINEAR PREDICTOR
 
-function predict(obj::Logit, MD::Microdata)
+function linear_predictor(obj::Logit, MD::Microdata)
     (getnames(obj, :control) != getnames(MD, :control)) && throw("missing variables")
     getmatrix(MD, :control) * obj.β
 end
 
 # FITTED VALUES
 
-fitted(obj::Logit, MD::Microdata) = logistic.(predict(obj, MD))
+predict(obj::Logit, MD::Microdata) = logistic.(linear_predictor(obj, MD))
 
 # DERIVATIVE OF FITTED VALUES
 
@@ -236,14 +236,13 @@ end
 # UTILITIES
 
 coefnames(obj::Logit) = getnames(obj, :control)
-mtitle(obj::Logit)    = "Logit MLE"
 
 # LIKELIHOOD FUNCTION
 
 function _loglikelihood(obj::Logit, ::UnitWeights)
 
     y  = getvector(obj, :response)
-    μ  = predict(obj)
+    μ  = linear_predictor(obj)
     ll = 0.0
 
     @inbounds for (yi, μi) in zip(y, μ)
@@ -256,7 +255,7 @@ end
 function _loglikelihood(obj::Logit, w::AbstractWeights)
 
     y  = getvector(obj, :response)
-    μ  = predict(obj)
+    μ  = linear_predictor(obj)
     ll = 0.0
 
     for (yi, μi, wi) in zip(y, μ, w)

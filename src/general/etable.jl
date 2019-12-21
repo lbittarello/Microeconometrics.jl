@@ -5,14 +5,12 @@
 function etable(args...;
         digits::Int = 4,
         aux::Union{Function, Nothing} = nothing,
-        stars::Matrix{Any} = [0.1 "*"; 0.05 "**"; 0.01 "***"],
-        titles::Vector{String} = [""]
+        stars::Matrix{Any} = [0.1 "*"; 0.05 "**"; 0.01 "***"]
     )
 
     N                  = length(args)
+    titles             = String["(" * string(i) * ")" for i = 1:N]
     cutpoints, symbols = _parsestars(stars)
-
-    (titles == [""]) && (titles = String["(" * string(i) * ")" for i = 1:N])
 
     μ = Vector{Vector{String}}(undef, N)
     β = Vector{Vector{String}}(undef, N)
@@ -23,9 +21,7 @@ function etable(args...;
         μ[i] = coefnames(ai)
         β[i] = format.("{:.$(digits)f}", coef(ai))
 
-        if typeof(aux) != Nothing
-            σ[i] = "(" .* format.("{:.$(digits)f}", aux(ai)) .* ")"
-        end
+        isnothing(aux) || (σ[i] = "(" .* format.("{:.$(digits)f}", aux(ai)) .* ")")
 
         if cutpoints != []
             for (j, pj) in enumerate(pval(ai))
@@ -37,7 +33,7 @@ function etable(args...;
 
     inter = union(μ...)
 
-    if typeof(aux) == Nothing
+    if isnothing(aux)
         output = vcat("", inter)
     else
         output          = fill("", 2 * length(inter) + 1)
@@ -104,7 +100,7 @@ function _alignatchar!(x::Vector{String}, y::Char)
     for (xi, xx) in enumerate(x)
         (xx == "") || (pos[xi] = findlast(z -> z == y, xx))
     end
-    
+
     maxpos = maximum(pos)
     add    = " " .^ (maxpos .- pos)
     x     .= add .* x

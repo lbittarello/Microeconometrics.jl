@@ -6,7 +6,7 @@ mutable struct Gompit <: MLE
 
     sample::Microdata
     β::Vector{Float64}
-    V::Matrix{Float64}
+    V::AbstractMatrix{Float64}
 
     Gompit() = new()
 end
@@ -77,7 +77,7 @@ function _fit!(obj::Gompit, ::UnitWeights)
         return ll
     end
 
-    function H!(h::Matrix, β::Vector)
+    function H!(h::AbstractMatrix, β::Vector)
 
         mul!(μ, x, β)
 
@@ -152,7 +152,7 @@ function _fit!(obj::Gompit, w::AbstractWeights)
         return ll
     end
 
-    function H!(h::Matrix, β::Vector)
+    function H!(h::AbstractMatrix, β::Vector)
 
         mul!(μ, x, β)
 
@@ -230,14 +230,14 @@ end
 
 # LINEAR PREDICTOR
 
-function predict(obj::Gompit, MD::Microdata)
+function linear_predictor(obj::Gompit, MD::Microdata)
     (getnames(obj, :control) != getnames(MD, :control)) && throw("missing variables")
     getmatrix(MD, :control) * obj.β
 end
 
 # FITTED VALUES
 
-fitted(obj::Gompit, MD::Microdata) = exp.(.- exp.(predict(obj, MD)))
+predict(obj::Gompit, MD::Microdata) = exp.(.- exp.(linear_predictor(obj, MD)))
 
 # DERIVATIVE OF FITTED VALUES
 
@@ -253,14 +253,13 @@ end
 # UTILITIES
 
 coefnames(obj::Gompit) = getnames(obj, :control)
-mtitle(obj::Gompit)    = "Gompit MLE"
 
 # LIKELIHOOD FUNCTION
 
 function _loglikelihood(obj::Gompit, ::UnitWeights)
 
     y  = getvector(obj, :response)
-    μ  = predict(obj)
+    μ  = linear_predictor(obj)
     ll = 0.0
 
     @inbounds for (yi, μi) in zip(y, μ)
@@ -274,7 +273,7 @@ end
 function _loglikelihood(obj::Gompit, w::AbstractWeights)
 
     y  = getvector(obj, :response)
-    μ  = predict(obj)
+    μ  = linear_predictor(obj)
     ll = 0.0
 
     for (yi, μi, wi) in zip(y, μ, w)

@@ -6,7 +6,7 @@ mutable struct Cloglog <: MLE
 
     sample::Microdata
     β::Vector{Float64}
-    V::Matrix{Float64}
+    V::AbstractMatrix{Float64}
 
     Cloglog() = new()
 end
@@ -77,7 +77,7 @@ function _fit!(obj::Cloglog, ::UnitWeights)
         return ll
     end
 
-    function H!(h::Matrix, β::Vector)
+    function H!(h::AbstractMatrix, β::Vector)
 
         mul!(μ, x, β)
 
@@ -152,7 +152,7 @@ function _fit!(obj::Cloglog, w::AbstractWeights)
         return ll
     end
 
-    function H!(h::Matrix, β::Vector)
+    function H!(h::AbstractMatrix, β::Vector)
 
         mul!(μ, x, β)
 
@@ -230,14 +230,14 @@ end
 
 # LINEAR PREDICTOR
 
-function predict(obj::Cloglog, MD::Microdata)
+function linear_predictor(obj::Cloglog, MD::Microdata)
     (getnames(obj, :control) != getnames(MD, :control)) && throw("missing variables")
     getmatrix(MD, :control) * obj.β
 end
 
 # FITTED VALUES
 
-fitted(obj::Cloglog, MD::Microdata) = 1.0 .- exp.(.- exp.(predict(obj, MD)))
+predict(obj::Cloglog, MD::Microdata) = 1.0 .- exp.(.- exp.(linear_predictor(obj, MD)))
 
 # DERIVATIVE OF FITTED VALUES
 
@@ -253,14 +253,13 @@ end
 # UTILITIES
 
 coefnames(obj::Cloglog) = getnames(obj, :control)
-mtitle(obj::Cloglog)    = "Complementary log-log MLE"
 
 # LIKELIHOOD FUNCTION
 
 function _loglikelihood(obj::Cloglog, ::UnitWeights)
 
     y  = getvector(obj, :response)
-    μ  = predict(obj)
+    μ  = linear_predictor(obj)
     ll = 0.0
 
     @inbounds for (yi, μi) in zip(y, μ)
@@ -274,7 +273,7 @@ end
 function _loglikelihood(obj::Cloglog, w::AbstractWeights)
 
     y  = getvector(obj, :response)
-    μ  = predict(obj)
+    μ  = linear_predictor(obj)
     ll = 0.0
 
     for (yi, μi, wi) in zip(y, μ, w)

@@ -24,7 +24,7 @@ function first_stage(::Type{Abadie}, M₁::Type{<:OneStageModel}, MD::Microdata;
     pop!(FSD.mapping, :treatment)
     pop!(FSD.mapping, :instrument)
 
-    return fit(M₁, FSD; kwargs...)
+    fit(M₁, FSD; kwargs...)
 end
 
 #==========================================================================================#
@@ -41,7 +41,7 @@ function fit(
     )
 
     m₁ = first_stage(Abadie, M₁, MD, novar = novar)
-    return fit(Abadie, M₂, m₁, MD; novar = novar, kwargs...)
+    fit(Abadie, M₂, m₁, MD; novar = novar, kwargs...)
 end
 
 function fit(
@@ -57,7 +57,7 @@ function fit(
     w = getweights(MD)
     d = getvector(MD, :treatment)
     z = getvector(MD, :instrument)
-    π = fitted(M₁)
+    π = predict(M₁)
     v = [1.0 - (1.0 - di) * zi / πi - di * (1.0 - zi) / (1.0 - πi)
          for (di, zi, πi) in zip(d, z, π)]
 
@@ -70,7 +70,7 @@ function fit(
     obj.first_stage  = M₁
     obj.second_stage = M₂(SSD; kwargs...)
     obj.pscore       = π
-    obj.eweights     = pweights(v)
+    obj.eweights     = ProbabilityWeights(v)
 
     _fit!(second_stage(obj), reweight(w, obj.eweights))
     novar || _vcov!(obj, getcorr(obj), w)
@@ -89,7 +89,7 @@ score(obj::Abadie) = lmul!(Diagonal(obj.eweights), score(second_stage(obj)))
 jacobian(obj::Abadie, ::UnitWeights) = jacobian(second_stage(obj), obj.eweights)
 
 function jacobian(obj::Abadie, w::AbstractWeights)
-    return jacobian(second_stage(obj), reweight(w, obj.eweights))
+    jacobian(second_stage(obj), reweight(w, obj.eweights))
 end
 
 # EXPECTED JACOBIAN OF SCORE W.R.T. FIRST-STAGE PARAMETERS × NUMBER OF OBSERVATIONS
@@ -105,7 +105,7 @@ function crossjacobian(obj::Abadie, ::UnitWeights)
     D[iszero.(obj.eweights)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
-    g₂ = score(obj.second_stage)
+    g₂ = score(second_stage(obj))
 
     return g₂' * lmul!(Diagonal(D), g₁)
 end
@@ -121,20 +121,16 @@ function crossjacobian(obj::Abadie, w::AbstractWeights)
     D[iszero.(obj.eweights)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
-    g₂ = score(obj.second_stage)
+    g₂ = score(second_stage(obj))
 
     return g₂' * lmul!(Diagonal(D), g₁)
 end
 
 #==========================================================================================#
 
-# LINEAR PREDICTOR
-
-predict(obj::Abadie) = predict(second_stage(obj))
-
 # FITTED VALUES
 
-fitted(obj::Abadie) = fitted(second_stage(obj))
+predict(obj::Abadie, MD::Microdata) = predict(second_stage(obj), MD)
 
 # DERIVATIVE OF FITTED VALUES
 
@@ -145,4 +141,3 @@ jacobexp(obj::Abadie) = jacobexp(second_stage(obj))
 # UTILITIES
 
 coefnames(obj::Abadie) = coefnames(second_stage(obj))
-mtitle(obj::Abadie)    = "Abadie (2003)"

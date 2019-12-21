@@ -6,7 +6,7 @@ mutable struct OLS <: MLE
 
     sample::Microdata
     β::Vector{Float64}
-    V::Matrix{Float64}
+    V::AbstractMatrix{Float64}
 
     OLS() = new()
 end
@@ -63,16 +63,12 @@ end
 
 #==========================================================================================#
 
-# LINEAR PREDICTOR
+# FITTED VALUES
 
 function predict(obj::OLS, MD::Microdata)
     (getnames(obj, :control) != getnames(MD, :control)) && throw("missing variables")
     getmatrix(MD, :control) * obj.β
 end
-
-# FITTED VALUES
-
-fitted(obj::OLS, MD::Microdata) = predict(obj, MD)
 
 # DERIVATIVE OF FITTED VALUES
 
@@ -83,7 +79,6 @@ jacobexp(obj::OLS) = copy(getmatrix(obj, :control))
 # UTILITIES
 
 coefnames(obj::OLS) = getnames(obj, :control)
-mtitle(obj::OLS)    = "OLS"
 
 # COEFFICIENT OF DETERMINATION
 
@@ -92,7 +87,7 @@ r2(obj::OLS)    = _r2(obj, getweights(obj))
 
 function _r2(obj::OLS, ::UnitWeights)
     y   = response(obj)
-    ŷ   = fitted(obj)
+    ŷ   = predict(obj)
     rss = sum(abs2, y .- ŷ)
     tss = sum(abs2, y .- mean(y))
     return 1.0 - rss / tss
@@ -101,7 +96,7 @@ end
 function _r2(obj::OLS, w::AbstractWeights)
     y   = response(obj)
     μ   = mean(y, w)
-    ŷ   = fitted(obj)
+    ŷ   = predict(obj)
     rss = sum(abs2.(y .- ŷ), w)
     tss = sum(abs2.(y .- μ), w)
     return 1.0 - rss / tss

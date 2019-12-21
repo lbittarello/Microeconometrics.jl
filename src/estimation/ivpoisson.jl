@@ -7,8 +7,8 @@ mutable struct IVPoisson <: GMM
     method::String
     sample::Microdata
     β::Vector{Float64}
-    V::Matrix{Float64}
-    W::Matrix{Float64}
+    V::AbstractMatrix{Float64}
+    W::AbstractMatrix{Float64}
 
     IVPoisson() = new()
 end
@@ -17,7 +17,7 @@ end
 
 # CONSTRUCTOR
 
-function IVPoisson(MD::Microdata, W::Matrix{Float64}, method::String)
+function IVPoisson(MD::Microdata, W::AbstractMatrix{Float64}, method::String)
     obj        = IVPoisson()
     obj.sample = MD
     obj.W      = W
@@ -90,7 +90,8 @@ end
 
 function _fit!(obj::IVPoisson, ::UnitWeights)
 
-    O  = haskey(obj.sample.mapping, :offset)
+    has_offset = haskey(obj.sample.mapping, :offset)
+
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :treatment, :control)
     z  = getmatrix(obj, :instrument, :control)
@@ -104,11 +105,11 @@ function _fit!(obj::IVPoisson, ::UnitWeights)
         β₀ = vcat(fill(0.0, size(x, 2) - 1), log(mean(y)))
     end
 
-    O && (xo = getmatrix(obj, :offset, :treatment, :control))
+    has_offset && (xo = getmatrix(obj, :offset, :treatment, :control))
 
     function L(β::Vector)
 
-        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
+        has_offset ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ .= y .- exp.(μ)
         m  = z' * μ
@@ -119,7 +120,7 @@ function _fit!(obj::IVPoisson, ::UnitWeights)
 
     function G!(g::Vector, β::Vector)
 
-        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
+        has_offset ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= exp.(μ)
         xx .= x .* μ
@@ -132,7 +133,7 @@ function _fit!(obj::IVPoisson, ::UnitWeights)
 
     function LG!(g::Vector, β::Vector)
 
-        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
+        has_offset ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= exp.(μ)
         xx .= x .* μ
@@ -146,9 +147,9 @@ function _fit!(obj::IVPoisson, ::UnitWeights)
         return 0.5 * dot(m, mw)
     end
 
-    function H!(h::Matrix, β::Vector)
+    function H!(h::AbstractMatrix, β::Vector)
 
-        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
+        has_offset ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= exp.(μ)
         xx .= x .* μ
@@ -169,7 +170,8 @@ end
 
 function _fit!(obj::IVPoisson, w::AbstractWeights)
 
-    O  = haskey(obj.sample.mapping, :offset)
+    has_offset = haskey(obj.sample.mapping, :offset)
+
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :treatment, :control)
     z  = getmatrix(obj, :instrument, :control)
@@ -183,11 +185,11 @@ function _fit!(obj::IVPoisson, w::AbstractWeights)
         β₀ = vcat(fill(0.0, size(x, 2) - 1), log(mean(y)))
     end
 
-    O && (xo = getmatrix(obj, :offset, :treatment, :control))
+    has_offset && (xo = getmatrix(obj, :offset, :treatment, :control))
 
     function L(β::Vector)
 
-        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
+        has_offset ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ .= w .* (y .- exp.(μ))
         m  = z' * μ
@@ -198,7 +200,7 @@ function _fit!(obj::IVPoisson, w::AbstractWeights)
 
     function G!(g::Vector, β::Vector)
 
-        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
+        has_offset ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= exp.(μ)
         xx .= x .* μ .* w
@@ -211,7 +213,7 @@ function _fit!(obj::IVPoisson, w::AbstractWeights)
 
     function LG!(g::Vector, β::Vector)
 
-        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
+        has_offset ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= exp.(μ)
         xx .= x .* μ .* w
@@ -225,9 +227,9 @@ function _fit!(obj::IVPoisson, w::AbstractWeights)
         return 0.5 * dot(m, mw)
     end
 
-    function H!(h::Matrix, β::Vector)
+    function H!(h::AbstractMatrix, β::Vector)
 
-        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
+        has_offset ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= w .* exp.(μ)
         xx .= x .* μ
@@ -290,7 +292,7 @@ end
 
 # LINEAR PREDICTOR
 
-function predict(obj::IVPoisson, MD::Microdata)
+function linear_predictor(obj::IVPoisson, MD::Microdata)
     if getnames(obj, :treatment, :control) != getnames(MD, :treatment, :control)
         throw("missing variables")
     end
@@ -303,7 +305,7 @@ end
 
 # FITTED VALUES
 
-fitted(obj::IVPoisson, MD::Microdata) = exp.(predict(obj, MD))
+predict(obj::IVPoisson, MD::Microdata) = exp.(linear_predictor(obj, MD))
 
 # DERIVATIVE OF FITTED VALUES
 
@@ -325,4 +327,3 @@ end
 # UTILITIES
 
 coefnames(obj::IVPoisson) = getnames(obj, :treatment, :control)
-mtitle(obj::IVPoisson)    = "IV Poisson with additive errors"

@@ -24,7 +24,7 @@ M           = @micromodel(response => gpmw, control => foreign + 1)
 
 @testset "OLS Homoscedastic" begin
 
-    D = Microdata(S, M, vcov = Homoscedastic())
+    D = Microdata(S, M, corr = Homoscedastic())
     E = fit(OLS, D)
 
     β = [0.24615258; 1.60900394]
@@ -43,7 +43,7 @@ end
 
 @testset "OLS Heteroscedastic" begin
 
-    D = Microdata(S, M, vcov = Heteroscedastic())
+    D = Microdata(S, M, corr = Heteroscedastic())
     E = fit(OLS, D)
 
     β = [0.24615258; 1.60900394]
@@ -57,15 +57,16 @@ end
     @test isapprox(adjr2(E), 0.20710363, atol = 1e-7, rtol = 1e-7)
 end
 
-T           = Dict("age" => Union{Int, Missing})
+T           = Dict(column => Union{AbstractFloat, Missing} for column in ["age", "tenure"])
 S           = CSV.read(joinpath(datadir, "regsmpl.csv"), types = T)
 S[!, :age2] = S[:, :age].^2
-W           = Clustered(S, :idcode)
 M           = @micromodel(response => ln_wage, control => age + age2 + tenure + 1)
+C           = Dict(term => ContinuousTerm for term in [:age, :age2, :tenure])
 
 @testset "OLS Clustered" begin
 
-    D = Microdata(S, M, vcov = W)
+    W = Clustered(S, :idcode)
+    D = Microdata(S, M, corr = W, hints = C)
     E = fit(OLS, D)
 
     β = [0.07521723; -0.00108513; 0.03908767; 0.33398213]
@@ -83,15 +84,15 @@ end
 
 S = CSV.read(joinpath(datadir, "hsng2.csv"))
 M = @micromodel(
-        response   => rent,
-        control    => pcturban + 1,
-        treatment  => hsngval,
-        instrument => faminc + region
-    )
+    response   => rent,
+    control    => pcturban + 1,
+    treatment  => hsngval,
+    instrument => faminc + region
+)
 
 @testset "TSLS" begin
 
-    D = Microdata(S, M, vcov = Homoscedastic())
+    D = Microdata(S, M, corr = Homoscedastic())
     E = fit(IV, D)
 
     β = [0.00223983; 0.08151597; 120.70651454]
@@ -105,7 +106,7 @@ end
 
 @testset "IV GMM" begin
 
-    D = Microdata(S, M, vcov = Heteroscedastic())
+    D = Microdata(S, M, corr = Heteroscedastic())
     E = fit(IV, D, method = "Two-step GMM")
 
     β = [0.00146433; 0.76154816; 112.12271295]
@@ -124,7 +125,7 @@ end
 S = CSV.read(joinpath(datadir, "lbw.csv"))
 M = @micromodel(response => low, control => age + lwt + race + smoke + ptl + ht + ui + 1)
 C = Dict(:race => DummyCoding(base = "white"))
-D = Microdata(S, M, vcov = Homoscedastic(), hints = C)
+D = Microdata(S, M, corr = Homoscedastic(), hints = C)
 
 @testset "Logit" begin
 
@@ -199,14 +200,14 @@ S             = CSV.read(joinpath(datadir, "dollhill3.csv"))
 S[!, :pyears] = log.(S[:, :pyears])
 
 M = @micromodel(
-        response => deaths,
-        control  => smokes + agecat + 1,
-        offset   => pyears
-    )
+    response => deaths,
+    control  => smokes + agecat + 1,
+    offset   => pyears
+)
 
 @testset "Poisson" begin
 
-    D = Microdata(S, M, vcov = Homoscedastic())
+    D = Microdata(S, M, corr = Homoscedastic())
     E = fit(Poisson, D)
 
     β = [0.35453564; 1.48400701; 2.62750512; 3.35049279; 3.70009645; -7.91932571]
@@ -222,11 +223,11 @@ end
 
 S = CSV.read(joinpath(datadir, "website.csv"))
 M = @micromodel(
-        response   => visits,
-        control    => ad + female + 1,
-        treatment  => time,
-        instrument => phone + frfam
-    )
+    response   => visits,
+    control    => ad + female + 1,
+    treatment  => time,
+    instrument => phone + frfam
+)
 
 @testset "IVPoisson" begin
 
@@ -244,11 +245,11 @@ end
 
 S = CSV.read(joinpath(datadir, "trip.csv"))
 M = @micromodel(
-        response   => trips,
-        control    => cbd + ptn + worker + weekend + 1,
-        treatment  => tcost,
-        instrument => pt
-    )
+    response   => trips,
+    control    => cbd + ptn + worker + weekend + 1,
+    treatment  => tcost,
+    instrument => pt
+)
 
 @testset "Mullahy" begin
 
@@ -270,10 +271,10 @@ S            = CSV.read(joinpath(datadir, "cattaneo2.csv"))
 S[!, :mage2] = S[:, :mage].^2
 
 M = @micromodel(
-        response  => bweight,
-        control   => mmarried + mage + mage2 + fbaby + medu + 1,
-        treatment => mbsmoke
-    )
+    response  => bweight,
+    control   => mmarried + mage + mage2 + fbaby + medu + 1,
+    treatment => mbsmoke
+)
 
 @testset "IPW" begin
 
@@ -293,16 +294,17 @@ end
 #==========================================================================================#
 
 S = CSV.read(joinpath(datadir, "income.csv"))
-X = (S[:, :male] .== 1)
 M = @micromodel(response => inc, control => edu + exp + 1)
 
-@testset "Hausman" begin
+@testset "Chow" begin
 
-    E0    = fit(OLS, Microdata(S, M, subset = X))
-    E0.V .= E0.V .* ((nobs(E0) - 1) / nobs(E0)) * (277 / 276)
-    E1    = fit(OLS, Microdata(S, M, subset = .!X))
-    E1.V .= E1.V .* ((nobs(E1) - 1) / nobs(E1)) * (277 / 276)
-    E     = hausman_2s(E0, E1)
+    E0 = fit(OLS, Microdata(S, M, subset = (S[:, :male] .== 1)))
+    E1 = fit(OLS, Microdata(S, M, subset = (S[:, :male] .== 0)))
+
+    Microeconometrics.lmul!(((nobs(E0) - 1) / nobs(E0)) * 277 / 276, E0.V)
+    Microeconometrics.lmul!(((nobs(E1) - 1) / nobs(E1)) * 277 / 276, E1.V)
+
+    E  = chow_test(E0, E1)
 
     p = [0.20345785; 0.59592600; 0.28068223]
 

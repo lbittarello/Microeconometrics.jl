@@ -6,61 +6,65 @@ abstract type CorrStructure
 end
 
 mutable struct Homoscedastic <: CorrStructure
-    adj::Bool
-    method::String
+    corrected::Bool
+    expected::Bool
+    nonmissing::Bool
 end
 
 mutable struct Heteroscedastic <: CorrStructure
-    adj::Bool
+    corrected::Bool
+    nonmissing::Bool
 end
 
 mutable struct Clustered <: CorrStructure
-    adj::Bool
+    corrected::Bool
     nonmissing::BitVector
-    mat::AbstractMatrix
-    ic::AbstractVector
-    nc::Int
+    matrix::AbstractMatrix
+    id_clusters::AbstractVector
+    n_clusters::Int
 end
 
 mutable struct CrossCorrelated <: CorrStructure
-    adj::Bool
+    corrected::Bool
     nonmissing::BitVector
-    mat::AbstractMatrix
+    matrix::AbstractMatrix
 end
 
 #==========================================================================================#
 
 # HOMOSCEDASTIC
 
-Homoscedastic(method::String = "OIM"; adj::Bool = true) = Homoscedastic(adj, method)
+function Homoscedastic(; corrected::Bool = true, expected::Bool = false)
+    Homoscedastic(corrected, expected, true)
+end
 
 # HETEROSCEDASTIC
 
-Heteroscedastic(; adj::Bool = true) = Heteroscedastic(adj)
+Heteroscedastic(; corrected::Bool = true) = Heteroscedastic(corrected, true)
 
 #==========================================================================================#
 
 # CLUSTERED
 
-function Clustered(df::DataFrame, x::Symbol; adj::Bool = true)
+function Clustered(df::DataFrame, x::Symbol; corrected::Bool = true)
 
-    nonmissing = completecases(df, x)
-    ic         = disallowmissing(df[nonmissing, x])
-    iter       = sort(unique(ic))
-    nc         = length(iter)
-    idx₁       = Vector{Int}()
-    idx₂       = Vector{Int}()
+    nonmissing  = completecases(df, x)
+    id_clusters = disallowmissing(df[nonmissing, x])
+    iter        = sort(unique(id_clusters))
+    n_clusters  = length(iter)
+    idx₁        = Vector{Int}()
+    idx₂        = Vector{Int}()
 
     @inbounds for (i, ci) in enumerate(iter)
-        idx = findall((in)([ci]), ic)
+        idx = findall((in)([ci]), id_clusters)
         append!(idx₁, fill(i, length(idx)))
         append!(idx₂, idx)
     end
 
     val = fill(1.0, length(idx₁))
-    V   = sparse(idx₁, idx₂, val)
+    V   = SuiteSparse.CHOLMOD.Sparse(sparse(idx₁, idx₂, val))
 
-    return Clustered(adj, nonmissing, SuiteSparse.CHOLMOD.Sparse(V), ic, nc)
+    return Clustered(corrected, nonmissing, V, id_clusters, n_clusters)
 end
 
 #==========================================================================================#
@@ -83,7 +87,7 @@ end
 
 # TWOWAY CLUSTERING
 
-function cc_twowayclustering(df::DataFrame, x₁::Symbol, x₂::Symbol; adj::Bool = true)
+function cc_twowayclustering(df::DataFrame, x₁::Symbol, x₂::Symbol; corrected::Bool = true)
 
     nonmissing  = completecases(df, [x₁, x₂])
     ic₁         = disallowmissing(df[nonmissing, x₁])
@@ -95,46 +99,30 @@ function cc_twowayclustering(df::DataFrame, x₁::Symbol, x₂::Symbol; adj::Boo
     idx₂        = Vector{Int}(1:n)
     nn          = n
 
-    @inbounds for i in iter₁
+    for (iter, ic) in zip([iter₁, iter₂], [ic₁, ic₂])
+        @inbounds for i in iter₁
 
-        idx = findall((in)([i]), ic₁)
-        nix = length(idx)
-        nel = Int(nix * (nix - 1) / 2)
+            iter = findall((in)([i]), ic)
+            nix  = length(idx)
+            nel  = Int(nix * (nix - 1) / 2)
 
-        append!(idx₁, Vector{Int}(nel))
-        append!(idx₂, Vector{Int}(nel))
+            append!(idx₁, Vector{Int}(nel))
+            append!(idx₂, Vector{Int}(nel))
 
-        for j = 1:nix
-            for k = 1:(j - 1)
-                nn += 1
-                idx₁[nn] = idx[k]
-                idx₂[nn] = idx[j]
-            end
-        end
-    end
-
-    @inbounds for i in iter₂
-
-        idx = findall((in)([i]), ic₂)
-        nix = length(idx)
-        nel = Int(nix * (nix - 1) / 2)
-
-        append!(idx₁, Vector{Int}(nel))
-        append!(idx₂, Vector{Int}(nel))
-
-        for j = 1:nix
-            for k = 1:(j - 1)
-                nn += 1
-                idx₁[nn] = idx[k]
-                idx₂[nn] = idx[j]
+            for j = 1:nix
+                for k = 1:(j - 1)
+                    nn += 1
+                    idx₁[nn] = idx[k]
+                    idx₂[nn] = idx[j]
+                end
             end
         end
     end
 
     val = fill(1.0, length(idx₁))
-    V   = Symmetric(sparse(idx₁, idx₂, val, n, n, max))
+    V   = SuiteSparse.CHOLMOD.Sparse(Symmetric(sparse(idx₁, idx₂, val, n, n, max)))
 
-    return CrossCorrelated(adj, nonmissing, SuiteSparse.CHOLMOD.Sparse(V))
+    return CrossCorrelated(corrected, nonmissing, V)
 end
 
 # CORRELATION ACROSS TIME
@@ -144,7 +132,7 @@ function cc_time(
         x::Symbol,
         b::Real,
         k::Function = parzen;
-        adj::Bool = true
+        corrected::Bool = true
     )
 
     nonmissing = completecases(df, x)
@@ -156,7 +144,7 @@ function cc_time(
 
     kernel(z) = k(z / float(b))
 
-    for i = 1:n
+    @inbounds for i = 1:n
         for j = 1:(i - 1)
             w = Dates.value(xx[i] - xx[j])
             w = k(w)
@@ -170,7 +158,7 @@ function cc_time(
 
     V = Symmetric(sparse(idx₁, idx₂, val))
 
-    return CrossCorrelated(adj, nonmissing, SuiteSparse.CHOLMOD.Sparse(V))
+    return CrossCorrelated(corrected, nonmissing, SuiteSparse.CHOLMOD.Sparse(V))
 end
 
 # CORRELATION ACROSS SPACE
@@ -181,7 +169,7 @@ function cc_space(
         x::Symbol,
         b::Real,
         k::Function = parzen;
-        adj::Bool = true
+        corrected::Bool = true
     )
 
     nonmissing  = completecases(df, [y, x])
@@ -194,7 +182,7 @@ function cc_space(
 
     kernel(z) = k(z / float(b))
 
-    for i = 1:n
+    @inbounds for i = 1:n
         for j = 1:(i - 1)
             w = geodistance(yy[i], xx[i], yy[j], xx[j])
             w = kernel(w)
@@ -208,7 +196,7 @@ function cc_space(
 
     V = Symmetric(sparse(idx₁, idx₂, val))
 
-    return CrossCorrelated(adj, nonmissing, SuiteSparse.CHOLMOD.Sparse(V))
+    return CrossCorrelated(corrected, nonmissing, SuiteSparse.CHOLMOD.Sparse(V))
 end
 
 # CORRELATION ACROSS TIME AND SPACE
@@ -221,7 +209,7 @@ function cc_timespace(
         x₂::Symbol,
         b₂::Real,
         k::Function = parzen;
-        adj::Bool = true
+        corrected::Bool = true
     )
 
     nonmissing  = completecases(df, [x₁, y₂, x₂])
@@ -238,7 +226,7 @@ function cc_timespace(
 
     kernel(z₁, z₂) = k(sqrt(abs2(z₁) + abs2(z₂)))
 
-    for i = 1:n
+    @inbounds for i = 1:n
         for j = 1:(i - 1)
             w₁ = Dates.value(xx₁[i] - xx₁[j]) / b₁
             if w₁ <= 1.0
@@ -254,5 +242,5 @@ function cc_timespace(
 
     V = Symmetric(sparse(idx₁, idx₂, val))
 
-    return CrossCorrelated(adj, nonmissing, SuiteSparse.CHOLMOD.Sparse(V))
+    return CrossCorrelated(corrected, nonmissing, SuiteSparse.CHOLMOD.Sparse(V))
 end

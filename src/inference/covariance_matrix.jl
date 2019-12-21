@@ -17,23 +17,30 @@ end
 
 #==========================================================================================#
 
+# FINITE-SAMPLE ADJUSTMENT
+
+varcorrection(corr::Homoscedastic, w::AbstractWeights) = 1
+
+function varcorrection(corr::Heteroscedastic, w::AbstractWeights)
+    sum(w) * varcorrection(w, true)
+end
+
+varcorrection(corr::Clustered, w::AbstractWeights) = corr.n_clusters / (corr.n_clusters - 1)
+
+function varcorrection(corr::CrossCorrelated, w::AbstractWeights)
+    sum(w) * varcorrection(w, true)
+end
+
 # SET COVARIANCE MATRIX
 
-_vcov!(obj::ParModel, V::Matrix) = (switch_stage(obj).V = V)
+_vcov!(obj::ParModel, V::AbstractMatrix) = (switch_stage(obj).V = V)
 
 #==========================================================================================#
 
 # COVARIANCE MATRIX FOR HOMOSCEDASTIC MLE
 
 function _vcov!(obj::MLE, corr::Homoscedastic, w::AbstractWeights)
-    if getcorr(obj).method == "OIM"
-        obj.V = - inv(jacobian(obj, w))
-    elseif getcorr(obj).method == "OPG"
-        g     = score(obj)
-        obj.V = inv(crossprod(g, w))
-    else
-        throw("unknown method")
-    end
+    obj.V = getcorr(obj).expected ? inv(crossprod(score(obj), w)) : - inv(jacobian(obj, w))
 end
 
 #==========================================================================================#
@@ -46,49 +53,49 @@ for m in (MLE, TwoStageModel)
         function _vcov!(obj::$m, corr::Heteroscedastic, w::UnitWeights)
             ψ = influence(obj, w)
             V = crossprod(ψ)
-            adjfactor!(V, obj, corr)
+            corr.corrected && lmul!(varcorrection(corr, w), V)
             _vcov!(obj, V)
         end
 
         function _vcov!(obj::$m, corr::Heteroscedastic, w::FrequencyWeights)
             ψ = influence(obj, w)
             V = crossprod(ψ, w)
-            adjfactor!(V, obj, corr)
+            corr.corrected && lmul!(varcorrection(corr, w), V)
             _vcov!(obj, V)
         end
 
         function _vcov!(obj::$m, corr::Heteroscedastic, w::AbstractWeights)
             ψ = influence(obj, w) ; lmul!(Diagonal(w), ψ)
             V = crossprod(ψ)
-            adjfactor!(V, obj, corr)
+            corr.corrected && lmul!(varcorrection(corr, w), V)
             _vcov!(obj, V)
         end
 
         function _vcov!(obj::$m, corr::Clustered, w::UnitWeights)
-            ψ = corr.mat * influence(obj, w)
+            ψ = corr.matrix * influence(obj, w)
             V = crossprod(ψ)
-            adjfactor!(V, obj, corr)
+            corr.corrected && lmul!(varcorrection(corr, w), V)
             _vcov!(obj, V)
         end
 
         function _vcov!(obj::$m, corr::Clustered, w::AbstractWeights)
-            ψ = corr.mat * influence(obj, w) ; lmul!(Diagonal(w), ψ)
+            ψ = corr.matrix * influence(obj, w) ; lmul!(Diagonal(w), ψ)
             V = crossprod(ψ)
-            adjfactor!(V, obj, corr)
+            corr.corrected && lmul!(varcorrection(corr, w), V)
             _vcov!(obj, V)
         end
 
         function _vcov!(obj::$m, corr::CrossCorrelated, w::UnitWeights)
             ψ = influence(obj, w)
-            V = crossprod(ψ, corr.mat)
-            adjfactor!(V, obj, corr)
+            V = crossprod(ψ, corr.matrix)
+            corr.corrected && lmul!(varcorrection(corr, w), V)
             _vcov!(obj, V)
         end
 
         function _vcov!(obj::$m, corr::CrossCorrelated, w::AbstractWeights)
             ψ = influence(obj, w) ; lmul!(Diagonal(w), ψ)
-            V = crossprod(ψ, corr.mat)
-            adjfactor!(V, obj, corr)
+            V = crossprod(ψ, corr.matrix)
+            corr.corrected && lmul!(varcorrection(corr, w), V)
             _vcov!(obj, V)
         end
     end
@@ -98,39 +105,24 @@ end
 
 # GMM WEIGHT MATRIX
 
-function wmatrix(obj::GMM, corr::Heteroscedastic, ::UnitWeights)
-    s = score(obj)
-    return crossprod(s)
-end
-
-function wmatrix(obj::GMM, corr::Heteroscedastic, w::FrequencyWeights)
-    s = score(obj)
-    return crossprod(s, w)
-end
+wmatrix(obj::GMM, corr::Heteroscedastic, ::UnitWeights) = crossprod(score(obj))
+wmatrix(obj::GMM, corr::Clustered, ::UnitWeights) = crossprod(corr.matrix * score(obj))
+wmatrix(obj::GMM, corr::CrossCorrelated, ::UnitWeights) = crossprod(score(obj), corr.matrix)
+wmatrix(obj::GMM, corr::Heteroscedastic, w::FrequencyWeights) = crossprod(score(obj), w)
 
 function wmatrix(obj::GMM, corr::Heteroscedastic, w::AbstractWeights)
     s = score(obj) ; lmul!(Diagonal(w), s)
-    return crossprod(s)
-end
-
-function wmatrix(obj::GMM, corr::Clustered, ::UnitWeights)
-    s = corr.mat * score(obj)
-    return crossprod(s)
+    crossprod(s)
 end
 
 function wmatrix(obj::GMM, corr::Clustered, w::AbstractWeights)
-    s = corr.mat * score(obj) ; lmul!(Diagonal(w), s)
-    return crossprod(s)
-end
-
-function wmatrix(obj::GMM, corr::CrossCorrelated, ::UnitWeights)
-    s = score(obj)
-    return crossprod(s, corr.mat)
+    s = corr.matrix * score(obj) ; lmul!(Diagonal(w), s)
+    crossprod(s)
 end
 
 function wmatrix(obj::GMM, corr::CrossCorrelated, w::AbstractWeights)
     s = score(obj) ; lmul!(Diagonal(w), s)
-    return crossprod(s, corr.mat)
+    crossprod(s, corr.matrix)
 end
 
 # COVARIANCE MATRIX FOR GMM
@@ -154,6 +146,6 @@ function _vcov!(obj::GMM, corr::CorrStructure, w::AbstractWeights)
         V = inv(j' * ω)
     end
 
-    adjfactor!(V, obj, corr)
+    corr.corrected && lmul!(varcorrection(corr, w), V)
     _vcov!(obj, V)
 end

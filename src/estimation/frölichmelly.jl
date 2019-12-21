@@ -24,7 +24,7 @@ function first_stage(::Type{FrölichMelly}, MM::Type{<:OneStageModel}, MD::Micro
     pop!(FSD.mapping, :treatment)
     pop!(FSD.mapping, :instrument)
 
-    return fit(MM, FSD; kwargs...)
+    fit(MM, FSD; kwargs...)
 end
 
 #==========================================================================================#
@@ -40,7 +40,7 @@ function fit(
     )
 
     m = first_stage(FrölichMelly, MM, MD; novar = novar)
-    return fit(FrölichMelly, m, MD; novar = novar, kwargs...)
+    fit(FrölichMelly, m, MD; novar = novar, kwargs...)
 end
 
 function fit(
@@ -54,7 +54,7 @@ function fit(
     w = getweights(MD)
     d = getvector(MD, :treatment)
     z = getvector(MD, :instrument)
-    π = fitted(MM)
+    π = predict(MM)
     v = [(2.0 * di - 1.0) * (zi - πi) / (πi * (1.0 - πi)) for (di, zi, πi) in zip(d, z, π)]
 
     v[((trim .> π) .| (1.0 - trim .< π))] .= 0.0
@@ -66,7 +66,7 @@ function fit(
     obj.first_stage  = MM
     obj.second_stage = OLS(SSD)
     obj.pscore       = π
-    obj.eweights     = pweights(v)
+    obj.eweights     = ProbabilityWeights(v)
 
     _fit!(second_stage(obj), reweight(w, obj.eweights))
     novar || _vcov!(obj, getcorr(obj), w)
@@ -87,7 +87,7 @@ end
 jacobian(obj::FrölichMelly, ::UnitWeights) = jacobian(second_stage(obj), obj.eweights)
 
 function jacobian(obj::FrölichMelly, w::AbstractWeights)
-    return jacobian(second_stage(obj), reweight(w, obj.eweights))
+    jacobian(second_stage(obj), reweight(w, obj.eweights))
 end
 
 # EXPECTED JACOBIAN OF SCORE W.R.T. FIRST-STAGE PARAMETERS × NUMBER OF OBSERVATIONS
@@ -103,7 +103,7 @@ function crossjacobian(obj::FrölichMelly, ::UnitWeights)
     D[iszero.(obj.eweights)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
-    g₂ = score(obj.second_stage)
+    g₂ = score(second_stage(obj))
 
     return g₂' * lmul!(Diagonal(D), g₁)
 end
@@ -119,20 +119,16 @@ function crossjacobian(obj::FrölichMelly, w::AbstractWeights)
     D[iszero.(obj.eweights)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
-    g₂ = score(obj.second_stage)
+    g₂ = score(second_stage(obj))
 
     return g₂' * lmul!(Diagonal(D), g₁)
 end
 
 #==========================================================================================#
 
-# LINEAR PREDICTOR
-
-predict(obj::FrölichMelly) = predict(second_stage(obj))
-
 # FITTED VALUES
 
-fitted(obj::FrölichMelly) = fitted(second_stage(obj))
+predict(obj::FrölichMelly, MD::Microdata) = predict(second_stage(obj), MD)
 
 # DERIVATIVE OF FITTED VALUES
 
@@ -143,4 +139,3 @@ jacobexp(obj::FrölichMelly) = jacobexp(second_stage(obj))
 # UTILITIES
 
 coefnames(obj::FrölichMelly) = coefnames(second_stage(obj))
-mtitle(obj::FrölichMelly)    = "Frölich and Melly (2013)"

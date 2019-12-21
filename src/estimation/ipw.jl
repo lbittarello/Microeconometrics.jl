@@ -23,7 +23,7 @@ function first_stage(::Type{IPW}, MM::Type{<:OneStageModel}, MD::Microdata; kwar
 
     pop!(FSD.mapping, :treatment)
 
-    return fit(MM, FSD; kwargs...)
+    fit(MM, FSD; kwargs...)
 end
 
 #==========================================================================================#
@@ -35,7 +35,7 @@ function fit(
     )
 
     m = first_stage(IPW, MM, MD; novar = novar)
-    return fit(IPW, m, MD; novar = novar, kwargs...)
+    fit(IPW, m, MD; novar = novar, kwargs...)
 end
 
 function fit(
@@ -55,12 +55,12 @@ function fit(
 
     SSD                   = Microdata(MD)
     SSD.mapping[:control] = asgn(MD.model, (MD.model[:treatment], InterceptTerm{true}()))
-    
+
     obj              = IPW()
     obj.first_stage  = MM
     obj.second_stage = OLS(SSD)
     obj.pscore       = π
-    obj.eweights     = pweights(v)
+    obj.eweights     = ProbabilityWeights(v)
 
     _fit!(second_stage(obj), reweight(w, obj.eweights))
     novar || _vcov!(obj, getcorr(obj), w)
@@ -79,7 +79,7 @@ score(obj::IPW) = lmul!(Diagonal(obj.eweights), score(second_stage(obj)))
 jacobian(obj::IPW, ::UnitWeights) = jacobian(second_stage(obj), obj.eweights)
 
 function jacobian(obj::IPW, w::AbstractWeights)
-    return jacobian(second_stage(obj), reweight(w, obj.eweights))
+    jacobian(second_stage(obj), reweight(w, obj.eweights))
 end
 
 # EXPECTED JACOBIAN OF SCORE W.R.T. FIRST-STAGE PARAMETERS × NUMBER OF OBSERVATIONS
@@ -93,7 +93,7 @@ function crossjacobian(obj::IPW, ::UnitWeights)
     D[iszero.(obj.eweights)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
-    g₂ = score(obj.second_stage)
+    g₂ = score(second_stage(obj))
 
     return g₂' * lmul!(Diagonal(D), g₁)
 end
@@ -108,20 +108,16 @@ function crossjacobian(obj::IPW, w::AbstractWeights)
     D[iszero.(obj.eweights)] .= 0.0
 
     g₁ = jacobexp(obj.first_stage)
-    g₂ = score(obj.second_stage)
+    g₂ = score(second_stage(obj))
 
     return g₂' * lmul!(Diagonal(D), g₁)
 end
 
 #==========================================================================================#
 
-# LINEAR PREDICTOR
-
-predict(obj::IPW) = predict(second_stage(obj))
-
 # FITTED VALUES
 
-fitted(obj::IPW) = fitted(second_stage(obj))
+predict(obj::IPW, MD::Microdata) = predict(second_stage(obj), MD)
 
 # DERIVATIVE OF FITTED VALUES
 
@@ -132,4 +128,3 @@ jacobexp(obj::IPW) = jacobexp(second_stage(obj))
 # UTILITIES
 
 coefnames(obj::IPW) = coefnames(second_stage(obj))
-mtitle(obj::IPW)    = "Inverse probability weighting"

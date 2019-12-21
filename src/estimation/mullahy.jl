@@ -7,8 +7,8 @@ mutable struct Mullahy <: GMM
     method::String
     sample::Microdata
     β::Vector{Float64}
-    V::Matrix{Float64}
-    W::Matrix{Float64}
+    V::AbstractMatrix{Float64}
+    W::AbstractMatrix{Float64}
 
     Mullahy() = new()
 end
@@ -17,7 +17,7 @@ end
 
 # CONSTRUCTOR
 
-function Mullahy(MD::Microdata, W::Matrix{Float64}, method::String)
+function Mullahy(MD::Microdata, W::AbstractMatrix{Float64}, method::String)
     obj        = Mullahy()
     obj.sample = MD
     obj.W      = W
@@ -92,7 +92,8 @@ end
 
 function _fit!(obj::Mullahy, ::UnitWeights)
 
-    O  = haskey(obj.sample.mapping, :offset)
+    has_offset = haskey(obj.sample.mapping, :offset)
+
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :treatment, :control)
     z  = getmatrix(obj, :instrument, :control)
@@ -106,11 +107,11 @@ function _fit!(obj::Mullahy, ::UnitWeights)
         β₀ = vcat(fill(0.0, size(x, 2) - 1), log(mean(y)))
     end
 
-    O && (xo = getmatrix(obj, :offset, :treatment, :control))
+    has_offset && (xo = getmatrix(obj, :offset, :treatment, :control))
 
     function L(β::Vector)
 
-        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
+        has_offset ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ .= muladd.(y, exp.(- μ), - 1.0)
         m  = z' * μ
@@ -121,7 +122,7 @@ function _fit!(obj::Mullahy, ::UnitWeights)
 
     function G!(g::Vector, β::Vector)
 
-        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
+        has_offset ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= y .* exp.(- μ)
         xx .= x .* μ
@@ -134,7 +135,7 @@ function _fit!(obj::Mullahy, ::UnitWeights)
 
     function LG!(g::Vector, β::Vector)
 
-        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
+        has_offset ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= y .* exp.(- μ)
         xx .= x .* μ
@@ -148,9 +149,9 @@ function _fit!(obj::Mullahy, ::UnitWeights)
         return 0.5 * dot(m, mw)
     end
 
-    function H!(h::Matrix, β::Vector)
+    function H!(h::AbstractMatrix, β::Vector)
 
-        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
+        has_offset ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= y .* exp.(- μ)
         xx .= x .* μ
@@ -171,7 +172,8 @@ end
 
 function _fit!(obj::Mullahy, w::AbstractWeights)
 
-    O  = haskey(obj.sample.mapping, :offset)
+    has_offset = haskey(obj.sample.mapping, :offset)
+
     y  = getvector(obj, :response)
     x  = getmatrix(obj, :treatment, :control)
     z  = getmatrix(obj, :instrument, :control)
@@ -185,11 +187,11 @@ function _fit!(obj::Mullahy, w::AbstractWeights)
         β₀ = vcat(fill(0.0, size(x, 2) - 1), log(mean(y)))
     end
 
-    O && (xo = getmatrix(obj, :offset, :treatment, :control))
+    has_offset && (xo = getmatrix(obj, :offset, :treatment, :control))
 
     function L(β::Vector)
 
-        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
+        has_offset ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ .= w .* muladd.(y, exp.(- μ), - 1.0)
         m  = z' * μ
@@ -200,7 +202,7 @@ function _fit!(obj::Mullahy, w::AbstractWeights)
 
     function G!(g::Vector, β::Vector)
 
-        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
+        has_offset ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= y .* exp.(- μ)
         xx .= x .* μ .* w
@@ -213,7 +215,7 @@ function _fit!(obj::Mullahy, w::AbstractWeights)
 
     function LG!(g::Vector, β::Vector)
 
-        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
+        has_offset ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= y .* exp.(- μ)
         xx .= x .* μ .* w
@@ -227,9 +229,9 @@ function _fit!(obj::Mullahy, w::AbstractWeights)
         return 0.5 * dot(m, mw)
     end
 
-    function H!(h::Matrix, β::Vector)
+    function H!(h::AbstractMatrix, β::Vector)
 
-        O ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
+        has_offset ? mul!(μ, xo, vcat(1.0, β)) : mul!(μ, x, β)
 
         μ  .= w .* y .* exp.(- μ)
         xx .= x .* μ
@@ -298,7 +300,7 @@ end
 
 # LINEAR PREDICTOR
 
-function predict(obj::Mullahy, MD::Microdata)
+function linear_predictor(obj::Mullahy, MD::Microdata)
     if getnames(obj, :treatment, :control) != getnames(MD, :treatment, :control)
         throw("missing variables")
     end
@@ -311,7 +313,7 @@ end
 
 # FITTED VALUES
 
-fitted(obj::Mullahy, MD::Microdata) = exp.(predict(obj, MD))
+predict(obj::Mullahy, MD::Microdata) = exp.(linear_predictor(obj, MD))
 
 # DERIVATIVE OF FITTED VALUES
 
@@ -331,7 +333,7 @@ end
 # RESIDUALS
 
 function residuals(obj::Mullahy, MD::Microdata)
-    r  = fitted(obj, MD)
+    r  = predict(obj, MD)
     r .= response(obj) ./ r .- 1.0
     return r
 end
@@ -341,4 +343,3 @@ end
 # UTILITIES
 
 coefnames(obj::Mullahy) = getnames(obj, :treatment, :control)
-mtitle(obj::Mullahy)    = "IV Poisson with multiplicative errors"

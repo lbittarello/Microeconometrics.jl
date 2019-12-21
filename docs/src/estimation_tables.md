@@ -19,14 +19,12 @@ etable(
     args...;
     digits::Int = 4,
     aux::Union{Function, Nothing} = nothing,
-    stars::Matrix{Any} = [0.1 "*"; 0.05 "**"; 0.01 "***"],
-    titles::Vector{String} = [""]
+    stars::AbstractMatrix{Any} = [0.1 "*"; 0.05 "**"; 0.01 "***"]
 )
 ```
 
 This function displays a simple regression table. The keyword arguments are:
 
-- `digits`: the number of digits on display.
-- `aux`: an auxiliary statistic (e.g., stderr), displayed below each coefficient.
+- `digits`: the number of digits on display;
+- `aux`: an auxiliary statistic (e.g., `stderror`), displayed below each coefficient;
 - `stars`: the star scheme.
-- `titles`: the title of each regression (defaults to numbers).

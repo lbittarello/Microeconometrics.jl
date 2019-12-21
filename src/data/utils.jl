@@ -2,31 +2,25 @@
 
 # PARSE WEIGHTS
 
-function parse_weights(nonmissing::BitVector, w::AnalyticWeights)
-    n  = sum(nonmissing)
-    v  = float(w[nonmissing])
-    s  = n / sum(v)
-    v .= v .* s
-    AnalyticWeights(v, n)
+for W in (AnalyticWeights, FrequencyWeights, ProbabilityWeights, Weights)
+    @eval begin
+        function update_weights(w::$W{T, Bool}, nonmissing::BitVector) where T
+            UnitWeights{Float64}(sum(nonmissing))
+        end
+    end
 end
 
-function parse_weights(nonmissing::BitVector, w::FrequencyWeights)
+function update_weights(w::FrequencyWeights, nonmissing::BitVector)
     v = w[nonmissing]
     s = Int(sum(v))
     FrequencyWeights(float(v), s)
 end
 
-function parse_weights(nonmissing::BitVector, w::ProbabilityWeights)
-    n  = sum(nonmissing)
-    v  = float(w[nonmissing])
-    s  = n / sum(v)
-    v .= v .* s
-    ProbabilityWeights(v, n)
+function update_weights(w::UnitWeights, nonmissing::BitVector)
+    UnitWeights{Float64}(sum(nonmissing))
 end
 
-parse_weights(nonmissing::BitVector, w::UnitWeights) = UnitWeights(Float64, sum(nonmissing))
-
-function parse_weights(nonmissing::BitVector, w::Weights)
+function update_weights(w::AbstractWeights, nonmissing::BitVector)
     n  = sum(nonmissing)
     v  = float(w[nonmissing])
     s  = n / sum(v)
@@ -36,35 +30,49 @@ end
 
 #==========================================================================================#
 
-# INTERSECTION BETWEEN A FRAME AND CORRELATION STRUCTURE
+# COPY
 
-parse_corr!(nonmissing::BitVector, corr::Homoscedastic)   = copy(corr)
-parse_corr!(nonmissing::BitVector, corr::Heteroscedastic) = copy(corr)
-
-function parse_corr!(nonmissing::BitVector, corr::Clustered)
-
-    (nonmissing == corr.nonmissing) && (return copy(corr))
-
-    nonmissing .*= corr.nonmissing
-    touse        = nonmissing[corr.nonmissing]
-    new_ic       = corr.ic[touse]
-    iter         = sort(unique(corr.ic))
-    new_iter     = sort(unique(new_ic))
-    new_nc       = length(new_iter)
-    new_mat      = corr.mat[findall((in)(new_iter), iter), touse]
-
-    return Clustered(corr.adj, nonmissing, new_mat, new_ic, new_nc)
+function Base.copy(corr::C) where {C <: CorrStructure}
+    C((copy(getfield(corr, f)) for f in fieldnames(C))...)
 end
 
-function parse_corr!(nonmissing::BitVector, corr::CrossCorrelated)
+# EQUALITY
 
-    (nonmissing == corr.nonmissing) && (return copy(corr))
+function Base.isequal(corr₁::C, corr₂::C) where {C <: CorrStructure}
+    mapreduce(i -> isequal(getfield.([corr₁, corr₂], i)...), *, fieldnames(C), init = true)
+end
+
+Base.isequal(corr₁::CorrStructure, corr₂::CorrStructure) = false
+
+# INTERSECTION BETWEEN A FRAME AND CORRELATION STRUCTURE
+
+update_corr(corr::Homoscedastic, nonmissing::BitVector)   = copy(corr)
+update_corr(corr::Heteroscedastic, nonmissing::BitVector) = copy(corr)
+
+function update_corr(corr::Clustered, nonmissing::BitVector)
+
+    isequal(nonmissing, corr.nonmissing) && (return copy(corr))
+
+    nonmissing    .*= corr.nonmissing
+    touse           = nonmissing[corr.nonmissing]
+    new_id_clusters = corr.id_clusters[touse]
+    iter            = sort(unique(corr.id_clusters))
+    new_iter        = sort(unique(new_id_clusters))
+    new_n_clusters  = length(new_iter)
+    new_matrix      = corr.matrix[findall((in)(new_iter), iter), touse]
+
+    Clustered(corr.corrected, nonmissing, new_matrix, new_id_clusters, new_n_clusters)
+end
+
+function update_corr(corr::CrossCorrelated, nonmissing::BitVector)
+
+    isequal(nonmissing, corr.nonmissing) && (return copy(corr))
 
     nonmissing .*= corr.nonmissing
     touse        = nonmissing[corr.nonmissing]
-    new_mat      = Symmetric(corr.mat[touse, touse])
+    new_matrix   = SuiteSparse.CHOLMOD.Sparse(Symmetric(corr.matrix[touse, touse]))
 
-    return CrossCorrelated(corr.adj, nonmissing, SuiteSparse.CHOLMOD.Sparse(new_mat))
+    CrossCorrelated(corr.corrected, nonmissing, new_matrix)
 end
 
 #==========================================================================================#
@@ -73,18 +81,18 @@ end
 
 function getvector(obj::Microdata, x::Symbol)
     (length(obj.mapping[x]) == 1) || throw(ArgumentError(string(x) * " is not a vector"))
-    return view(obj.matrix, :, obj.mapping[x]...)
+    view(obj.matrix, :, obj.mapping[x]...)
 end
 
 function getmatrix(obj::Microdata, args...)
     x = mapreduce(i -> obj.mapping[i], vcat, args, init = Vector{Int64}())
-    return view(obj.matrix, :, x)
+    view(obj.matrix, :, x)
 end
 
 function getnames(obj::Microdata, args...)
     n = coefnames(eterms(obj.model))
     x = mapreduce(i -> obj.mapping[i], vcat, args, init = Vector{Int64}())
-    return n[x]
+    n[x]
 end
 
 getcorr(obj::Microdata)       = obj.corr

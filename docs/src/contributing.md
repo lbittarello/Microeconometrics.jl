@@ -10,7 +10,7 @@ mutable struct OLS <: MLE
 
     sample::Microdata     # estimation sample
     β::Vector{Float64}    # coefficient vector
-    V::Matrix{Float64}    # variance matrix
+    V::AbstractMatrix{Float64}    # variance matrix
 
     OLS() = new()
 end
@@ -87,10 +87,9 @@ end
 
 We do not need to extend `_vcov!`. The default method will call `score` and `jacobian` and construct the appropriate estimator, accounting for the correlation structure of the data and the type of weights.
 
-We now overload `predict` and `fitted`. For OLS, these functions are equivalent.
+We now overload `predict`:
 ```julia
-predict(obj::OLS) = getmatrix(obj, :control) * obj.β
-fitted(obj::OLS)  = predict(obj)
+predict(obj::OLS, MD::Microdata) = getmatrix(MD, :control) * obj.β
 ```
 The next step is optional. We extend `jacobexp`, which computes the derivative of fitted values.
 ```julia
